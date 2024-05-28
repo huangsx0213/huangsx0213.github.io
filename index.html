@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APITestRunner Code</title>
+    <title>API Automatic Testing Framework</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -29,11 +29,144 @@
     </style>
 </head>
 <body>
-    <h1>APITestRunner Code</h1>
+    <h1>API Automatic Testing Framework</h1>
     <div class="code-container">
-        <div class="class-header">APITestRunner.py</div>
-        <pre>
-import json
+    <div class="class-header">.\config\body_defaults.yaml</div>
+    <pre>create_user:
+  name: "Vick"
+  email: "john.doe@example.com"
+  address:
+    street: "123 Main St"
+    city: "Anytown"
+    state: "CA"
+    zip: "12345"
+  phones:
+    - type: "home"
+      number: "555-555-5555"
+    - type: "work"
+      number: "{{phones.number}}"
+  preferences:
+    newsletter: true
+    notifications:
+      email: true
+      sms: false
+create_customer:
+  name: "ACME Corp."
+  contact:
+    name: "Jane Doe"
+    email: "contact@acme.com"
+  address:
+    street: "456 Industry Rd"
+    city: "Busytown"
+    zipcode: "{{address.zipcode}}"
+
+</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\config\body_templates\create_customer.xml</div>
+    <pre>&lt;create_customer&gt;
+  &lt;name&gt;aaa{{ name }}&lt;/name&gt;
+  &lt;contact&gt;
+    &lt;name&gt;{{ contact.name }}&lt;/name&gt;
+    &lt;email&gt;{{ contact.email }}&lt;/email&gt;
+  &lt;/contact&gt;
+  &lt;address&gt;
+    &lt;street&gt;{{ address.street }}&lt;/street&gt;
+    &lt;city&gt;{{ address.city }}&lt;/city&gt;
+    &lt;zipcode&gt;{{ address.zipcode }}&lt;/zipcode&gt;
+  &lt;/address&gt;
+&lt;/create_customer&gt;
+</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\config\body_templates\create_user.json</div>
+    <pre>{
+  "name": "{{ name }}",
+  "email": "{{ email }}",
+  "address": {
+    "street": "{{ address.street }}",
+    "city": "{{ address.city }}",
+    "state": "{{ address.state }}",
+    "zip": "{{ address.zip }}"
+  },
+  "phones": [
+    {% for phone in phones %}
+    {
+      "type": "{{ phone.type }}",
+      "number": "{{ phone.number }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "preferences": {
+    "newsletter": {{ preferences.newsletter | json_bool }},
+    "notifications": {
+      "email": {{ preferences.notifications.email | json_bool }},
+      "sms": {{ preferences.notifications.sms | json_bool }}
+    }
+  }
+}
+</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\config\config.yaml</div>
+    <pre>active_environment: development
+environments:
+  development:
+    base_url: "https://vhuang2.free.beeceptor.com"
+  production:
+    base_url: "https://vhuang1.free.beeceptor.com"</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\config\endpoints.yaml</div>
+    <pre>get_user: "/users/{user_id}"
+create_user: "/api/users"
+create_customer: "/customers"
+</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\config\headers.yaml</div>
+    <pre>default:
+  Content-Type: "application/json"
+  accept: "application/json"
+  Authorization: "{{ token }}"
+  test1: "{{ test1 }}"
+  test2: "{{ test2 }}"
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36"
+default2:
+  Content-Type: "application/json"
+  accept: "application/json"
+  Authorization: "{{ token }}"
+  test1: "{{ 1.response.name }}"
+  test2: "{{ 1.response.phones[0].type }}"
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36"</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\config\saved_fields.yaml</div>
+    <pre>1.response.name: Vick Huang
+1.response.phones[0].type: home
+1.response.preferences.notifications.email: true
+</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\main.py</div>
+    <pre>from utils.APITestRunner import APITestRunner
+
+if __name__ == "__main__":
+    api_requester = APITestRunner()
+    api_requester.run_tests()  # 运行所有测试
+    # api_requester.run_tests(test_id=2)  # 仅运行ID为1的测试</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\utils\APITestRunner.py</div>
+    <pre>import json
 import pandas as pd
 from utils.common_utils import CommonUtils
 from utils.config_loader import ConfigLoader
@@ -177,15 +310,17 @@ class APITestRunner:
 if __name__ == "__main__":
     api_requester = APITestRunner()
     api_requester.run_tests()  # Run all tests
-    # api_requester.run_tests(test_id=1)  # Run test with ID 1
-        </pre>
-    </div>
+    # api_requester.run_tests(test_id=1)  # Run test with ID 1</pre>
+</div>
 
-    <!-- Add other classes in similar blocks -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
-import os
+<div class="code-container">
+    <div class="class-header">.\utils\__init__.py</div>
+    <pre></pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\utils\common_utils.py</div>
+    <pre>import os
 
 
 class CommonUtils:
@@ -201,16 +336,12 @@ class CommonUtils:
         xml_element = etree.fromstring(xml_string, parser)
         formatted_xml = etree.tostring(xml_element, pretty_print=False, encoding='unicode')
         return formatted_xml.strip()
+</pre>
+</div>
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-
-    <div class="code-container">
-        <div class="class-header">config_loader.py</div>
-        <pre>
-import yaml
+<div class="code-container">
+    <div class="class-header">.\utils\config_loader.py</div>
+    <pre>import yaml
 import json
 import os
 
@@ -237,114 +368,534 @@ class ConfigLoader:
                 template_name = os.path.splitext(filename)[0]
                 templates[template_name] = os.path.join(template_dir, filename)
         return templates
+</pre>
+</div>
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
+<div class="code-container">
+    <div class="class-header">.\utils\logger.py</div>
+    <pre>import json
+import os
+import time
+from datetime import datetime
+from utils.common_utils import CommonUtils
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
+class Logger:
+    def __init__(self, log_dir='log'):
+        self.log_dir = log_dir
+        self.log_filename = self.generate_log_filename()
+        self.log_filepath = os.path.join(self.log_dir, self.log_filename)
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir)
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
+    def generate_log_filename(self):
+        timestamp = int(time.time())
+        date_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d_%H-%M-%S')
+        return f"log_{date_str}.log"
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
+    def log_request(self, test_id, endpoint_name, method, endpoint, headers, body, format_type):
+        timestamp = int(time.time())
+        date_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d_%H-%M-%S')
+        if format_type == 'json':
+            formatted_body = body
+        elif format_type == 'xml':
+            formatted_body = CommonUtils.format_xml(body)
+        log_content1 = {
+            "method": method,
+            "endpoint": endpoint,
+            "headers": headers,
+            "body": formatted_body,
+            "format_type": format_type
+        }
+        log_content2 = f"{date_str} [INFO] [Test ID: {test_id}] [Endpoint: {endpoint_name}]: Request:"
+        with open(self.log_filepath, 'a') as log_file:
+            log_file.write(log_content2 + "\n")
+            json.dump(log_content1, log_file, indent=4)
+            log_file.write("\n")
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
+    def log_response(self, test_id, endpoint_name, response, format_type):
+        timestamp = int(time.time())
+        date_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d_%H-%M-%S')
+        log_content1 = {
+            "response_status_code": response.status_code,
+            "response_headers": dict(response.headers),
+            "response_body": json.loads(response.text) if format_type == 'json' else response.text
+        }
+        log_content2 = f"{date_str} [INFO] [Test ID: {test_id}] [Endpoint: {endpoint_name}]: Response:"
+        with open(self.log_filepath, 'a') as log_file:
+            log_file.write(log_content2 + "\n")
+            json.dump(log_content1, log_file, indent=4)
+            log_file.write("\n")
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
+    def log(self, level, message):
+        timestamp = int(time.time())
+        date_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d_%H-%M-%S')
+        log_content = f"{date_str} [{level.upper()}]: {message}"
+        with open(self.log_filepath, 'a') as log_file:
+            log_file.write(log_content + "\n")
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
+# Example usage
+if __name__ == "__main__":
+    logger = Logger()
+    logger.log("INFO", "This is an info message.")
+    logger.log("ERROR", "This is an error message.")
+</pre>
+</div>
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
+<div class="code-container">
+    <div class="class-header">.\utils\request_body_builder.py</div>
+    <pre>import re
+from .variable_generator import VariableGenerator
+from .template_renderer import TemplateRenderer
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
+class RequestBodyBuilder:
+    def __init__(self, template_dir, body_defaults, templates):
+        self.template_dir = template_dir
+        self.body_defaults = body_defaults
+        self.templates = templates
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
-    <div class="code-container">
-        <div class="class-header">common_utils.py</div>
-        <pre>
+    def prepare_body(self, template_name, default_values, modifications, format_type):
+        try:
+            template_path = self.templates[template_name]
+            # Merge default values and modifications
+            body_data = self._merge_data(self._merge_dynamic_defaults(default_values), modifications)
+            # Generate dynamic values
+            dynamic_values = self._generate_dynamic_values(body_data)
+            # Merge dynamic values
+            body_data = self._merge_data(body_data, dynamic_values)
+            return TemplateRenderer.render_template(self.template_dir, template_path, body_data, format_type)
+        except KeyError as e:
+            raise ValueError(f"Template '{template_name}' not found: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Error preparing request body: {str(e)}")
 
-        </pre>
-    </div>
-    
-    <!-- Add additional class code blocks as needed -->
+    def _merge_dynamic_defaults(self, default_values):
+        merged_values = {}
+        for key, value in default_values.items():
+            if isinstance(value, dict):
+                merged_values[key] = self._merge_dynamic_defaults(value)
+            elif isinstance(value, str):
+                merged_values[key] = self._process_string(value)
+            else:
+                merged_values[key] = value
+        return merged_values
+
+    def _generate_dynamic_values(self, nested_data):
+        if isinstance(nested_data, dict):
+            return {key: self._generate_dynamic_values(value) if isinstance(value, (dict, list))
+                    else self._process_string(value) for key, value in nested_data.items()}
+        elif isinstance(nested_data, list):
+            return [self._generate_dynamic_values(item) if isinstance(item, (dict, list))
+                    else self._process_string(item) for item in nested_data]
+        return nested_data
+
+    def _process_string(self, value):
+        if isinstance(value, str) and re.match(r'\{\{\s*[^}]+?\s*\}\}', value):
+            dynamic_key = re.findall(r'\{\{\s*([^}]+?)\s*\}\}', value)[0]
+            return VariableGenerator.generate_dynamic_value(dynamic_key)
+        return value
+
+    def _merge_data(self, base_data, custom_data):
+        for key, value in custom_data.items():
+            if key in base_data and isinstance(value, dict) and isinstance(base_data[key], dict):
+                base_data[key] = self._merge_data(base_data.get(key, {}), value)
+            else:
+                base_data[key] = value
+        return base_data</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\utils\request_headers_builder.py</div>
+    <pre>import re
+from .variable_generator import VariableGenerator
+
+class RequestHeadersBuilder:
+    def __init__(self, headers_config):
+        self.headers_config = headers_config
+
+    def prepare_headers(self, headers_name, saved_fields):
+        try:
+            headers = self.headers_config[headers_name]
+            return {k: self._process_header_value(v, saved_fields) for k, v in headers.items()}
+        except KeyError as e:
+            raise ValueError(f"Headers configuration '{headers_name}' not found: {str(e)}")
+
+    def _process_header_value(self, value, saved_fields):
+        if isinstance(value, str) and re.match(r'\{\{\s*[^}]+?\s*\}\}', value):
+            return self._generate_dynamic_value(value, saved_fields)
+        return value
+
+    def _generate_dynamic_value(self, template_string, saved_fields):
+        dynamic_key = re.findall(r'\{\{\s*([^}]+?)\s*\}\}', template_string)[0]
+        if dynamic_key in saved_fields:
+            return saved_fields[dynamic_key]
+        return VariableGenerator.generate_dynamic_value(dynamic_key)</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\utils\request_sender.py</div>
+    <pre>import requests
+
+
+class RequestSender:
+    @staticmethod
+    def send_request(base_url, method, endpoint, headers=None, body=None, format_type='json'):
+        url = f"{base_url}{endpoint}"
+        requests_method = RequestSender._get_request_method(method)
+
+        if format_type == 'json':
+            response = requests_method(url, headers=headers, json=body)
+        elif format_type == 'xml':
+            headers['Content-Type'] = 'application/xml'
+            response = requests_method(url, headers=headers, data=body)
+        else:
+            raise ValueError(f"Unsupported format type: {format_type}")
+
+        return response
+
+    @staticmethod
+    def _get_request_method(method):
+        methods = {
+            'GET': requests.get,
+            'POST': requests.post,
+            'PUT': requests.put,
+            'DELETE': requests.delete,
+            'PATCH': requests.patch
+        }
+
+        if method in methods:
+            return methods[method]
+        else:
+            raise ValueError(f"Unsupported HTTP method: {method}")
+</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\utils\response_handler.py</div>
+    <pre>import json
+import re
+import pandas as pd
+from openpyxl.styles import Font
+from openpyxl import load_workbook
+
+
+class ResponseHandler:
+    def __init__(self, logger):
+        self.logger = logger
+
+    def handle_response(self, response, test_case, test_cases_path, row_idx):
+        actual_status = response.status_code
+        actual_response = self._get_response_content(response)
+
+        expected_lines = self._parse_lines(test_case['Expected Result'])
+        fields_to_save_lines = self._parse_lines(test_case.get('Fields To Save', ''))
+
+        results = [self._compare_field(actual_response, expectation) for expectation in expected_lines]
+        fields_saved_results = [self._extract_field(actual_response, field) for field in fields_to_save_lines]
+
+        overall_result = "fail" if any(res['result'] == "fail" for res in results) else "pass"
+        formatted_results = self._format_results(results)
+        formatted_fields_saved = self._format_saved_fields(fields_saved_results)
+
+        self._write_results_to_excel(
+            test_cases_path, row_idx + 2, actual_status, formatted_results, overall_result, formatted_fields_saved
+        )
+
+        self.logger.log("INFO", json.dumps(results, indent=4))
+        self.logger.log("INFO", f"The overall result is: {overall_result}.")
+
+    def _get_response_content(self, response):
+        try:
+            return response.json()
+        except json.JSONDecodeError:
+            return response.text
+
+    def _parse_lines(self, lines):
+        return lines.strip().split('\n') if pd.notna(lines) else []
+
+    def _compare_field(self, actual_response, expectation):
+        try:
+            field_path, expected_value = expectation.split('=')
+        except ValueError:
+            return self._create_error_result(expectation, "Invalid [Expected Result] format")
+
+        expected_value = expected_value.strip().strip('""')
+        actual_value = self._get_actual_value(actual_response, field_path)
+
+        if actual_value is None:
+            return self._create_fail_result(field_path, "Field not found")
+        return self._create_pass_fail_result(field_path, actual_value, expected_value)
+
+    def _get_actual_value(self, actual_response, field_path):
+        parts = field_path.split('.')
+        try:
+            if 'response[' in parts[0]:
+                match = re.match(r'response\[(\d+)\]', parts[0])
+                array_index = int(match.group(1))
+                value = actual_response[array_index]
+            else:
+                value = actual_response
+
+            for part in parts[1:]:
+                if '[' in part and ']' in part:
+                    array_part, idx = re.match(r'(.*)\[(\d+)\]', part).groups()
+                    value = value[array_part][int(idx)]
+                else:
+                    value = value[part]
+            return value
+        except (KeyError, IndexError, TypeError):
+            return None
+
+    def _create_error_result(self, field_path, error_message):
+        return {
+            "field": field_path,
+            "result": "error",
+            "error": error_message
+        }
+
+    def _create_fail_result(self, field_path, error_message):
+        return {
+            "field": field_path,
+            "result": "fail",
+            "error": error_message
+        }
+
+    def _create_pass_fail_result(self, field_path, actual_value, expected_value):
+        return {
+            "field": field_path,
+            "result": "pass" if str(actual_value) == expected_value else "fail"
+        }
+
+    def _extract_field(self, actual_response, field_path):
+        parts = field_path.split('.')
+        try:
+            if 'response[' in parts[0]:
+                match = re.match(r'response\[(\d+)\]', parts[0])
+                array_index = int(match.group(1))
+                value = actual_response[array_index]
+            else:
+                value = actual_response
+
+            for part in parts[1:]:
+                if '[' in part and ']' in part:
+                    array_part, idx = re.match(r'(.*)\[(\d+)\]', part).groups()
+                    value = value[array_part][int(idx)]
+                else:
+                    value = value[part]
+
+            return f"{field_path}=\"{value}\"" if isinstance(value, str) else f"{field_path}={value}"
+        except (KeyError, IndexError, TypeError):
+            return f"{field_path}=null"
+
+    def _format_results(self, results):
+        return '\n'.join(f"{res['field']}:{res['result']}" for res in results)
+
+    def _format_saved_fields(self, fields_saved_results):
+        return '\n'.join(fields_saved_results)
+
+    def _write_results_to_excel(self, file_path, row, actual_status, formatted_results, overall_result,
+                                formatted_fields_saved):
+        workbook = load_workbook(file_path)
+        sheet = workbook.active
+        actual_status_col_idx = self._get_column_index_by_name(sheet, "Actual Status")
+        actual_result_col_idx = self._get_column_index_by_name(sheet, "Actual Result")
+        overall_result_col_idx = self._get_column_index_by_name(sheet, "Overall Result")
+        fields_saved_col_idx = self._get_column_index_by_name(sheet, "Fields Saved")
+
+        sheet.cell(row=row, column=actual_status_col_idx, value=actual_status)
+        sheet.cell(row=row, column=actual_result_col_idx, value=formatted_results)
+        overall_cell = sheet.cell(row=row, column=overall_result_col_idx, value=overall_result)
+
+        overall_cell.font = Font(color="00FF00" if overall_result == "pass" else "FF0000")
+        sheet.cell(row=row, column=fields_saved_col_idx, value=formatted_fields_saved)
+
+        workbook.save(file_path)
+
+    def _get_column_index_by_name(self, sheet, column_name):
+        for col in sheet.iter_cols(1, sheet.max_column):
+            if col[0].value == column_name:
+                return col[0].column
+        return None</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\utils\saved_fields_handler.py</div>
+    <pre>import re
+import yaml
+import os
+import pandas as pd
+
+
+class SavedFieldsHandler:
+    def __init__(self, file_path='config/saved_fields.yaml'):
+        self.file_path = file_path
+
+    def load_saved_fields(self):
+        if not os.path.exists(self.file_path):
+            return {}
+        try:
+            with open(self.file_path, 'r') as f:
+                saved_fields = yaml.safe_load(f) or {}
+            return saved_fields
+        except Exception as e:
+            raise ValueError(f"Failed to load saved fields: {str(e)}")
+
+    def save_fields(self, field_data):
+        saved_fields = self.load_saved_fields()
+        saved_fields.update(field_data)
+        try:
+            with open(self.file_path, 'w') as f:
+                yaml.safe_dump(saved_fields, f, default_flow_style=False)
+        except Exception as e:
+            raise ValueError(f"Failed to save fields: {str(e)}")
+
+    def update_saved_fields(self, response, test_case):
+        fields_to_save_lines = self._parse_fields_to_save(test_case.get('Fields To Save', ''))
+        actual_response = response.json()
+        field_data = {
+            f"{test_case['ID']}.{field}": self._extract_value(actual_response, field)
+            for field in fields_to_save_lines
+        }
+        self.save_fields(field_data)
+
+    def _parse_fields_to_save(self, fields_to_save):
+        return fields_to_save.strip().split('\n') if pd.notna(fields_to_save) else []
+
+    def _extract_value(self, actual_response, field_path):
+        parts = field_path.split('.')
+        try:
+            if 'response[' in parts[0]:
+                match = re.match(r'response\[(\d+)\]', parts[0])
+                array_index = int(match.group(1))
+                value = actual_response[array_index]
+            else:
+                value = actual_response
+
+            for part in parts[1:]:
+                if '[' in part and ']' in part:
+                    array_part, idx = re.match(r'(.*)\[(\d+)\]', part).groups()
+                    value = value[array_part][int(idx)]
+                else:
+                    value = value[part]
+            return value
+        except (KeyError, IndexError, TypeError):
+            return None
+</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\utils\template_renderer.py</div>
+    <pre>import os
+import json
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+
+
+class TemplateRenderer:
+    @staticmethod
+    def render_template(template_dir, template_path, modifications, format_type):
+        try:
+            env = TemplateRenderer._create_environment(template_dir)
+            template = TemplateRenderer._load_template(env, template_path)
+            rendered_body = template.render(modifications)
+            return TemplateRenderer._format_rendered_body(rendered_body, format_type)
+        except (TemplateNotFound, json.JSONDecodeError) as e:
+            raise ValueError(f"Error rendering template: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"An unexpected error occurred while rendering template: {str(e)}")
+
+    @staticmethod
+    def _create_environment(template_dir):
+        env = Environment(loader=FileSystemLoader(template_dir))
+        env.filters['json_bool'] = lambda value: str(value).lower()
+        return env
+
+    @staticmethod
+    def _load_template(env, template_path):
+        template_name = os.path.basename(template_path)
+        return env.get_template(template_name)
+
+    @staticmethod
+    def _format_rendered_body(rendered_body, format_type):
+        if format_type == 'json':
+            return json.loads(rendered_body)
+        elif format_type == 'xml':
+            return rendered_body
+        else:
+            raise ValueError(f"Unsupported format type: {format_type}")</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\utils\variable_generator.py</div>
+    <pre>import uuid
+
+class VariableGenerator:
+    @staticmethod
+    def generate_dynamic_value(field_name, saved_fields=None):
+        if saved_fields and field_name in saved_fields:
+            return saved_fields[field_name]
+
+        handlers = {
+            'user_id': VariableGenerator._generate_user_id,
+            'name': VariableGenerator._generate_name,
+            'email': VariableGenerator._generate_email,
+            'age': VariableGenerator._generate_age,
+            'address.street': VariableGenerator._generate_street,
+            'phones.number': VariableGenerator._generate_phone_number,
+            'address.zipcode': VariableGenerator._generate_zipcode,
+            'token': VariableGenerator._generate_token,
+            'test1': VariableGenerator._generate_test1,
+            'test2': VariableGenerator._generate_test2,
+        }
+
+        return handlers.get(field_name, VariableGenerator._generate_default_value)(field_name)
+
+    @staticmethod
+    def _generate_user_id(field_name=None):
+        return 1  # Example value, actual implementation can vary
+
+    @staticmethod
+    def _generate_name(field_name=None):
+        return 'Dynamic Name'
+
+    @staticmethod
+    def _generate_email(field_name=None):
+        return 'dynamic@example.com'
+
+    @staticmethod
+    def _generate_age(field_name=None):
+        return 25
+
+    @staticmethod
+    def _generate_street(field_name=None):
+        return 'Dynamic Street'
+
+    @staticmethod
+    def _generate_phone_number(field_name=None):
+        return '5511539'
+
+    @staticmethod
+    def _generate_zipcode(field_name=None):
+        return '00000'
+
+    @staticmethod
+    def _generate_token(field_name=None):
+        return str(uuid.uuid4())
+
+    @staticmethod
+    def _generate_test1(field_name=None):
+        return 'Dynamic Test1'
+
+    @staticmethod
+    def _generate_test2(field_name=None):
+        return 'Dynamic Test2'
+
+    @staticmethod
+    def _generate_default_value(field_name):
+        return f'dynamic_{field_name}'</pre>
+</div>
+
+
 </body>
 </html>
