@@ -27,7 +27,7 @@
             color: #61dafb;
             margin-bottom: 10px;
         }
-        .copy-button {
+        .copy-button, .return-button {
             position: absolute;
             right: 20px;
             top: 20px;
@@ -37,6 +37,10 @@
             padding: 5px 10px;
             cursor: pointer;
             border-radius: 3px;
+            margin-left: 5px;
+        }
+        .return-button {
+            right: 100px;
         }
         .directory a {
             color: #98c379;
@@ -97,6 +101,7 @@
     <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_body_defaults_create_customer_json">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\body_defaults\create_customer.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
   "name": "ACME Corp.",
   "contact": {
@@ -114,6 +119,7 @@
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_body_defaults_create_user_json">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\body_defaults\create_user.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
   "name": "Vick",
   "email": "john.doe@example.com",
@@ -146,6 +152,7 @@
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_body_defaults_pacs_008_in_def_json">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\body_defaults\pacs.008_in_def.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
   "transaction_id": "IN123457",
   "amount": 1500.00,
@@ -174,6 +181,7 @@
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_body_defaults_pacs_008_out_def_json">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\body_defaults\pacs.008_out_def.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
   "InstrId": "OUT123456",
   "EndToEndId": "E2EOUT123456",
@@ -203,6 +211,7 @@
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_body_templates_pacs_008_in_json">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\body_templates\pacs.008_in.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
   "transaction_id": "{{transaction_id}}",
   "amount": {{amount}},
@@ -237,6 +246,7 @@
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_body_templates_pacs_008_out_xml">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\body_templates\pacs.008_out.xml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>&lt;Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02"&gt;
     &lt;CdtTrfTxInf&gt;
         &lt;PmtId&gt;
@@ -277,6 +287,7 @@
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_body_templates_sample_create_customer_xml">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\body_templates\sample_create_customer.xml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>&lt;create_customer&gt;
   &lt;name&gt;aaa{{ name }}&lt;/name&gt;
   &lt;contact&gt;
@@ -295,6 +306,7 @@
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_body_templates_sample_create_user_json">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\body_templates\sample_create_user.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
   "name": "{{ name }}",
   "email": "{{ email }}",
@@ -326,6 +338,7 @@
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_config_yaml">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\config.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre># The active environment to be used for the tests.
 # This should match one of the environment keys defined below in 'environments'.
 active_environment: DEV
@@ -373,6 +386,7 @@ environments:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_headers_default_json">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\headers\default.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
   "Content-Type": "application/json",
   "accept": "application/json",
@@ -386,6 +400,7 @@ environments:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_headers_default2_json">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\headers\default2.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
   "Content-Type": "application/json",
   "accept": "application/json",
@@ -399,6 +414,7 @@ environments:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_report_template_report_template_html">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\report_template\report_template.html</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>&lt;!DOCTYPE html&gt;
 &lt;html lang="en"&gt;
 &lt;head&gt;
@@ -582,6 +598,7 @@ environments:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_saved_fields_yaml">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\saved_fields.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>PRE_001_01.response[2].outbound.count: 0
 PRE_001_02.response[3].balance: 57800.0
 TC001_01.response.amount: 100
@@ -592,6 +609,7 @@ TC001_02.response.response.amount: '100.0'
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_test_config_yaml">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\test_config.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre># Path to the excel file containing the test cases.
 # Make sure the file exists at this path.
 test_cases_path: 'test_cases/test_cases.xlsx'
@@ -613,6 +631,7 @@ log_level: 'DEBUG'</pre>
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries___init___py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\__init__.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from .log_manager import Logger
 logger = Logger()</pre>
 </div>
@@ -620,6 +639,7 @@ logger = Logger()</pre>
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_test_executor_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api_test_executor.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
 from typing import Dict, List, Union, Any
 from libraries.config_manager import ConfigManager
@@ -814,6 +834,7 @@ class APITestExecutor:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_body_generator_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\body_generator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
 import os
 import re
@@ -928,6 +949,7 @@ class BodyGenerator:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_config_manager_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\config_manager.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import yaml
 import json
 import os
@@ -962,6 +984,7 @@ class ConfigManager:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_excel_operation_manager_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\excel_operation_manager.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
 from typing import Dict, Any
 from openpyxl.styles import Font
@@ -1050,6 +1073,7 @@ class ExcelOperationManager:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_headers_generator_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\headers_generator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
 import re
 import json
@@ -1118,6 +1142,7 @@ class HeadersGenerator:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_html_report_generator_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\html_report_generator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
 from . import logger
@@ -1174,6 +1199,7 @@ class HTMLReportGenerator:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_log_manager_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\log_manager.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
 import os
 import time
@@ -1346,6 +1372,7 @@ class Logger:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_request_sender_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\request_sender.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import requests
 from typing import Dict, Union, Optional
 import time
@@ -1395,6 +1422,7 @@ class RequestSender:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_response_comparator_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\response_comparator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
 import re
 from typing import Dict, Any, Union
@@ -1502,6 +1530,7 @@ class ResponseComparator:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_response_handler_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\response_handler.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
 import re
 from datetime import datetime
@@ -1588,6 +1617,7 @@ class ResponseHandler:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_saved_fields_manager_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\saved_fields_manager.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import yaml
 import os
 from typing import Dict, Any
@@ -1634,6 +1664,7 @@ class SavedFieldsManager:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_template_renderer_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\template_renderer.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
 import json
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
@@ -1678,6 +1709,7 @@ class TemplateRenderer:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_test_case_manager_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\test_case_manager.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
 import re
 import json
@@ -1871,6 +1903,7 @@ class TestCaseManager:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_utility_helpers_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\utility_helpers.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
 import time
 from functools import wraps
@@ -1912,6 +1945,7 @@ class UtilityHelpers:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_variable_generator_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\variable_generator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import uuid
 import datetime
 from typing import Any, Dict, Callable
@@ -1987,6 +2021,7 @@ class VariableGenerator:
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_main_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\main.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from libraries.api_test_executor import APITestExecutor
 
 if __name__ == "__main__":
@@ -1998,6 +2033,7 @@ if __name__ == "__main__":
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_positions_json">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\testing_server\positions.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
     "balances": {
         "USD": 13500.0,
@@ -2071,6 +2107,7 @@ if __name__ == "__main__":
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_server_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\testing_server\server.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
 from flask import Flask, request, jsonify, Response
 import xml.etree.ElementTree as ET
@@ -2404,6 +2441,9 @@ if __name__ == '__main__':
                 button.innerText = 'Copied!';
                 setTimeout(() => { button.innerText = 'Copy'; }, 2000);
             });
+        }
+        function returnToDirectory() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
 </body>
