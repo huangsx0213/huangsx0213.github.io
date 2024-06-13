@@ -17,6 +17,7 @@
             border-radius: 5px;
             margin: 20px 0;
             overflow-x: auto;
+            position: relative;
         }
         .code-container pre {
             margin: 0;
@@ -26,12 +27,24 @@
             color: #61dafb;
             margin-bottom: 10px;
         }
+        .copy-button {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background-color: #61dafb;
+            color: #282c34;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
     <h1>API Automatic Testing Framework</h1>
     <div class="code-container">
     <div class="class-header">.\configs\body_defaults\create_customer.json</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>{
   "name": "ACME Corp.",
   "contact": {
@@ -48,6 +61,7 @@
 
 <div class="code-container">
     <div class="class-header">.\configs\body_defaults\create_user.json</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>{
   "name": "Vick",
   "email": "john.doe@example.com",
@@ -79,6 +93,7 @@
 
 <div class="code-container">
     <div class="class-header">.\configs\body_defaults\pacs.008_in_def.json</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>{
   "transaction_id": "IN123457",
   "amount": 1500.00,
@@ -106,6 +121,7 @@
 
 <div class="code-container">
     <div class="class-header">.\configs\body_defaults\pacs.008_out_def.json</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>{
   "InstrId": "OUT123456",
   "EndToEndId": "E2EOUT123456",
@@ -134,6 +150,7 @@
 
 <div class="code-container">
     <div class="class-header">.\configs\body_templates\pacs.008_in.json</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>{
   "transaction_id": "{{transaction_id}}",
   "amount": {{amount}},
@@ -167,6 +184,7 @@
 
 <div class="code-container">
     <div class="class-header">.\configs\body_templates\pacs.008_out.xml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>&lt;Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02"&gt;
     &lt;CdtTrfTxInf&gt;
         &lt;PmtId&gt;
@@ -206,6 +224,7 @@
 
 <div class="code-container">
     <div class="class-header">.\configs\body_templates\sample_create_customer.xml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>&lt;create_customer&gt;
   &lt;name&gt;aaa{{ name }}&lt;/name&gt;
   &lt;contact&gt;
@@ -223,6 +242,7 @@
 
 <div class="code-container">
     <div class="class-header">.\configs\body_templates\sample_create_user.json</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>{
   "name": "{{ name }}",
   "email": "{{ email }}",
@@ -253,6 +273,7 @@
 
 <div class="code-container">
     <div class="class-header">.\configs\config.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre># The active environment to be used for the tests.
 # This should match one of the environment keys defined below in 'environments'.
 active_environment: DEV
@@ -299,6 +320,7 @@ environments:
 
 <div class="code-container">
     <div class="class-header">.\configs\headers\default.json</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>{
   "Content-Type": "application/json",
   "accept": "application/json",
@@ -311,6 +333,7 @@ environments:
 
 <div class="code-container">
     <div class="class-header">.\configs\headers\default2.json</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>{
   "Content-Type": "application/json",
   "accept": "application/json",
@@ -323,6 +346,7 @@ environments:
 
 <div class="code-container">
     <div class="class-header">.\configs\report_template\report_template.html</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>&lt;!DOCTYPE html&gt;
 &lt;html lang="en"&gt;
 &lt;head&gt;
@@ -505,6 +529,7 @@ environments:
 
 <div class="code-container">
     <div class="class-header">.\configs\saved_fields.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>PRE_001_01.response[2].outbound.count: 0
 PRE_001_02.response[3].balance: 57800.0
 TC001_01.response.amount: 100
@@ -514,6 +539,7 @@ TC001_02.response.response.amount: '100.0'
 
 <div class="code-container">
     <div class="class-header">.\configs\test_config.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre># Path to the excel file containing the test cases.
 # Make sure the file exists at this path.
 test_cases_path: 'test_cases/test_cases.xlsx'
@@ -533,13 +559,256 @@ log_level: 'DEBUG'</pre>
 </div>
 
 <div class="code-container">
+    <div class="class-header">.\export_code.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <pre>import os
+
+# Function to list all files with specific extensions and exclude certain directories and files
+def list_files(directory, extensions, exclude_dirs, exclude_files):
+    files_list = []
+    for root, dirs, files in os.walk(directory):
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+        for file in files:
+            if file.endswith(extensions) and file not in exclude_files:
+                files_list.append(os.path.join(root, file))
+    return files_list
+
+# Function to write the content of files to a single txt file
+def write_contents_to_file(files_list, output_file):
+    with open(output_file, 'w', encoding='utf-8') as f:
+        for file_path in files_list:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    f.write(f'\n--- Content of: {file_path} ---\n')
+                    f.write(file.read())
+                    f.write('\n')
+            except UnicodeDecodeError:
+                with open(file_path, 'r', encoding='latin1') as file:
+                    f.write(f'\n--- Content of: {file_path} (read with latin1 encoding) ---\n')
+                    f.write(file.read())
+                    f.write('\n')
+
+if __name__ == '__main__':
+    exclude_scripts = ['export_code.py', 'export_html.py', 'gen_temp_default.py']  # Replace with your actual script names
+    directory_to_search = '.'
+    extensions = ('.py', '.json', '.xml', '.yaml', '.html')
+    #exclude_directories = {'venv', '.idea', '__pycache__', '.git'}
+    exclude_directories = {'venv', '.idea', '__pycache__', '.git', 'testing_server', 'output'}
+
+    # Listing the files
+    files = list_files(directory_to_search, extensions, exclude_directories, exclude_scripts)
+
+    # Writing the file contents to the output txt file
+    output_txt_file = 'output/collected_files_content.txt'
+    write_contents_to_file(files, output_txt_file)
+
+    print(f'Content of files has been written to {output_txt_file}.')</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\export_html.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <pre>import os
+
+html_template = '''&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;API Automatic Testing Framework&lt;/title&gt;
+    &lt;style&gt;
+        body {{
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+        }}
+        .code-container {{
+            background-color: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow-x: auto;
+            position: relative;
+        }}
+        .code-container pre {{
+            margin: 0;
+        }}
+        .class-header {{
+            font-size: 1.5em;
+            color: #61dafb;
+            margin-bottom: 10px;
+        }}
+        .copy-button {{
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background-color: #61dafb;
+            color: #282c34;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+        }}
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;API Automatic Testing Framework&lt;/h1&gt;
+    {code_blocks}
+    &lt;script&gt;
+        function copyToClipboard(button) {{
+            const codeContainer = button.parentElement;
+            const code = codeContainer.querySelector('pre').innerText;
+            navigator.clipboard.writeText(code).then(() =&gt; {{
+                button.innerText = 'Copied!';
+                setTimeout(() =&gt; {{ button.innerText = 'Copy'; }}, 2000);
+            }});
+        }}
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+'''
+
+code_block_template = '''&lt;div class="code-container"&gt;
+    &lt;div class="class-header"&gt;{file_name}&lt;/div&gt;
+    &lt;button class="copy-button" onclick="copyToClipboard(this)"&gt;Copy&lt;/button&gt;
+    &lt;pre&gt;{code_content}&lt;/pre&gt;
+&lt;/div&gt;
+'''
+
+def read_files(directory='.', exclude_files=None, exclude_directories=None):
+    if exclude_files is None:
+        exclude_files = []
+    if exclude_directories is None:
+        exclude_directories = set()
+
+    supported_extensions = ('.py', '.json', '.yaml', '.html', '.xml')
+    files_list = []
+    for root, dirs, files in os.walk(directory):
+        # Modify dirs in place to exclude specified directories
+        dirs[:] = [d for d in dirs if d not in exclude_directories]
+        for file in files:
+            file_path = os.path.join(root, file)
+            if file.endswith(supported_extensions) and file_path not in exclude_files:
+                files_list.append(file_path)
+    files_list.sort()  # Sort the list of files
+    return files_list
+
+def escape_html(text):
+    return text.replace('&amp;', '&amp;amp;').replace('&lt;', '&amp;lt;').replace('&gt;', '&amp;gt;')
+
+def generate_code_blocks(files_list):
+    code_blocks = ''
+    for file_path in files_list:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            code_content = escape_html(file.read())
+            code_block = code_block_template.format(file_name=file_path, code_content=code_content)
+            code_blocks += code_block + '\n'
+    return code_blocks
+
+def generate_html_file(html_content, output_file='output/index.html'):
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    with open(output_file, 'w', encoding='utf-8') as file:
+        file.write(html_content)
+
+if __name__ == "__main__":
+    # Define files and directories to exclude
+    exclude_files = [
+        './export_html.py',
+        './export_code.py',
+        './gen_temp_default.py'
+        # Add more file paths as needed
+    ]
+    exclude_directories = {'venv', '.idea', '__pycache__', '.git', 'output'}
+
+    files_list = read_files(exclude_files=exclude_files, exclude_directories=exclude_directories)
+    code_blocks = generate_code_blocks(files_list)
+    html_content = html_template.format(code_blocks=code_blocks)
+    generate_html_file(html_content)
+    print(f"HTML file 'output/index.html' generated successfully.")</pre>
+</div>
+
+<div class="code-container">
+    <div class="class-header">.\gen_temp_default.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <pre>import os
+import re
+import json
+from collections import defaultdict
+
+TEMPLATE_DIR = 'configs/body_templates'
+OUTPUT_DIR = 'output'
+
+
+def extract_placeholders(template_content):
+    # 提取{{}}中的占位符，支持嵌套
+    placeholders = re.findall(r'\{\{\s*([^}]+?)\s*\}\}', template_content)
+    return placeholders
+
+
+def nest_keys(keys):
+    nested_dict = {}
+    for key in keys:
+        parts = key.split('.')
+        current_level = nested_dict
+        for part in parts[:-1]:
+            if part not in current_level:
+                current_level[part] = {}
+            current_level = current_level[part]
+        current_level[parts[-1]] = ""
+    return nested_dict
+
+
+def merge_dicts(dict1, dict2):
+    for key in dict2:
+        if key in dict1:
+            if isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
+                merge_dicts(dict1[key], dict2[key])
+            else:
+                dict1[key] = dict2[key]
+        else:
+            dict1[key] = dict2[key]
+    return dict1
+
+
+def generate_json_from_template(template_filename):
+    template_path = os.path.join(TEMPLATE_DIR, template_filename)
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"The template file {template_filename} does not exist in {TEMPLATE_DIR}")
+
+    with open(template_path, 'r', encoding='utf-8') as file:
+        template_content = file.read()
+
+    placeholders = extract_placeholders(template_content)
+    nested_structure = {}
+
+    for placeholder in placeholders:
+        nested_dict = nest_keys([placeholder])
+        nested_structure = merge_dicts(nested_structure, nested_dict)
+
+    output_path = os.path.join(OUTPUT_DIR, f"{os.path.splitext(template_filename)[0]}_placeholders.json")
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(output_path, 'w', encoding='utf-8') as outfile:
+        json.dump(nested_structure, outfile, indent=4)
+
+    print(f"Generated JSON file with placeholders: {output_path}")
+
+
+if __name__ == "__main__":
+    template_filename = 'pacs.008_out.xml'  # 你可以更改为你想指定的模板文件名
+    generate_json_from_template(template_filename)</pre>
+</div>
+
+<div class="code-container">
     <div class="class-header">.\libraries\__init__.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>from .log_manager import Logger
 logger = Logger()</pre>
 </div>
 
 <div class="code-container">
     <div class="class-header">.\libraries\api_test_executor.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import os
 from typing import Dict, List, Union, Any
 from libraries.config_manager import ConfigManager
@@ -733,6 +1002,7 @@ class APITestExecutor:
 
 <div class="code-container">
     <div class="class-header">.\libraries\body_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import json
 import os
 import re
@@ -846,6 +1116,7 @@ class BodyGenerator:
 
 <div class="code-container">
     <div class="class-header">.\libraries\config_manager.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import yaml
 import json
 import os
@@ -879,6 +1150,7 @@ class ConfigManager:
 
 <div class="code-container">
     <div class="class-header">.\libraries\excel_operation_manager.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import json
 from typing import Dict, Any
 from openpyxl.styles import Font
@@ -966,6 +1238,7 @@ class ExcelOperationManager:
 
 <div class="code-container">
     <div class="class-header">.\libraries\headers_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import os
 import re
 import json
@@ -1033,6 +1306,7 @@ class HeadersGenerator:
 
 <div class="code-container">
     <div class="class-header">.\libraries\html_report_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
 from . import logger
@@ -1088,6 +1362,7 @@ class HTMLReportGenerator:
 
 <div class="code-container">
     <div class="class-header">.\libraries\log_manager.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import json
 import os
 import time
@@ -1259,6 +1534,7 @@ class Logger:
 
 <div class="code-container">
     <div class="class-header">.\libraries\request_sender.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import requests
 from typing import Dict, Union, Optional
 import time
@@ -1307,6 +1583,7 @@ class RequestSender:
 
 <div class="code-container">
     <div class="class-header">.\libraries\response_comparator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import json
 import re
 from typing import Dict, Any, Union
@@ -1413,6 +1690,7 @@ class ResponseComparator:
 
 <div class="code-container">
     <div class="class-header">.\libraries\response_handler.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import json
 import re
 from datetime import datetime
@@ -1498,6 +1776,7 @@ class ResponseHandler:
 
 <div class="code-container">
     <div class="class-header">.\libraries\saved_fields_manager.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import yaml
 import os
 from typing import Dict, Any
@@ -1543,6 +1822,7 @@ class SavedFieldsManager:
 
 <div class="code-container">
     <div class="class-header">.\libraries\template_renderer.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import os
 import json
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
@@ -1586,6 +1866,7 @@ class TemplateRenderer:
 
 <div class="code-container">
     <div class="class-header">.\libraries\test_case_manager.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import os
 import re
 import json
@@ -1778,6 +2059,7 @@ class TestCaseManager:
 
 <div class="code-container">
     <div class="class-header">.\libraries\utility_helpers.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import os
 import time
 from functools import wraps
@@ -1818,6 +2100,7 @@ class UtilityHelpers:
 
 <div class="code-container">
     <div class="class-header">.\libraries\variable_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import uuid
 import datetime
 from typing import Any, Dict, Callable
@@ -1892,6 +2175,7 @@ class VariableGenerator:
 
 <div class="code-container">
     <div class="class-header">.\main.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>from libraries.api_test_executor import APITestExecutor
 
 if __name__ == "__main__":
@@ -1902,6 +2186,7 @@ if __name__ == "__main__":
 
 <div class="code-container">
     <div class="class-header">.\testing_server\positions.json</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>{
     "balances": {
         "USD": 13500.0,
@@ -1974,6 +2259,7 @@ if __name__ == "__main__":
 
 <div class="code-container">
     <div class="class-header">.\testing_server\server.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <pre>import json
 from flask import Flask, request, jsonify, Response
 import xml.etree.ElementTree as ET
@@ -2299,5 +2585,15 @@ if __name__ == '__main__':
 </div>
 
 
+    <script>
+        function copyToClipboard(button) {
+            const codeContainer = button.parentElement;
+            const code = codeContainer.querySelector('pre').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                button.innerText = 'Copied!';
+                setTimeout(() => { button.innerText = 'Copy'; }, 2000);
+            });
+        }
+    </script>
 </body>
 </html>
