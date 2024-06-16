@@ -60,6 +60,7 @@
 │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_main_py">main.py</a>
 │   ├── configs/
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_config_yaml">config.yaml</a>
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_logging_config_yaml">logging_config.yaml</a>
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_saved_fields_yaml">saved_fields.yaml</a>
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_test_config_yaml">test_config.yaml</a>
 │   │   ├── body_defaults/
@@ -251,34 +252,32 @@
     <pre>&lt;Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02"&gt;
     &lt;CdtTrfTxInf&gt;
         &lt;PmtId&gt;
-            &lt;InstrId&gt;{{InstrId}}&lt;/InstrId&gt;
-            &lt;EndToEndId&gt;{{EndToEndId}}&lt;/EndToEndId&gt;
+            &lt;InstrId&gt;{{ InstrId }}&lt;/InstrId&gt;
+            &lt;EndToEndId&gt;{{ EndToEndId }}&lt;/EndToEndId&gt;
         &lt;/PmtId&gt;
-        &lt;IntrBkSttlmAmt Ccy="{{currency}}"&gt;{{amount}}&lt;/IntrBkSttlmAmt&gt;
+        &lt;IntrBkSttlmAmt Ccy="{{ currency }}"&gt;{{ amount }}&lt;/IntrBkSttlmAmt&gt;
         &lt;Dbtr&gt;
-            &lt;Nm&gt;{{debtor.name}}&lt;/Nm&gt;
+            &lt;Nm&gt;{{ debtor.name }}&lt;/Nm&gt;
             &lt;PstlAdr&gt;
-                &lt;StrtNm&gt;{{debtor.address}}&lt;/StrtNm&gt;
-                {% for phone in debtor.phones %}
-                  &lt;Phne&gt;"{{ phone }}"&lt;/Phne&gt;
-                {% if not loop.last %},{% endif %}
-                {% endfor %}
+                &lt;StrtNm&gt;{{ debtor.address }}&lt;/StrtNm&gt;
+                {%- for phone in debtor.phones %}
+                &lt;Phne&gt;{{ phone }}&lt;/Phne&gt;
+                {%- endfor %}
             &lt;/PstlAdr&gt;
             &lt;CtctDtls&gt;
-                &lt;EmailAdr&gt;{{debtor.email}}&lt;/EmailAdr&gt;
+                &lt;EmailAdr&gt;{{ debtor.email }}&lt;/EmailAdr&gt;
             &lt;/CtctDtls&gt;
         &lt;/Dbtr&gt;
         &lt;Cdtr&gt;
-            &lt;Nm&gt;{{creditor.name}}&lt;/Nm&gt;
+            &lt;Nm&gt;{{ creditor.name }}&lt;/Nm&gt;
             &lt;PstlAdr&gt;
-                &lt;StrtNm&gt;{{creditor.address}}&lt;/StrtNm&gt;
-                {% for phone in debtor.phones %}
-                  &lt;Phne&gt;"{{ phone }}"&lt;/Phne&gt;
-                {% if not loop.last %},{% endif %}
-                {% endfor %}
+                &lt;StrtNm&gt;{{ creditor.address }}&lt;/StrtNm&gt;
+                {%- for phone in creditor.phones %}
+                &lt;Phne&gt;{{ phone }}&lt;/Phne&gt;
+                {%- endfor %}
             &lt;/PstlAdr&gt;
             &lt;CtctDtls&gt;
-                &lt;EmailAdr&gt;{{creditor.email}}&lt;/EmailAdr&gt;
+                &lt;EmailAdr&gt;{{ creditor.email }}&lt;/EmailAdr&gt;
             &lt;/CtctDtls&gt;
         &lt;/Cdtr&gt;
     &lt;/CdtTrfTxInf&gt;
@@ -412,6 +411,41 @@ environments:
 }</pre>
 </div>
 
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_logging_config_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\logging_config.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>version: 1
+disable_existing_loggers: False
+
+formatters:
+  standard:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: standard
+    level: DEBUG
+    stream: ext://sys.stdout
+
+  file:
+    class: logging.FileHandler
+    formatter: standard
+    level: DEBUG
+    mode: "a"
+
+loggers:
+  e2e_testing:
+    level: DEBUG
+    handlers: [console, file]
+    propagate: no
+
+root:
+  level: DEBUG
+  handlers: [console, file]</pre>
+</div>
+
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_report_template_report_template_html">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\report_template\report_template.html</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -492,16 +526,12 @@ environments:
             font-weight: bold;
             font-size: 14px;
         }
-        .log-entry-header.pass {
-            background-color: #e6ffee;
-        }
-        .log-entry-header.fail {
-            background-color: #ffe6e6;
-        }
         code {
             background-color: #f5f5f5;
-            padding: 2px 4px;
-            border-radius: 3px;
+            padding: 5px;
+            border-radius: 5px;
+            display: block;
+            white-space: pre-wrap;
             font-family: 'Courier New', Courier, monospace;
         }
     &lt;/style&gt;
@@ -534,7 +564,7 @@ environments:
                 &lt;td style="color: {{ 'green' if result.result == 'PASS' else 'red' }}"&gt;{{ result.result }}&lt;/td&gt;
                 &lt;td&gt;{{ result.execution_time }}&lt;/td&gt;
                 &lt;td&gt;
-                    {% if result.logs|selectattr('details')|reject('equalto', '')|list %}
+                    {% if result.logs|list %}
                         &lt;span class="toggle-indicator" onclick="toggleLogContent('{{ result.tsid }}')"&gt;[+]&lt;/span&gt;
                     {% endif %}
                 &lt;/td&gt;
@@ -544,19 +574,9 @@ environments:
                     &lt;ul&gt;
                         {% for log in result.logs %}
                         &lt;li class="log-entry"&gt;
-                            &lt;div class="log-entry-header {{ log.result }}" onclick="toggleContent('{{ log.log_id }}')"&gt;
-                                [{{ log.timestamp }}] {{ log.level }}: {{ log.message }}
-                                {% if log.details %}
-                                    &lt;span class="toggle-indicator" id="indicator-{{ log.log_id }}"&gt;[-]&lt;/span&gt;
-                                {% endif %}
+                            &lt;div class="log-entry-header {{ log.result }}"&gt;
+                                [{{ log.timestamp }}] {{ log.level }}&lt;pre&gt;&lt;code&gt;{{ log.message | escape_xml }}&lt;/code&gt;&lt;/pre&gt;
                             &lt;/div&gt;
-                            {% if log.details %}
-                                &lt;ul class="log-entry-content" id="content-{{ log.log_id }}"&gt;
-                                    &lt;li&gt;
-                                        &lt;pre&gt;&lt;code&gt;{{ log.details | escape }}&lt;/code&gt;&lt;/pre&gt;
-                                    &lt;/li&gt;
-                                &lt;/ul&gt;
-                            {% endif %}
                         &lt;/li&gt;
                         {% endfor %}
                     &lt;/ul&gt;
@@ -572,19 +592,6 @@ environments:
             var indicator = content.previousElementSibling.querySelector('.toggle-indicator');
             if (content.style.display === "none" || content.style.display === "") {
                 content.style.display = "table-row";
-                indicator.textContent = "[-]";
-            } else {
-                content.style.display = "none";
-                indicator.textContent = "[+]";
-            }
-        }
-
-        // Function to toggle the visibility of individual log entries
-        function toggleContent(log_id) {
-            var content = document.getElementById('content-' + log_id);
-            var indicator = document.getElementById('indicator-' + log_id);
-            if (content.style.display === "none" || content.style.display === "") {
-                content.style.display = "block";
                 indicator.textContent = "[-]";
             } else {
                 content.style.display = "none";
@@ -705,8 +712,7 @@ if __name__ == "__main__":
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\__init__.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from .log_manager import Logger
-logger = Logger()</pre>
+    <pre></pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_test_executor_py">
@@ -716,7 +722,6 @@ logger = Logger()</pre>
     <pre>import os
 from typing import Dict, List, Union, Any
 from libraries.config_manager import ConfigManager
-from libraries import logger
 from libraries.request_sender import RequestSender
 from libraries.body_generator import BodyGenerator
 from libraries.headers_generator import HeadersGenerator
@@ -724,6 +729,7 @@ from libraries.response_handler import ResponseHandler
 from libraries.saved_fields_manager import SavedFieldsManager
 from libraries.test_case_manager import TestCaseManager
 from libraries.utility_helpers import UtilityHelpers
+from libraries.log_manager import logger_instance, logger
 
 
 class APITestExecutor:
@@ -737,10 +743,6 @@ class APITestExecutor:
         self.test_config: Dict = ConfigManager.load_yaml(test_config_path)
         self.active_environment: Dict = self.config['environments'][self.config['active_environment']]
         self.endpoints: Dict = self.active_environment['endpoints']
-
-        # Set log level
-        log_level = self.test_config.get('log_level', 'INFO')
-        logger.set_level(log_level)
 
         # Load other configurations
         self.template_dir: str = 'configs/body_templates'
@@ -768,19 +770,18 @@ class APITestExecutor:
             self.test_case_manager = TestCaseManager(test_cases_path, self.endpoints, self.headers_dir,
                                                      self.template_dir, self.body_defaults_dir)
             filtered_cases = self.test_case_manager.filter_test_cases(tcid_list=tc_id_list, tags=tags)
-            logger.log("DEBUG", f"Successfully loaded test cases from {test_cases_path}")
-
+            logger.debug(f"Successfully loaded test cases from {test_cases_path}")
             # Run suite-level setup if defined
             self.run_suite_setup(filtered_cases)
 
             for tc_id, test_case in filtered_cases.items():
                 # Run test-level setup if defined
                 self.run_test_setup(test_case)
+                logger.info(f"Running test case {tc_id}")
 
-                logger.log("INFO", f"Running test case {tc_id}")
                 self.run_test_case(test_case, tc_id)
-                logger.log("INFO", f"Test case {tc_id} ran successfully.")
-                logger.log("INFO", f"********************************************\n")
+                logger.info(f"Test case {tc_id} ran successfully.")
+                logger.info(f"********************************************\n")
 
                 # Run test-level teardown if defined
                 self.run_test_teardown(test_case)
@@ -789,7 +790,7 @@ class APITestExecutor:
             self.run_suite_teardown(filtered_cases)
 
         except Exception as e:
-            logger.log("INFO", f"Failed to run test suite: {str(e)}")
+            logger.info(f"Failed to run test suite: {str(e)}")
         finally:
             # Perform delayed Excel operations after all test cases are executed or an error is encountered
             self.response_handler.apply_pending_operations()
@@ -802,9 +803,9 @@ class APITestExecutor:
                 for condition in conditions:
                     if "[suite setup]" in condition and not self.suite_setup_run:
                         suite_tc_id = condition.split("[suite setup]")[1].strip()
-                        logger.log("INFO", f"Running suite-level setup {suite_tc_id}")
+                        logger.info(f"Running suite-level setup {suite_tc_id}")
                         self.execute_setup_teardown(suite_tc_id)
-                        logger.log("INFO", f"Suite-level setup {suite_tc_id} ran successfully.")
+                        logger.info(f"Suite-level setup {suite_tc_id} ran successfully.")
                         self.suite_setup_run = True
 
     def run_suite_teardown(self, filtered_cases) -&gt; None:
@@ -816,9 +817,9 @@ class APITestExecutor:
                 for condition in conditions:
                     if "[suite teardown]" in condition:
                         suite_tc_id = condition.split("[suite teardown]")[1].strip()
-                        logger.log("INFO", f"Running suite-level teardown {suite_tc_id}")
+                        logger.info(f"Running suite-level teardown {suite_tc_id}")
                         self.execute_setup_teardown(suite_tc_id)
-                        logger.log("INFO", f"Suite-level teardown {suite_tc_id} ran successfully.")
+                        logger.info(f"Suite-level teardown {suite_tc_id} ran successfully.")
                         self.suite_teardown_run = True
 
     def run_test_setup(self, test_case: List[Dict[str, Union[str, Any]]]) -&gt; None:
@@ -827,9 +828,9 @@ class APITestExecutor:
             for condition in conditions:
                 if "[test setup]" in condition:
                     test_tc_id = condition.split("[test setup]")[1].strip()
-                    logger.log("INFO", f"Running test-level setup {test_tc_id}")
+                    logger.info(f"Running test-level setup {test_tc_id}")
                     self.execute_setup_teardown(test_tc_id)
-                    logger.log("INFO", f"Test-level setup {test_tc_id} ran successfully.")
+                    logger.info(f"Test-level setup {test_tc_id} ran successfully.")
 
     def run_test_teardown(self, test_case: List[Dict[str, Union[str, Any]]]) -&gt; None:
         for test_step in test_case:
@@ -837,9 +838,9 @@ class APITestExecutor:
             for condition in conditions:
                 if "[test teardown]" in condition:
                     test_tc_id = condition.split("[test teardown]")[1].strip()
-                    logger.log("INFO", f"Running test-level teardown {test_tc_id}")
+                    logger.info(f"Running test-level teardown {test_tc_id}")
                     self.execute_setup_teardown(test_tc_id)
-                    logger.log("INFO", f"Test-level teardown {test_tc_id} ran successfully.")
+                    logger.info(f"Test-level teardown {test_tc_id} ran successfully.")
 
     def execute_setup_teardown(self, tc_id: str) -&gt; None:
         conditions = self.test_case_manager.get_conditions_by_tc_id(tc_id)
@@ -853,27 +854,28 @@ class APITestExecutor:
         for test_step in test_case:
             test_step_result = self.execute_test_step(test_step)
             if not test_step_result:
-                logger.log("INFO", f"Test case {tc_id} failed, skipping to next case.")
+                logger.info(f"Test case {tc_id} failed, skipping to next case.")
                 break
 
     @UtilityHelpers.time_calculation()
     def execute_test_step(self, test_step: Dict[str, Union[str, Any]]) -&gt; bool:
         try:
             ex_ts_id: str = test_step['TSID']
-            logger.set_context(ts_id=ex_ts_id, result='Pending')
+            # logger_instance.set_context(ts_id=ex_ts_id, result='Pending')
             ex_endpoint: str = test_step['Endpoint']
             ex_headers: str = test_step['Headers']
             ex_defaults_body: str = test_step['Defaults']
             ex_body_modifications: str = test_step['Body Modifications']
             ex_exp_result: str = test_step['Exp Result']
             ex_fields_to_save: str = test_step['Save Fields']
-
-            logger.log("INFO", f"Starting execution of test step {ex_ts_id}")
+            logger.info(f"Starting execution of test step {ex_ts_id}")
             current_endpoint: Union[Dict[str, Any], None] = self.endpoints.get(ex_endpoint, None)
             if current_endpoint is None:
                 raise Exception(f"Endpoint {ex_endpoint} not found in config file")
             method: str = current_endpoint['method']
+            logger.debug(f"Executing test step {ex_ts_id} with method {method} and endpoint [{ex_endpoint}]")
             url: str = current_endpoint['path']
+            logger.debug(f"Executing test step {ex_ts_id} with URL {url}")
             # Load saved fields
             saved_fields: Dict[str, Any] = self.saved_fields_manager.load_saved_fields()
             # Prepare headers
@@ -883,23 +885,21 @@ class APITestExecutor:
             # Prepare request body
             body, format_type = self.body_generator.generate_request_body(test_step, ex_defaults_body, method)
             # Log request
-            logger.log_request(ex_ts_id, ex_endpoint, method, url, headers, body, format_type, 'pending')
+
             # Send request and log response
             response, execution_time = RequestSender.send_request(url, method, headers, body, format_type)
-            logger.log_response(ex_ts_id, ex_endpoint, response, format_type, 'pending')
+
             # Process response
             result = self.response_handler.process_and_store_results(response, test_step, self.test_cases_path,
                                                                      self.test_case_manager, execution_time)
-            # Update log with actual test result
-            test_result = 'pass' if result == 'PASS' else 'fail'
-            logger.html_log_entries[ex_ts_id][-2]['result'] = test_result  # Update request log entry
-            logger.html_log_entries[ex_ts_id][-1]['result'] = test_result  # Update response log entry
 
-            logger.log("INFO", f"Finished execution of test step {ex_ts_id}")
-            logger.log("INFO", f"============================================\n")
+            test_result = 'pass' if result == 'PASS' else 'fail'
+
+            logger.info(f"Finished execution of test step {ex_ts_id}")
+            logger.info("============================================")
             return True
         except Exception as e:
-            logger.log("ERROR", f"Failed to execute test step {ex_ts_id}: {str(e)}")
+            logger.error(f"Failed to execute test step {ex_ts_id}: {str(e)}")
             return False
 </pre>
 </div>
@@ -912,17 +912,18 @@ class APITestExecutor:
 import os
 import re
 from typing import Any, Dict, Union
-from . import logger
 from .config_manager import ConfigManager
 from .utility_helpers import UtilityHelpers
 from .variable_generator import VariableGenerator
 from .template_renderer import TemplateRenderer
-
+from libraries.log_manager import logger_instance, logger
 
 class BodyGenerator:
     def __init__(self, template_dir: str, body_defaults_dir: str) -&gt; None:
         self.template_dir = template_dir
         self.body_defaults_dir = body_defaults_dir
+        self.format_json = UtilityHelpers.format_json
+        self.format_xml = UtilityHelpers.format_xml
 
     def generate_request_body(self, test_step, default_values_file: str, method) -&gt; (Union[Dict, str], str):
         try:
@@ -931,24 +932,30 @@ class BodyGenerator:
 
             template_name = test_step['Template']
             body_modifications = self._validate_and_load_json(test_step['Body Modifications'], test_step)
+            logger.debug(f"[TSID:{test_step['TSID']}] Body modifications for test step {test_step['TSID']}: \n{self.format_json(body_modifications)}")
             template_path = self._resolve_template_path(template_name, test_step)
             format_type = UtilityHelpers.get_file_format(template_path)
 
             # Prepare all required request data
             request_data = self._prepare_request_data(default_values_file, body_modifications, test_step)
+            logger.debug(f"[TSID:{test_step['TSID']}] Request data for test step {test_step['TSID']}: \n{self.format_json(request_data)}")
 
             # Generate request body
             body = TemplateRenderer.render_template(self.template_dir, template_path, request_data, format_type)
+            if format_type == 'json':
+                logger.debug(f"[TSID:{test_step['TSID']}] Request body for test step {test_step['TSID']}: \n{self.format_json(body)}")
+            else:
+                logger.debug(f"[TSID:{test_step['TSID']}] Request body for test step {test_step['TSID']}: \n{self.format_xml(body)}")
             return body, format_type
         except Exception as e:
-            logger.log("ERROR", f"Error in generate_request_body for test step {test_step['TSID']}: {str(e)}")
+            logger.error(f"[TSID:{test_step['TSID']}] Error in generate_request_body for test step {test_step['TSID']}: {str(e)}")
             raise
 
     def _validate_and_load_json(self, json_string: str, test_step: Dict[str, Any]) -&gt; Dict[str, Any]:
         try:
             return json.loads(json_string)
         except json.JSONDecodeError:
-            logger.log("ERROR", f"Invalid JSON format in test step {test_step['TSID']}: {json_string}")
+            logger.error(f"[TSID:{test_step['TSID']}] Invalid JSON format in test step {test_step['TSID']}: {json_string}")
             raise
 
     def _resolve_template_path(self, template_name: str, test_step: Dict[str, Any]) -&gt; str:
@@ -956,8 +963,7 @@ class BodyGenerator:
         if not os.path.exists(template_path):
             template_path = os.path.join(self.template_dir, f"{template_name}.xml")
         if not os.path.exists(template_path):
-            logger.log("ERROR",
-                       f"Template '{template_name}' not found for test step {test_step['TSID']} in {self.template_dir}")
+            logger.error(f"[TSID:{test_step['TSID']}] Template '{template_name}' not found for test step {test_step['TSID']} in {self.template_dir}")
             raise
         return template_path
 
@@ -972,8 +978,7 @@ class BodyGenerator:
         if not file_path.endswith('.json'):
             file_path += '.json'
         if not os.path.exists(file_path):
-            logger.log("ERROR",
-                       f"Default values file '{default_values_file}' not found for test step {test_step['TSID']} in {self.body_defaults_dir}")
+            logger.error(f"[TSID:{test_step['TSID']}] Default values file '{default_values_file}' not found for test step {test_step['TSID']} in {self.body_defaults_dir}")
             raise
         return ConfigManager.load_json(file_path)
 
@@ -987,8 +992,7 @@ class BodyGenerator:
                     base_values[key] = value
             return base_values
         except Exception as e:
-            logger.log("ERROR",
-                       f"Error merging default values and custom values in test step {test_step['TSID']} : {str(e)}")
+            logger.error(f"[TSID:{test_step['TSID']}] Error merging default values and custom values in test step {test_step['TSID']} : {str(e)}")
             raise
 
     def _generate_dynamic_values(self, data: Union[Dict[str, Any], list], test_step: Dict[str, Any]) -&gt; Union[
@@ -1002,8 +1006,7 @@ class BodyGenerator:
                         else self._replace_placeholders(item, test_step) for item in data]
             return data
         except Exception as e:
-            logger.log("ERROR",
-                       f"Error generating dynamic values in test step {test_step['TSID']} : {str(e)}")
+            logger.error(f"[TSID:{test_step['TSID']}] Error generating dynamic values in test step {test_step['TSID']} : {str(e)}")
             raise
 
     def _replace_placeholders(self, value: Any, test_step: Dict[str, Any]) -&gt; Any:
@@ -1014,7 +1017,7 @@ class BodyGenerator:
             return value
         except Exception as e:
             logger.log("ERROR",
-                       f"Error replacing placeholders in test step {test_step['TSID']} : {str(e)}")
+                       f"[TSID:{test_step['TSID']}] Error replacing placeholders in test step {test_step['TSID']} : {str(e)}")
             raise
 </pre>
 </div>
@@ -1058,13 +1061,10 @@ class ConfigManager:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\excel_operation_manager.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import json
-from typing import Dict, Any
-from openpyxl.styles import Font
+    <pre>from openpyxl.styles import Font
 from openpyxl import load_workbook
-from datetime import datetime
-import pandas as pd
-from libraries import logger
+from libraries.log_manager import logger_instance, logger
+
 
 class ExcelOperationManager:
     def __init__(self):
@@ -1105,7 +1105,7 @@ class ExcelOperationManager:
             try:
                 self.workbook_cache[file_path] = load_workbook(file_path)
             except Exception as e:
-                logger.log("ERROR", f"Failed to load workbook: {str(e)}")
+                logger.error(f"Failed to load workbook: {str(e)}")
                 raise
         try:
             workbook = self.workbook_cache[file_path]
@@ -1130,7 +1130,7 @@ class ExcelOperationManager:
                 api_timing_cell.font = Font(color="006400")
 
         except Exception as e:
-            logger.log("ERROR", f"An error occurred while writing results to the Excel file: {str(e)}")
+            logger.error(f"An error occurred while writing results to the Excel file: {str(e)}")
             raise
 
     def get_excel_column_index(self, sheet, column_name: str) -&gt; int:
@@ -1139,7 +1139,7 @@ class ExcelOperationManager:
                 if col[0].value == column_name:
                     return col[0].column
         except Exception as e:
-            logger.log("ERROR", f"An error occurred while getting the column index for '{column_name}': {str(e)}")
+            logger.error(f"An error occurred while getting the column index for '{column_name}': {str(e)}")
             return None</pre>
 </div>
 
@@ -1151,32 +1151,38 @@ class ExcelOperationManager:
 import re
 import json
 from typing import Dict, Any
-from . import logger
+from libraries.log_manager import logger_instance, logger
+from .utility_helpers import UtilityHelpers
 from .variable_generator import VariableGenerator
 
 
 class HeadersGenerator:
     def __init__(self, headers_dir: str) -&gt; None:
         self.headers_dir: str = headers_dir
+        self.format_json = UtilityHelpers.format_json
 
     def prepare_headers(self, headers_filename: str, saved_fields: Dict[str, Any], test_step: Dict[str, Any]) -&gt; Dict[
         str, str]:
         try:
-            headers = self._load_headers(headers_filename, test_step)
-            return {k: self._replace_placeholders(v, saved_fields, headers_filename, test_step) for k, v in
-                    headers.items()}
+            original_headers = self._load_headers(headers_filename, test_step)
+            logger.debug(
+                f"[TSID:{test_step['TSID']}] Headers for test step '{test_step['TSID']}' loaded from file: \n{self.format_json(original_headers)}")
+            headers = {k: self._replace_placeholders(v, saved_fields, headers_filename, test_step) for k, v in
+                       original_headers.items()}
+            logger.debug(
+                f"[TSID:{test_step['TSID']}] Headers for test step '{test_step['TSID']}' replaced placeholders: \n{self.format_json(headers)}")
+            return headers
         except KeyError as e:
-            logger.log("ERROR",
-                       f"Headers file '{headers_filename}' not found in test step '{test_step['TSID']}': {str(e)}")
+            logger.error(f"[TSID:{test_step['TSID']}] Headers file '{headers_filename}' not found in test step '{test_step['TSID']}': {str(e)}")
             raise
 
         except json.JSONDecodeError as e:
-            logger.log("ERROR",
-                       f"Invalid JSON format in headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}")
+            logger.error(
+                f"[TSID:{test_step['TSID']}] Invalid JSON format in headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}")
             raise
         except Exception as e:
-            logger.log("ERROR",
-                       f"Error processing headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}")
+            logger.error(
+                f"[TSID:{test_step['TSID']}] Error processing headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}")
             raise
 
     def _load_headers(self, headers_filename: str, test_step: Dict[str, Any]) -&gt; Dict[str, str]:
@@ -1185,15 +1191,15 @@ class HeadersGenerator:
             if not headers_file_path.endswith('.json'):
                 headers_file_path += '.json'
             if not os.path.exists(headers_file_path):
-                logger.log("ERROR",
-                           f"Headers file '{headers_filename}' not found in directory '{self.headers_dir}' for test step '{test_step['TSID']}'")
+                logger.error(
+                    f"[TSID:{test_step['TSID']}] Headers file '{headers_filename}' not found in directory '{self.headers_dir}' for test step '{test_step['TSID']}'")
                 raise
             with open(headers_file_path, 'r') as file:
                 headers = json.load(file)
             return headers
         except Exception as e:
-            logger.log("ERROR",
-                       f"Error loading headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}")
+            logger.error(
+                f"[TSID:{test_step['TSID']}] Error loading headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}")
             raise
 
     def _replace_placeholders(self, value: Any, saved_fields: Dict[str, Any], headers_filename: str,
@@ -1206,8 +1212,8 @@ class HeadersGenerator:
                 return VariableGenerator.generate_dynamic_value(placeholder)
             return value
         except Exception as e:
-            logger.log("ERROR",
-                       f"Error replacing placeholders in headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}")
+            logger.error(
+                f"[TSID:{test_step['TSID']}] Error replacing placeholders in headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}")
             raise
 </pre>
 </div>
@@ -1217,40 +1223,41 @@ class HeadersGenerator:
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
-from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
-from . import logger
+from libraries.log_manager import logger_instance
+from libraries.utility_helpers import UtilityHelpers
 
 
 class HTMLReportGenerator:
-    def __init__(self, log_entries):
-        self.log_entries = log_entries
+    def __init__(self):
         self.ensure_log_dir_exists()
+        self.html_log_entries = {}
+        self.report_file_name = ''
 
     def ensure_log_dir_exists(self, log_dir='output') -&gt; None:
         try:
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir)
         except OSError as e:
-            raise RuntimeError(f"Failed to create log directory {log_dir}: {str(e)}")
+            raise ValueError(f"Failed to create log directory {log_dir}: {str(e)}")
 
     def generate_html_report(self, pending_operations, report_path=None):
         try:
             env = Environment(loader=FileSystemLoader('configs/report_template'))
+            env.filters['escape_xml'] = UtilityHelpers.escape_xml
             template = env.get_template('report_template.html')
-
+            self.html_log_entries = logger_instance.get_html_log_entries()
+            self.report_file_name = logger_instance.log_file_name
             results = []
             for operation in pending_operations:
                 test_step = operation['test_step']
-                log_entries = logger.html_log_entries.get(test_step['TSID'], [])
+                log_entries = self.html_log_entries.get(test_step['TSID'], [])
 
                 formatted_logs = [{
                     'log_id': log['id'],
                     'timestamp': log['timestamp'],
                     'level': log['level'],
-                    'message': log['message'],
-                    'details': log['details'],
-                    'result': log['result']
+                    'message': log['message']
                 } for log in log_entries]
 
                 results.append({
@@ -1265,16 +1272,14 @@ class HTMLReportGenerator:
                     'execution_time': f"{operation['execution_time']:.2f}s",
                     'logs': formatted_logs
                 })
-            # Use the start time from the logger to generate the report filename
+
             if report_path is None:
-                start_time = datetime.fromtimestamp(logger.start_time).strftime('%Y-%m-%d_%H-%M-%S')
-                report_path = f"output/report_{start_time}.html"
+                report_path = f"output/{self.report_file_name}.html"
             html_content = template.render(results=results)
             with open(report_path, 'w') as report_file:
                 report_file.write(html_content)
         except Exception as e:
-            logger.log("ERROR", f"Failed to generate HTML report: {str(e)}")
-            raise
+            raise ValueError(f"Failed to generate HTML report: {str(e)}")
 </pre>
 </div>
 
@@ -1282,172 +1287,94 @@ class HTMLReportGenerator:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\log_manager.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import json
+    <pre>import logging
+import logging.config
 import os
-import time
+import re
+import yaml
 import uuid
 from datetime import datetime
-from typing import Dict, Union
-import requests
-from xml.dom.minidom import parseString
+
+
+class HTMLLogHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.html_log_entries = {}
+
+    def emit(self, record):
+        msg = record.getMessage()
+        match = re.match(r'\[TSID:(.*?)\]\s*(.*)', msg, re.DOTALL)
+        if match:
+            ts_id = match.group(1)
+            message = match.group(2)
+        else:
+            ts_id = 'default_tsid'
+            message = msg
+
+        log_entry = {
+            'id': str(uuid.uuid4()),
+            'timestamp': datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S'),
+            'level': record.levelname,
+            'message': message
+        }
+        self.html_log_entries.setdefault(ts_id, []).append(log_entry)
 
 
 class Logger:
     _instance = None
-    _log_levels = {
-        'DEBUG': 10,
-        'INFO': 20,
-        'WARNING': 30,
-        'ERROR': 40,
-        'CRITICAL': 50
-    }
-    start_time = int(time.time())
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
             cls._instance = super(Logger, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, log_dir: str = 'log', log_level: str = 'INFO') -&gt; None:
+    def __init__(self, config_path='configs/logging_config.yaml'):
         if not hasattr(self, 'initialized'):
-            self.log_dir: str = log_dir
-            self.log_filename: str = self.generate_log_filename()
-            self.log_filepath: str = os.path.join(self.log_dir, self.log_filename)
-            self.log_level: int = self._log_levels.get(log_level.upper(), 10)
-            self.ensure_log_dir_exists()
-            self.html_log_entries = {}
+            self.config_path = config_path
+            self.log_file_name = ''
+            self.logger = None
+            self.load_config()
             self.initialized = True
-            self.set_context('', '')
 
-    def set_level(self, level: str) -&gt; None:
-        self.log_level = self._log_levels.get(level.upper(), 10)
+    def load_config(self):
+        if os.path.exists(self.config_path):
+            with open(self.config_path, 'r', encoding='utf-8') as file:
+                config = yaml.safe_load(file)
+                self.log_file_name = f"e2e_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                # Generate dynamic log file name with timestamp
+                log_file_name = f"logs/{self.log_file_name}.log"
 
-    def set_context(self, ts_id: str, result: str) -&gt; None:
-        self.ts_id = ts_id if ts_id else ''
-        self.result = result if result else ''
+                # Ensure the directory for the log file exists
+                log_dir = os.path.dirname(log_file_name)
+                if not os.path.exists(log_dir):
+                    os.makedirs(log_dir)
 
-    def generate_log_filename(self) -&gt; str:
-        date_str = datetime.fromtimestamp(self.start_time).strftime('%Y-%m-%d_%H-%M-%S')
-        return f"log_{date_str}.log"
+                # Update the log file name in the configuration
+                config['handlers']['file']['filename'] = log_file_name
 
-    def ensure_log_dir_exists(self) -&gt; None:
-        try:
-            if not os.path.exists(self.log_dir):
-                os.makedirs(self.log_dir)
-        except OSError as e:
-            raise RuntimeError(f"Failed to create log directory {self.log_dir}: {str(e)}")
+                logging.config.dictConfig(config)
+                self.logger = logging.getLogger('e2e_testing')
 
-    def log(self, level: str, message: str) -&gt; None:
-        if self._log_levels.get(level.upper(), 0) &gt;= self.log_level:
-            try:
-                timestamp = int(time.time())
-                date_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d_%H-%M-%S')
-                log_content = f"{date_str} [{level.upper()}]: {message}"
+                # Add custom HTML report log handler
+                self.html_handler = HTMLLogHandler()
+                self.logger.addHandler(self.html_handler)
+        else:
+            logging.basicConfig(level=logging.DEBUG)
+            self.logger = logging.getLogger('e2e_testing')
 
-                # Write to log file
-                with open(self.log_filepath, 'a') as log_file:
-                    log_file.write(log_content + "\n")
+    def get_logger(self):
+        return self.logger
 
-                # Print to console
-                print(log_content)
+    def get_html_log_entries(self):
+        return self.html_handler.html_log_entries
 
-                # Store HTML log entry
-                self.html_log_entries.setdefault(self.ts_id, []).append({
-                    'id': str(uuid.uuid4()),
-                    'timestamp': date_str,
-                    'level': level.upper(),
-                    'message': message,
-                    'details': '',
-                    'result': self.result
-                })
 
-            except (OSError, IOError) as e:
-                raise ValueError(f"Failed to write log message: {str(e)}")
+# 创建并配置 logger 实例
+logger_instance = Logger()
+logger = logger_instance.get_logger()
 
-    def log_request(self, ts_id, endpoint_name, method, endpoint: str, headers: Dict[str, str],
-                    body: Union[Dict, str], format_type: str, result: str) -&gt; None:
-        if self._log_levels.get('DEBUG', 0) &gt;= self.log_level:
-            try:
-                timestamp = int(time.time())
-                date_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d_%H-%M-%S')
-                if format_type == 'json':
-                    formatted_body = body
-                elif format_type == 'xml':
-                    formatted_body = parseString(body).toprettyxml()
-                log_content1 = {
-                    "method": method,
-                    "endpoint": endpoint,
-                    "headers": headers,
-                    "body": formatted_body,
-                    "format_type": format_type
-                }
-                log_content2 = f"{date_str} [DEBUG] [Test step ID: {ts_id}] [Endpoint: {endpoint_name}]: Request:"
-
-                with open(self.log_filepath, 'a') as log_file:
-                    log_file.write(log_content2 + "\n")
-                    json.dump(log_content1, log_file, indent=4)
-                    log_file.write("\n")
-
-                # Print request log to console
-                print(log_content2)
-                print(json.dumps(log_content1, indent=4))
-
-                # Store HTML log entry
-                self.html_log_entries.setdefault(ts_id, []).append({
-                    'id': str(uuid.uuid4()),
-                    'timestamp': date_str,
-                    'level': 'DEBUG',
-                    'message': f"[Test step ID: {ts_id}] [Endpoint: {endpoint_name}]: Request",
-                    'details': json.dumps(log_content1, indent=4) if format_type == 'json' else formatted_body,
-                    'result': result
-                })
-
-            except (OSError, IOError) as e:
-                raise ValueError(f"Failed to log request: {str(e)}")
-
-    def log_response(self, ts_id, endpoint_name: str, response: requests.Response, format_type: str,
-                     result: str) -&gt; None:
-        if self._log_levels.get('DEBUG', 0) &gt;= self.log_level:
-            try:
-                timestamp = int(time.time())
-                date_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d_%H-%M-%S')
-                if format_type == 'json':
-                    formatted_body = json.loads(response.text)
-                elif format_type == 'xml':
-                    formatted_body = parseString(response.text).toprettyxml()
-                else:
-                    formatted_body = response.text
-                log_content1 = {
-                    "response_status_code": response.status_code,
-                    "response_headers": dict(response.headers),
-                    "response_body": formatted_body
-                }
-                log_content2 = f"{date_str} [DEBUG] [Test step ID: {ts_id}] [Endpoint: {endpoint_name}]: Response:"
-
-                with open(self.log_filepath, 'a') as log_file:
-                    log_file.write(log_content2 + "\n")
-                    json.dump(log_content1, log_file, indent=4)
-                    log_file.write("\n")
-
-                # Print response log to console
-                print(log_content2)
-                print(json.dumps(log_content1, indent=4))
-
-                # Store HTML log entry
-                self.html_log_entries.setdefault(ts_id, []).append({
-                    'id': str(uuid.uuid4()),
-                    'timestamp': date_str,
-                    'level': 'DEBUG',
-                    'message': f"[Test step ID: {ts_id}] [Endpoint: {endpoint_name}]: Response",
-                    'details': json.dumps(log_content1, indent=4) if format_type == 'json' else formatted_body,
-                    'result': result
-                })
-
-            except (OSError, IOError) as e:
-                raise ValueError(f"Failed to log response: {str(e)}")
-            except json.JSONDecodeError as e:
-                raise ValueError(
-                    f"Failed to log response (failed to decode response body): {str(e)}.\n Response body:\n{response.text}")
+# 导出 logger
+__all__ = ['logger', 'logger_instance']
 </pre>
 </div>
 
@@ -1508,25 +1435,30 @@ class RequestSender:
     <pre>import json
 import re
 from typing import Dict, Any, Union
-
 import requests
-
-from libraries import logger
+from libraries.log_manager import logger_instance, logger
 import xmltodict
+
+from libraries.utility_helpers import UtilityHelpers
+
 
 class ResponseComparator:
     def __init__(self):
-        pass
+        self.format_xml = UtilityHelpers.format_xml
+        self.format_json = UtilityHelpers.format_json
 
-    def extract_response_content(self, response: requests.Response) -&gt; Union[Dict[str, Any], str]:
+    def extract_response_content(self, response: requests.Response, test_step) -&gt; Union[Dict[str, Any], str]:
         try:
-            return response.json()
+            response = response.json()
+            logger.debug(f"[TSID:{test_step['TSID']}] Response content: \n{self.format_json(response)}")
+            return response
         except json.JSONDecodeError as json_error:
-            logger.log("Warning", f"JSON decode error: {json_error}. Attempting XML parse.")
+            logger.warning(f"[TSID:{test_step['TSID']}] JSON decode error: {json_error}. Attempting XML parse.")
             try:
+                logger.debug(f"[TSID:{test_step['TSID']}] Response content: \n{self.format_xml(response.text)}")
                 return xmltodict.parse(response.text)
             except Exception as xml_error:
-                logger.log("ERROR", f"XML parse error: {xml_error}. Returning raw response text.")
+                logger.error(f"[TSID:{test_step['TSID']}] XML parse error: {xml_error}. Returning raw response text.")
                 return response.text
 
     def compare_response_field(self, actual_response: Union[Dict[str, Any], str], expectation: str) -&gt; Dict[str, Any]:
@@ -1576,7 +1508,7 @@ class ResponseComparator:
         try:
             return _extract_value(actual_response, parts[1:])
         except (KeyError, IndexError, TypeError) as e:
-            logger.log("ERROR", f"Error retrieving the value for path '{field_path}': {str(e)}")
+            logger.error(f"Error retrieving the value for path '{field_path}': {str(e)}")
             return None
 
     def create_error_comparison_result(self, field_path: str, error_message: str) -&gt; Dict[str, str]:
@@ -1614,15 +1546,10 @@ class ResponseComparator:
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
-import re
-from datetime import datetime
 import pandas as pd
 import requests
-from openpyxl.styles import Font
-from openpyxl import load_workbook
 from typing import Dict, Any, Union
-from libraries import logger
-import xmltodict
+from libraries.log_manager import logger_instance, logger
 from libraries.excel_operation_manager import ExcelOperationManager
 from libraries.html_report_generator import HTMLReportGenerator
 from libraries.response_comparator import ResponseComparator
@@ -1634,7 +1561,7 @@ class ResponseHandler:
         self.workbook_cache = {}
         self.pending_operations = []
         self.sfm = SavedFieldsManager()
-        self.html_report_generator = HTMLReportGenerator(logger.html_log_entries)
+        self.html_report_generator = HTMLReportGenerator()
         self.excel_manager = ExcelOperationManager()
         self.comparator = ResponseComparator()
 
@@ -1642,7 +1569,7 @@ class ResponseHandler:
                                   test_case_manager, execution_time: float) -&gt; None:
         try:
             actual_status: int = response.status_code
-            actual_response: Union[Dict[str, Any], str] = self.comparator.extract_response_content(response)
+            actual_response: Union[Dict[str, Any], str] = self.comparator.extract_response_content(response,test_step)
 
             # actual_results
             expected_lines = self._split_lines(test_step['Exp Result'])
@@ -1666,11 +1593,11 @@ class ResponseHandler:
                                                      overall_result, fields_to_save_for_excel, test_case_manager,
                                                      execution_time)
 
-            logger.log("INFO", json.dumps(results, indent=4))
-            logger.log("INFO", f"The Result is: {overall_result}.")
+            logger.info(json.dumps(results, indent=4))
+            logger.info(f"The Result is: {overall_result}.")
             return overall_result
         except Exception as e:
-            logger.log("ERROR", f"An error occurred while processing and storing results: {str(e)}")
+            logger.error(f"An error occurred while processing and storing results: {str(e)}")
             raise
 
     def apply_pending_operations(self) -&gt; None:
@@ -1703,7 +1630,7 @@ class ResponseHandler:
     <pre>import yaml
 import os
 from typing import Dict, Any
-from libraries import logger
+from libraries.log_manager import logger_instance, logger
 
 
 class SavedFieldsManager:
@@ -1718,7 +1645,8 @@ class SavedFieldsManager:
                 saved_fields: Dict[str, Any] = yaml.safe_load(f) or {}
             return saved_fields
         except Exception as e:
-            raise ValueError(f"Failed to load saved fields from the yaml file: {str(e)}")
+            logger.error(f"Failed to load saved fields from the yaml file: {str(e)}")
+            raise
 
     def save_fields(self, field_data: Dict[str, Any]) -&gt; None:
         saved_fields: Dict[str, Any] = self.load_saved_fields()
@@ -1727,7 +1655,8 @@ class SavedFieldsManager:
             with open(self.file_path, 'w') as f:
                 yaml.safe_dump(saved_fields, f, default_flow_style=False)
         except Exception as e:
-            raise ValueError(f"Failed to save fields to the yaml file: {str(e)}")
+            logger.error(f"Failed to save fields to the yaml file: {str(e)}")
+            raise
 
     def apply_saved_fields(self, test_step, saved_fields: Dict, columns: list) -&gt; None:
         try:
@@ -1738,7 +1667,7 @@ class SavedFieldsManager:
                         replaced_lines = [line.replace(f"${{{key}}}", str(value)) for line in lines]
                         test_step[column] = "\n".join(replaced_lines)
         except Exception as e:
-            logger.log("ERROR", f"Failed to apply saved fields to [Body Modifications], [Exp Result]: {str(e)}")
+            logger.error(f"Failed to apply saved fields to [Body Modifications], [Exp Result]: {str(e)}")
             raise
 </pre>
 </div>
@@ -1760,7 +1689,8 @@ class TemplateRenderer:
             env = TemplateRenderer._create_environment(template_dir)
             template = TemplateRenderer._load_template(env, template_path)
             rendered_body: str = template.render(modifications)
-            return TemplateRenderer._format_rendered_body(rendered_body, format_type)
+            format_body = TemplateRenderer._format_rendered_body(rendered_body, format_type)
+            return format_body
         except (TemplateNotFound, json.JSONDecodeError) as e:
             raise ValueError(f"Error rendering template: {str(e)}")
         except Exception as e:
@@ -1797,7 +1727,7 @@ import re
 import json
 import pandas as pd
 from collections import defaultdict
-from libraries import logger
+from libraries.log_manager import logger_instance, logger
 
 
 class TestCaseManager:
@@ -1899,9 +1829,9 @@ class TestCaseManager:
 
             if test_step["Save Fields"] and not self._is_valid_save_fields_format(test_step["Save Fields"]):
                 raise ValueError("Save Fields format is invalid")
-            logger.log("DEBUG", f"Validation passed in test step {test_step['TSID']}")
+            logger.info(f"Validation passed in test step {test_step['TSID']}")
         except ValueError as e:
-            logger.log("ERROR", f"Validation error in test step {test_step['TSID']}: {str(e)}")
+            logger.error(f"[TSID:{test_step['TSID']}]: Validation error in test step {test_step['TSID']}: {str(e)}")
             raise
 
     def _file_exists_in_dir(self, file_name, dir_path, extensions):
@@ -1986,36 +1916,70 @@ class TestCaseManager:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\utility_helpers.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import os
+    <pre>import json
 import time
 from functools import wraps
 from lxml import etree
-
-
+from libraries.log_manager import logger_instance, logger
 class UtilityHelpers:
     @staticmethod
     def get_file_format(file_path: str) -&gt; str:
-        _, file_extension = os.path.splitext(file_path)
-        return file_extension.lower().strip('.')
+        """
+        Determine the format of the file based on its extension.
+        """
+        if file_path.endswith('.json'):
+            return 'json'
+        elif file_path.endswith('.xml'):
+            return 'xml'
+        else:
+            logger.error(f"Unsupported file format for file: {file_path}")
+            raise ValueError("Unsupported file format")
+    @staticmethod
+    def escape_xml(value):
+        """Escape XML characters."""
+        return (
+            value.replace("&amp;", "&amp;amp;")
+            .replace("&lt;", "&amp;lt;")
+            .replace("&gt;", "&amp;gt;")
+            .replace('"', "&amp;quot;")
+            .replace("'", "&amp;apos;")
+        )
+
+    @staticmethod
+    def format_json(data):
+        """
+        Formats a given dictionary as a pretty-printed JSON string.
+
+        :param data: Dictionary to format.
+        :return: Pretty-printed JSON string.
+        """
+        return json.dumps(data, indent=4)
 
     @staticmethod
     def format_xml(xml_string: str) -&gt; str:
-        parser = etree.XMLParser(remove_blank_text=True)
-        xml_element = etree.fromstring(xml_string, parser)
-        formatted_xml = etree.tostring(xml_element, pretty_print=False, encoding='unicode')
-        return formatted_xml.strip()
+        """
+        Formats a given XML string as a pretty-printed XML string without extra newlines.
 
+        :param xml_string: XML string to format.
+        :return: Pretty-printed XML string.
+        """
+        try:
+            parser = etree.XMLParser(remove_blank_text=True)
+            xml_element = etree.fromstring(xml_string, parser)
+            formatted_xml = etree.tostring(xml_element, pretty_print=True, encoding='unicode')
+            return formatted_xml.strip()
+        except Exception as e:
+            raise ValueError(f"Invalid XML data: {str(e)}")
     @staticmethod
     def time_calculation():
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                from libraries import logger
                 start_time = time.time()
                 result = func(*args, **kwargs)
                 end_time = time.time()
                 execution_time = end_time - start_time
-                logger.log("INFO", f"Function '{func.__name__}' executed in {execution_time:.2f} seconds")
+                logger.info(f"Function {func.__name__} executed in {execution_time:.4f} seconds")
                 return result
 
             return wrapper
@@ -2039,7 +2003,7 @@ class VariableGenerator:
         handlers: Dict[str, Callable[[str], Any]] = {
             'uetr': VariableGenerator._generate_uuid4,
             'value_date': VariableGenerator._generate_current_day,
-            'msg_id ': VariableGenerator._generate_msg_id,
+            'msg_id': VariableGenerator._generate_msg_id,
             'age': VariableGenerator._generate_age,
             'address.street': VariableGenerator._generate_street,
             'phones.number': VariableGenerator._generate_phone_number,
@@ -2056,7 +2020,7 @@ class VariableGenerator:
         return str(uuid.uuid4())
 
     @staticmethod
-    def _generate_current_day(date_format: str = "%Y-%m-%d") -&gt; str:
+    def _generate_current_day(date_format: str = "%Y%m%d") -&gt; str:
         current_date = datetime.datetime.now()
         return current_date.strftime(date_format)
 
@@ -2161,24 +2125,14 @@ if __name__ == "__main__":
             }
         },
         "CNY": {
-            "2024-06-13": {
+            "2024-06-16": {
                 "inbound": {
-                    "count": 2,
-                    "total_amount": 200.0
+                    "count": 48,
+                    "total_amount": 4800.0
                 },
                 "outbound": {
-                    "count": 2,
-                    "total_amount": 200.0
-                }
-            },
-            "2024-06-14": {
-                "inbound": {
-                    "count": 1,
-                    "total_amount": 100.0
-                },
-                "outbound": {
-                    "count": 1,
-                    "total_amount": 100.0
+                    "count": 48,
+                    "total_amount": 4800.0
                 }
             }
         }
