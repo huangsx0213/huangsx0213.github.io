@@ -607,10 +607,66 @@ root:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\saved_fields.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>PRE_001_01.response[2].outbound.count: 0
-PRE_001_02.response[3].balance: 57800.0
+    <pre>PRE_01_01.response[3].balance: 58000.0
+Position_01_01.:
+- balance: 13500.0
+  currency: USD
+  inbound:
+    count: 0
+    total_amount: 0.0
+  outbound:
+    count: 0
+    total_amount: 0.0
+  value_date: '2024-06-26'
+- balance: 8000.0
+  currency: EUR
+  inbound:
+    count: 0
+    total_amount: 0.0
+  outbound:
+    count: 0
+    total_amount: 0.0
+  value_date: '2024-06-26'
+- balance: 50000.0
+  currency: HKD
+  inbound:
+    count: 0
+    total_amount: 0.0
+  outbound:
+    count: 0
+    total_amount: 0.0
+  value_date: '2024-06-26'
+- balance: 58100.0
+  currency: CNY
+  inbound:
+    count: 4
+    total_amount: 400.0
+  outbound:
+    count: 2
+    total_amount: 200.0
+  value_date: '2024-06-26'
 TC001_01.response.amount: 100
 TC001_02.response.response.amount: '100.0'
+TC002_01.:
+  amount: 100
+  creditor:
+    address: 500 Green Arrow Street
+    email: oliver.queen@example.com
+    name: Hal Jordan
+    phones:
+    - 555-789-1234
+    - 555-789-1235
+  currency: CNY
+  debtor:
+    address: 500 Green Arrow Street
+    email: oliver.queen@example.com
+    name: Oliver Queen
+    phones:
+    - 555-987-1234
+    - 555-987-1235
+  new_position: 58100.0
+  status: Inbound Processed
+  transaction_id: IN123457
 </pre>
 </div>
 
@@ -626,6 +682,7 @@ test_cases_path: 'test_cases/test_cases.xlsx'
 # Specify one or more Test Case IDs here.
 tc_id_list:
   - 'TC001'
+  - 'TC002'
 
 # List of tags to filter test cases.
 # Only test cases which contain any of these tags will be run.
@@ -731,10 +788,10 @@ from libraries.test_case_manager import TestCaseManager
 from libraries.utility_helpers import UtilityHelpers
 from libraries.log_manager import logger_instance, logger
 
-
+PROJECT_ROOT = UtilityHelpers.find_project_root()
 class APITestExecutor:
-    def __init__(self, config_path: str = 'configs/config.yaml',
-                 test_config_path: str = 'configs/test_config.yaml') -&gt; None:
+    def __init__(self, config_path: str = os.path.join(PROJECT_ROOT, 'configs', 'config.yaml'),
+                 test_config_path: str = os.path.join(PROJECT_ROOT, 'configs', 'test_config.yaml')) -&gt; None:
         self.test_cases_path: Union[str, None] = None
         self.test_case_manager: Union[TestCaseManager, None] = None
 
@@ -745,9 +802,9 @@ class APITestExecutor:
         self.endpoints: Dict = self.active_environment['endpoints']
 
         # Load other configurations
-        self.template_dir: str = 'configs/body_templates'
-        self.headers_dir: str = 'configs/headers'
-        self.body_defaults_dir: str = 'configs/body_defaults'
+        self.template_dir: str = os.path.join(PROJECT_ROOT, 'configs', 'body_templates')
+        self.headers_dir: str = os.path.join(PROJECT_ROOT, 'configs', 'headers')
+        self.body_defaults_dir: str = os.path.join(PROJECT_ROOT, 'configs', 'body_defaults')
 
         # Initialize other components
         self.saved_fields_manager: SavedFieldsManager = SavedFieldsManager()
@@ -761,13 +818,13 @@ class APITestExecutor:
 
     @UtilityHelpers.time_calculation()
     def run_test_suite(self, test_cases_path: str = None, tc_id_list: List[str] = None, tags: List[str] = None) -&gt; None:
-        test_cases_path = test_cases_path or self.test_config.get('test_cases_path', 'test_cases/test_cases.xlsx')
+        test_cases_path = test_cases_path or self.test_config.get('test_cases_path', os.path.join(PROJECT_ROOT, 'test_cases', 'test_cases.xlsx'))
         tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
         tags = tags or self.test_config.get('tags', [])
-        self.test_cases_path = test_cases_path
+        self.test_cases_path = os.path.join(PROJECT_ROOT, test_cases_path)
 
         try:
-            self.test_case_manager = TestCaseManager(test_cases_path, self.endpoints, self.headers_dir,
+            self.test_case_manager = TestCaseManager(self.test_cases_path, self.endpoints, self.headers_dir,
                                                      self.template_dir, self.body_defaults_dir)
             filtered_cases = self.test_case_manager.filter_test_cases(tcid_list=tc_id_list, tags=tags)
             logger.debug(f"Successfully loaded test cases from {test_cases_path}")
@@ -851,17 +908,18 @@ class APITestExecutor:
                     raise Exception(f"Condition {tc_id} failed, skipping to the next case.")
 
     def run_test_case(self, test_case: List[Dict[str, Union[str, Any]]], tc_id: str) -&gt; None:
+        test_step_result = False
         for test_step in test_case:
-            test_step_result = self.execute_test_step(test_step)
+            test_step_result = self.handle_check_with_conditions(test_step)
+            #test_step_result = self.execute_test_step(test_step)
             if not test_step_result:
                 logger.info(f"Test case {tc_id} failed, skipping to next case.")
                 break
 
-    @UtilityHelpers.time_calculation()
-    def execute_test_step(self, test_step: Dict[str, Union[str, Any]]) -&gt; bool:
+    def execute_test_step(self, test_step: Dict[str, Union[str, Any]], save_response: bool = False) -&gt; Union[
+        Dict[str, Any], str, None]:
         try:
             ex_ts_id: str = test_step['TSID']
-            # logger_instance.set_context(ts_id=ex_ts_id, result='Pending')
             ex_endpoint: str = test_step['Endpoint']
             ex_headers: str = test_step['Headers']
             ex_defaults_body: str = test_step['Defaults']
@@ -897,9 +955,74 @@ class APITestExecutor:
 
             logger.info(f"Finished execution of test step {ex_ts_id}")
             logger.info("============================================")
+
+            if save_response:
+                return self.response_handler.extract_response_content(response, test_step)
+
             return True
         except Exception as e:
             logger.error(f"Failed to execute test step {ex_ts_id}: {str(e)}")
+            return False
+
+    def handle_check_with_conditions(self, test_step: Dict[str, Union[str, Any]]) -&gt; bool:
+        try:
+            conditions = test_step['Conditions'].splitlines() if test_step.get('Conditions') else []
+            check_tc_ids = set()  # 使用集合来存储唯一的 check_tc_id
+
+            # 解析所有 [check with] 的条件，并获取相应的 tc_id
+            for condition in conditions:
+                if "[check with]" in condition:
+                    check_tc_id = condition.split("[check with]")[1].strip()
+                    check_tc_ids.add(check_tc_id)
+
+            # 在执行当前 test step 之前分别执行所有的 check_tc_id
+            pre_check_responses = {}
+            for check_tc_id in check_tc_ids:
+                check_step = self.test_case_manager.get_conditions_by_tc_id(check_tc_id)
+                pre_check_responses[check_tc_id] = self.execute_test_step(check_step[0], save_response=True)
+
+            # 执行当前 test step
+            target_response = self.execute_test_step(test_step, save_response=True)
+
+            # 在执行当前 test step 之后再次执行所有的 check_tc_id
+            post_check_responses = {}
+            for check_tc_id in check_tc_ids:
+                check_step = self.test_case_manager.get_conditions_by_tc_id(check_tc_id)
+                post_check_responses[check_tc_id] = self.execute_test_step(check_step[0], save_response=True)
+
+            # 检查预期结果
+            for expectation in test_step['Exp Result'].splitlines():
+                field_path, expected_value = expectation.split('=')
+                field_path = field_path.strip()
+                expected_value = expected_value.strip()
+                if field_path.startswith(tuple(check_tc_ids)):
+                    # 需要检查的行
+                    check_tc_id, _ = field_path.split('.', 1)
+                    check_tc_id, _ = check_tc_id.split('[', 1)
+                    expected_delta = int(expected_value)  # 直接转换为整数以支持正负号
+
+                    # 获取 pre 和 post 的值
+                    pre_value = self.response_handler.comparator.extract_actual_value(pre_check_responses[check_tc_id],
+                                                                                      field_path)
+                    post_value = self.response_handler.comparator.extract_actual_value(post_check_responses[check_tc_id],
+                                                                                       field_path)
+
+                    delta = post_value - pre_value
+                    if delta == expected_delta:
+                        logger.info(f"Check-with condition passed for {field_path}: {delta} == {expected_delta}")
+                    else:
+                        raise AssertionError(f"Check-with condition failed for {field_path}: {delta} != {expected_delta}")
+                else:
+                    # 非检查行（当前步骤的响应检查行）
+                    actual_value = self.response_handler.comparator.extract_actual_value(target_response, field_path)
+                    if str(actual_value) == expected_value:
+                        logger.info(f"Expectation passed for {field_path}: {actual_value} == {expected_value}")
+                    else:
+                        logger.info(f"Expectation failed for {field_path}: {actual_value} != {expected_value}")
+
+            return True
+        except Exception as e:
+            logger.error(f"Failed to execute test step {test_step['TCID']}: {str(e)}")
             return False
 </pre>
 </div>
@@ -1455,7 +1578,7 @@ class ResponseComparator:
         except json.JSONDecodeError as json_error:
             logger.warning(f"[TSID:{test_step['TSID']}] JSON decode error: {json_error}. Attempting XML parse.")
             try:
-                logger.debug(f"[TSID:{test_step['TSID']}] Response content: \n{self.format_xml(response.text)}")
+                logger.debug(f"[TSID:{test_step['TSID']}] Response content: \n{response.text}")
                 return xmltodict.parse(response.text)
             except Exception as xml_error:
                 logger.error(f"[TSID:{test_step['TSID']}] XML parse error: {xml_error}. Returning raw response text.")
@@ -1468,20 +1591,24 @@ class ResponseComparator:
             except ValueError:
                 return self.create_error_comparison_result(expectation, "Invalid [Exp Result] format")
 
-            expected_value = expected_value.strip().strip('""').strip("''")
-            actual_value = self.extract_actual_value(actual_response, field_path)
+            if field_path.startswith("response"):
+                expected_value = expected_value.strip().strip('""').strip("''")
+                actual_value = self.extract_actual_value(actual_response, field_path)
 
-            if actual_value is None:
-                return self.create_error_comparison_result(field_path, "Field not found")
-            return self.create_comparison_result(field_path, actual_value, expected_value)
+                if actual_value is None:
+                    return self.create_error_comparison_result(field_path, "Field not found")
+                return self.create_comparison_result(field_path, actual_value, expected_value)
+            return self.create_not_specified_result()
         else:
             return self.create_not_specified_result()
+
     def get_save_result(self, actual_response: Union[Dict[str, Any], str], field_path: str):
         actual_value = self.extract_actual_value(actual_response, field_path)
         if actual_value is None:
             return self.create_error_comparison_result(field_path, "Field not found")
         else:
             return self.create_save_result(field_path, actual_value)
+
     def extract_actual_value(self, actual_response: Union[Dict[str, Any], str], field_path: str) -&gt; str:
         def _extract_value(data, parts):
             if not parts:
@@ -1501,9 +1628,9 @@ class ResponseComparator:
 
         parts = field_path.split('.')
 
-        if isinstance(actual_response, list) and 'response[' in parts[0]:
-            match = re.match(r'response\[(\d+)\]', parts[0])
-            array_index = int(match.group(1))
+        if isinstance(actual_response, list) and '[' in parts[0] and ']' in parts[0]:
+            match = re.match(r'([a-zA-Z_][a-zA-Z0-9_]*)(\[\d+\])?', parts[0])
+            array_index = int(match.group(2)[1:-1])
             actual_response = actual_response[array_index]
         try:
             return _extract_value(actual_response, parts[1:])
@@ -1533,6 +1660,7 @@ class ResponseComparator:
             "actual_value": "N/A",
             "result": "Not specified"
         }
+
     def create_save_result(self, field_path, actual_value) -&gt; Dict[str, Any]:
         return {
             "field": field_path,
@@ -1566,10 +1694,10 @@ class ResponseHandler:
         self.comparator = ResponseComparator()
 
     def process_and_store_results(self, response: requests.Response, test_step, test_cases_path: str,
-                                  test_case_manager, execution_time: float) -&gt; None:
+                                  test_case_manager, execution_time: float) -&gt; str:
         try:
             actual_status: int = response.status_code
-            actual_response: Union[Dict[str, Any], str] = self.comparator.extract_response_content(response,test_step)
+            actual_response: Union[Dict[str, Any], str] = self.comparator.extract_response_content(response, test_step)
 
             # actual_results
             expected_lines = self._split_lines(test_step['Exp Result'])
@@ -1603,8 +1731,7 @@ class ResponseHandler:
     def apply_pending_operations(self) -&gt; None:
         self.pending_operations = self.excel_manager.apply_pending_operations()
 
-
-    def generate_html_report(self):
+    def generate_html_report(self) -&gt; None:
         self.html_report_generator.generate_html_report(self.pending_operations)
 
     def format_comparison_results(self, results: list) -&gt; str:
@@ -1613,14 +1740,16 @@ class ResponseHandler:
     def format_fields_to_save(self, fields_saved_results: list) -&gt; str:
         return '\n'.join(f"{res['field']}={res['actual_value']}" for res in fields_saved_results)
 
-    def format_fields_to_save_yaml(self, test_step, fields_saved_results: list) -&gt; str:
+    def format_fields_to_save_yaml(self, test_step, fields_saved_results: list) -&gt; Dict[str, Any]:
         return {
             f"{test_step['TSID']}.{res['field']}": res['actual_value'] for res in fields_saved_results
         }
 
     def _split_lines(self, lines: str) -&gt; list:
         return lines.strip().split('\n') if pd.notna(lines) else []
-</pre>
+
+    def extract_response_content(self, response: requests.Response, test_step) -&gt; Union[Dict[str, Any], str]:
+        return self.comparator.extract_response_content(response, test_step)</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_saved_fields_manager_py">
@@ -1790,7 +1919,7 @@ class TestCaseManager:
                 conditions = test_step["Conditions"].splitlines()
                 for condition in conditions:
                     if not any(x in condition for x in
-                               ["[suite setup]", "[test setup]", "[suite teardown]", "[test teardown]"]):
+                               ["[suite setup]", "[test setup]", "[suite teardown]", "[test teardown]", "[check with]"]):
                         raise ValueError(f"Condition '{condition}' is invalid")
                     referenced_tcid = condition.split("]")[1].strip()
                     if referenced_tcid not in test_cases:
@@ -1917,6 +2046,7 @@ class TestCaseManager:
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
+import os
 import time
 from functools import wraps
 from lxml import etree
@@ -1985,6 +2115,16 @@ class UtilityHelpers:
             return wrapper
 
         return decorator
+
+    @staticmethod
+    def find_project_root(current_dir=os.getcwd()):
+        while True:
+            if os.path.exists(os.path.join(current_dir, '.project_root')):
+                return current_dir
+            parent = os.path.dirname(current_dir)
+            if parent == current_dir:
+                raise FileNotFoundError("Project root not found")
+            current_dir = parent
 </pre>
 </div>
 
@@ -2085,7 +2225,7 @@ if __name__ == "__main__":
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 57800.0
+        "CNY": 58100.0
     },
     "transactions": {
         "USD": {
@@ -2125,14 +2265,14 @@ if __name__ == "__main__":
             }
         },
         "CNY": {
-            "2024-06-16": {
+            "2024-06-26": {
                 "inbound": {
-                    "count": 48,
-                    "total_amount": 4800.0
+                    "count": 4,
+                    "total_amount": 400.0
                 },
                 "outbound": {
-                    "count": 48,
-                    "total_amount": 4800.0
+                    "count": 2,
+                    "total_amount": 200.0
                 }
             }
         }
