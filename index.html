@@ -607,7 +607,7 @@ root:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\saved_fields.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>PRE_01_01.response[3].balance: 58000.0
+    <pre>PRE_01_01.response[3].balance: 59200.0
 Position_01_01.:
 - balance: 13500.0
   currency: USD
@@ -636,14 +636,14 @@ Position_01_01.:
     count: 0
     total_amount: 0.0
   value_date: '2024-06-26'
-- balance: 58100.0
+- balance: 59300.0
   currency: CNY
   inbound:
-    count: 4
-    total_amount: 400.0
+    count: 28
+    total_amount: 2800.0
   outbound:
-    count: 2
-    total_amount: 200.0
+    count: 14
+    total_amount: 1400.0
   value_date: '2024-06-26'
 TC001_01.response.amount: 100
 TC001_02.response.response.amount: '100.0'
@@ -664,7 +664,7 @@ TC002_01.:
     phones:
     - 555-987-1234
     - 555-987-1235
-  new_position: 58100.0
+  new_position: 59300.0
   status: Inbound Processed
   transaction_id: IN123457
 </pre>
@@ -1350,6 +1350,8 @@ from jinja2 import Environment, FileSystemLoader
 from libraries.log_manager import logger_instance
 from libraries.utility_helpers import UtilityHelpers
 
+PROJECT_ROOT = UtilityHelpers.find_project_root()
+
 
 class HTMLReportGenerator:
     def __init__(self):
@@ -1357,7 +1359,7 @@ class HTMLReportGenerator:
         self.html_log_entries = {}
         self.report_file_name = ''
 
-    def ensure_log_dir_exists(self, log_dir='output') -&gt; None:
+    def ensure_log_dir_exists(self, log_dir=os.path.join(PROJECT_ROOT, 'output')) -&gt; None:
         try:
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir)
@@ -1366,7 +1368,7 @@ class HTMLReportGenerator:
 
     def generate_html_report(self, pending_operations, report_path=None):
         try:
-            env = Environment(loader=FileSystemLoader('configs/report_template'))
+            env = Environment(loader=FileSystemLoader(os.path.join(PROJECT_ROOT, 'configs', 'report_template')))
             env.filters['escape_xml'] = UtilityHelpers.escape_xml
             template = env.get_template('report_template.html')
             self.html_log_entries = logger_instance.get_html_log_entries()
@@ -1397,7 +1399,7 @@ class HTMLReportGenerator:
                 })
 
             if report_path is None:
-                report_path = f"output/{self.report_file_name}.html"
+                report_path = os.path.join(PROJECT_ROOT, 'output', f'{self.report_file_name}.html')
             html_content = template.render(results=results)
             with open(report_path, 'w') as report_file:
                 report_file.write(html_content)
@@ -1417,6 +1419,9 @@ import re
 import yaml
 import uuid
 from datetime import datetime
+from libraries.utility_helpers import UtilityHelpers
+
+PROJECT_ROOT = UtilityHelpers.find_project_root()
 
 
 class HTMLLogHandler(logging.Handler):
@@ -1451,7 +1456,7 @@ class Logger:
             cls._instance = super(Logger, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, config_path='configs/logging_config.yaml'):
+    def __init__(self, config_path=os.path.join(PROJECT_ROOT, 'configs', 'logging_config.yaml')):
         if not hasattr(self, 'initialized'):
             self.config_path = config_path
             self.log_file_name = ''
@@ -1465,7 +1470,7 @@ class Logger:
                 config = yaml.safe_load(file)
                 self.log_file_name = f"e2e_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                 # Generate dynamic log file name with timestamp
-                log_file_name = f"logs/{self.log_file_name}.log"
+                log_file_name = os.path.join(PROJECT_ROOT, 'logs', f"{self.log_file_name}.log")
 
                 # Ensure the directory for the log file exists
                 log_dir = os.path.dirname(log_file_name)
@@ -1760,10 +1765,13 @@ class ResponseHandler:
 import os
 from typing import Dict, Any
 from libraries.log_manager import logger_instance, logger
+from libraries.utility_helpers import UtilityHelpers
+
+PROJECT_ROOT = UtilityHelpers.find_project_root()
 
 
 class SavedFieldsManager:
-    def __init__(self, file_path: str = 'configs/saved_fields.yaml') -&gt; None:
+    def __init__(self, file_path: str = os.path.join(PROJECT_ROOT, 'configs', 'saved_fields.yaml')) -&gt; None:
         self.file_path: str = file_path
 
     def load_saved_fields(self) -&gt; Dict[str, Any]:
@@ -2050,7 +2058,8 @@ import os
 import time
 from functools import wraps
 from lxml import etree
-from libraries.log_manager import logger_instance, logger
+
+
 class UtilityHelpers:
     @staticmethod
     def get_file_format(file_path: str) -&gt; str:
@@ -2062,8 +2071,8 @@ class UtilityHelpers:
         elif file_path.endswith('.xml'):
             return 'xml'
         else:
-            logger.error(f"Unsupported file format for file: {file_path}")
-            raise ValueError("Unsupported file format")
+            raise ValueError(f"Unsupported file format for file: {file_path}")
+
     @staticmethod
     def escape_xml(value):
         """Escape XML characters."""
@@ -2100,6 +2109,7 @@ class UtilityHelpers:
             return formatted_xml.strip()
         except Exception as e:
             raise ValueError(f"Invalid XML data: {str(e)}")
+
     @staticmethod
     def time_calculation():
         def decorator(func):
@@ -2109,6 +2119,7 @@ class UtilityHelpers:
                 result = func(*args, **kwargs)
                 end_time = time.time()
                 execution_time = end_time - start_time
+                from libraries.log_manager import logger
                 logger.info(f"Function {func.__name__} executed in {execution_time:.4f} seconds")
                 return result
 
@@ -2225,7 +2236,7 @@ if __name__ == "__main__":
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 58100.0
+        "CNY": 59300.0
     },
     "transactions": {
         "USD": {
@@ -2267,12 +2278,12 @@ if __name__ == "__main__":
         "CNY": {
             "2024-06-26": {
                 "inbound": {
-                    "count": 4,
-                    "total_amount": 400.0
+                    "count": 28,
+                    "total_amount": 2800.0
                 },
                 "outbound": {
-                    "count": 2,
-                    "total_amount": 200.0
+                    "count": 14,
+                    "total_amount": 1400.0
                 }
             }
         }
