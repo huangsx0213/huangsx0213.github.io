@@ -106,13 +106,14 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_utility_helpers_py">utility_helpers.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common___init___py">__init__.py</a>
 │   │   ├── e2e/
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_test_executor_py">e2e_test_executor.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e___init___py">__init__.py</a>
 │   │   ├── web/
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_e2e_test_executor_py">e2e_test_executor.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_excel_reader_py">excel_reader.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_page_object_py">page_object.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_webdriver_factory_py">webdriver_factory.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_element_actions_py">web_element_actions.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_executor_py">web_test_executor.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">__init__.py</a>
 │   ├── testing_server/
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_positions_json">positions.json</a>
@@ -713,30 +714,30 @@ browser_options:
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
 from libraries.common.config_manager import ConfigManager
-from libraries.web.e2e_test_executor import E2ETestExecutor
-from libraries.web.excel_reader import ExcelReader
+from libraries.e2e.e2e_test_executor import E2ETestExecutor
 from libraries.web.webdriver_factory import WebDriverFactory
 from libraries.common.utility_helpers import PROJECT_ROOT
 
+
 def main():
     project_root: str = PROJECT_ROOT
-    config_path = os.path.join(project_root,  'configs', 'e2e', 'e2e_config.yaml')
+    config_path = os.path.join(project_root, 'configs', 'e2e', 'e2e_config.yaml')
     test_config = ConfigManager.load_yaml(config_path)
 
     test_case_path = test_config.get("test_case_path", None)
 
-    excel_data_manager = ExcelReader(test_case_path)
     driver = WebDriverFactory.create_driver(config_path)
 
     try:
-        test_executor = E2ETestExecutor(driver, excel_data_manager)
+        test_executor = E2ETestExecutor(driver, test_case_path)
         test_executor.run_tests()
     finally:
         WebDriverFactory.quit_driver(driver)
 
 
 if __name__ == "__main__":
-    main()</pre>
+    main()
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries___init___py">
@@ -2328,42 +2329,36 @@ PROJECT_ROOT = UtilityHelpers.get_project_root()</pre>
     <pre></pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\__init__.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre></pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_e2e_test_executor_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\e2e_test_executor.py</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_test_executor_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\e2e\e2e_test_executor.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
 from time import sleep
 
 from libraries.common.log_manager import logger
+from libraries.web.excel_reader import WebTestLoader
 from libraries.web.page_object import PageObject
 from libraries.api.api_test_executor import APITestExecutor
 from libraries.common.utility_helpers import PROJECT_ROOT
 
 
 class E2ETestExecutor:
-    def __init__(self, driver, excel_reader):
+    def __init__(self, driver, test_case_path):
         self.driver = driver
-        self.excel_reader = excel_reader
+        self.web_test_loader = WebTestLoader(test_case_path)
         self.page_object = PageObject(
             driver,
-            excel_reader.get_locators(),
-            excel_reader.get_page_objects()
+            self.web_test_loader.get_locators(),
+            self.web_test_loader.get_page_objects()
         )
         self.project_root: str = PROJECT_ROOT
-        e2e_test_cases_path = os.path.join(self.project_root, 'test_cases', 'e2e_test_cases.xlsx')
-        self.api_test_executor = APITestExecutor(test_cases_path=e2e_test_cases_path)
+        api_test_cases_path = os.path.join(self.project_root, test_case_path)
+        self.api_test_executor = APITestExecutor(test_cases_path=api_test_cases_path)
 
 
     def run_tests(self):
-        test_cases = self.excel_reader.get_test_cases()
+        test_cases = self.web_test_loader.get_test_cases()
         for _, test_case in test_cases.iterrows():
             case_id = test_case['Case ID']
             if test_case['Run'] == 'Y':
@@ -2375,8 +2370,8 @@ class E2ETestExecutor:
 
     def run_test_case(self, case_id):
         logger.info(f"Starting E2E test case {case_id}")
-        test_steps = self.excel_reader.get_test_steps(case_id)
-        test_data_sets = self.excel_reader.get_test_data(case_id)
+        test_steps = self.web_test_loader.get_test_steps(case_id)
+        test_data_sets = self.web_test_loader.get_test_data(case_id)
 
         for data_set_index, data_set in enumerate(test_data_sets, 1):
             logger.info(f"Running E2E test case {case_id} with data set {data_set_index}")
@@ -2408,6 +2403,13 @@ class E2ETestExecutor:
         return parameters</pre>
 </div>
 
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\__init__.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre></pre>
+</div>
+
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_excel_reader_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\excel_reader.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -2415,7 +2417,7 @@ class E2ETestExecutor:
     <pre>import pandas as pd
 
 
-class ExcelReader:
+class WebTestLoader:
     def __init__(self, excel_path):
         self.excel_path = excel_path
         self.data = self._load_excel_data()
@@ -2908,6 +2910,73 @@ class WebElementActions:
 </pre>
 </div>
 
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_executor_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_test_executor.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import os
+from time import sleep
+from libraries.api.api_test_executor import APITestExecutor
+from libraries.common.log_manager import logger
+from libraries.web.excel_reader import WebTestLoader
+from libraries.web.page_object import PageObject
+from libraries.common.utility_helpers import PROJECT_ROOT
+
+
+class WebTestExecutor:
+    def __init__(self, driver, test_case_path):
+        self.driver = driver
+        self.web_test_loader = WebTestLoader(test_case_path)
+        self.page_object = PageObject(
+            driver,
+            self.web_test_loader.get_locators(),
+            self.web_test_loader.get_page_objects()
+        )
+        self.project_root: str = PROJECT_ROOT
+
+
+    def run_tests(self):
+        test_cases = self.web_test_loader.get_test_cases()
+        for _, test_case in test_cases.iterrows():
+            case_id = test_case['Case ID']
+            if test_case['Run'] == 'Y':
+                try:
+                    self.run_test_case(case_id)
+                except Exception as e:
+                    logger.error(f"Error running test case {case_id}: {str(e)}")
+                sleep(1)
+
+    def run_test_case(self, case_id):
+        logger.info(f"Starting E2E test case {case_id}")
+        test_steps = self.web_test_loader.get_test_steps(case_id)
+        test_data_sets = self.web_test_loader.get_test_data(case_id)
+
+        for data_set_index, data_set in enumerate(test_data_sets, 1):
+            logger.info(f"Running E2E test case {case_id} with data set {data_set_index}")
+            for _, step in test_steps.iterrows():
+                page_name = step['Page Name']
+                method_name = step['Method Name']
+                parameters = self._get_parameters(data_set, step['Parameter Name'])
+
+                try:
+                    logger.info(f"Executing web step: {page_name}.{method_name}")
+                    self.page_object.execute_method(page_name, method_name, parameters)
+                except Exception as e:
+                    logger.error(f"Error executing step {page_name}.{method_name}: {str(e)}")
+                    raise
+
+            logger.info(f"Completed E2E test case {case_id} with data set {data_set_index}")
+            sleep(1)  # Add a small delay between data sets
+
+    def _get_parameters(self, data_set, parameter_names):
+        parameters = {}
+        for name in parameter_names.split(','):
+            if name in data_set:
+                parameters[name] = data_set[name]
+        logger.debug(f"Extracted parameters: {parameters}")
+        return parameters</pre>
+</div>
+
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_webdriver_factory_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\webdriver_factory.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -2953,7 +3022,7 @@ class WebDriverFactory:
             raise ValueError(f"Unsupported browser: {browser}")
 
         # 设置浏览器路径
-        if browser_path:
+        if browser_path and not is_remote:
             options.binary_location = browser_path
             logger.info(f"Set browser binary location: {browser_path}")
 
@@ -3003,7 +3072,7 @@ class WebDriverFactory:
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 58600.0
+        "CNY": 59000.0
     },
     "transactions": {
         "USD": {
@@ -3043,10 +3112,10 @@ class WebDriverFactory:
             }
         },
         "CNY": {
-            "2024-07-10": {
+            "2024-07-11": {
                 "inbound": {
-                    "count": 4,
-                    "total_amount": 400.0
+                    "count": 6,
+                    "total_amount": 600.0
                 },
                 "outbound": {
                     "count": 2,
@@ -3392,30 +3461,30 @@ if __name__ == '__main__':
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
 from libraries.common.config_manager import ConfigManager
-from libraries.web.e2e_test_executor import E2ETestExecutor
-from libraries.web.excel_reader import ExcelReader
+from libraries.web.web_test_executor import WebTestExecutor
 from libraries.web.webdriver_factory import WebDriverFactory
 from libraries.common.utility_helpers import PROJECT_ROOT
 
+
 def main():
     project_root: str = PROJECT_ROOT
-    config_path = os.path.join(project_root,  'configs', 'web', 'web_config.yaml')
+    config_path = os.path.join(project_root, 'configs', 'web', 'web_config.yaml')
     test_config = ConfigManager.load_yaml(config_path)
 
     test_case_path = test_config.get("test_case_path", None)
 
-    excel_data_manager = ExcelReader(test_case_path)
     driver = WebDriverFactory.create_driver(config_path)
 
     try:
-        test_executor = E2ETestExecutor(driver, excel_data_manager)
+        test_executor = WebTestExecutor(driver, test_case_path)
         test_executor.run_tests()
     finally:
         WebDriverFactory.quit_driver(driver)
 
 
 if __name__ == "__main__":
-    main()</pre>
+    main()
+</pre>
 </div>
 
 
