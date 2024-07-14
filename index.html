@@ -65,15 +65,11 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_saved_fields_yaml">saved_fields.yaml</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_test_config_yaml">test_config.yaml</a>
 │   │   │   ├── body_defaults/
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_create_customer_json">create_customer.json</a>
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_create_user_json">create_user.json</a>
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_pacs_008_in_def_json">pacs.008_in_def.json</a>
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_pacs_008_out_def_json">pacs.008_out_def.json</a>
+│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_j_pacs_008_in_cny_json">j_pacs.008_in_cny.json</a>
+│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_x_pacs_008_out_cny_json">x_pacs.008_out_cny.json</a>
 │   │   │   ├── body_templates/
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_pacs_008_in_json">pacs.008_in.json</a>
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_pacs_008_out_xml">pacs.008_out.xml</a>
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_sample_create_customer_xml">sample_create_customer.xml</a>
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_sample_create_user_json">sample_create_user.json</a>
+│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_j_pacs_008_in_json">j_pacs.008_in.json</a>
+│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_x_pacs_008_out_xml">x_pacs.008_out.xml</a>
 │   │   │   ├── headers/
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_headers_default_json">default.json</a>
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_headers_default2_json">default2.json</a>
@@ -109,11 +105,11 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_test_executor_py">e2e_test_executor.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e___init___py">__init__.py</a>
 │   │   ├── web/
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_excel_reader_py">excel_reader.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_page_object_py">page_object.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_webdriver_factory_py">webdriver_factory.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_element_actions_py">web_element_actions.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_executor_py">web_test_executor.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_loader_py">web_test_loader.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">__init__.py</a>
 │   ├── testing_server/
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_positions_json">positions.json</a>
@@ -132,59 +128,8 @@ if __name__ == "__main__":
 </pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_create_customer_json">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_defaults\create_customer.json</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>{
-  "name": "ACME Corp.",
-  "contact": {
-    "name": "Jane Doe",
-    "email": "contact@acme.com"
-  },
-  "address": {
-    "street": "456 Industry Rd",
-    "city": "Busytown",
-    "zipcode": "{{address.zipcode}}"
-  }
-}</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_create_user_json">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_defaults\create_user.json</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>{
-  "name": "Vick",
-  "email": "john.doe@example.com",
-  "address": {
-    "street": "123 Main St",
-    "city": "Anytown",
-    "state": "CA",
-    "zip": "12345"
-  },
-  "phones": [
-    {
-      "type": "home",
-      "number": "555-555-5555"
-    },
-    {
-      "type": "work",
-      "number": "{{phones.number}}"
-    }
-  ],
-  "preferences": {
-    "newsletter": true,
-    "notifications": {
-      "email": true,
-      "sms": false
-    }
-  }
-}</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_pacs_008_in_def_json">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_defaults\pacs.008_in_def.json</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_j_pacs_008_in_cny_json">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_defaults\j_pacs.008_in_cny.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
@@ -212,8 +157,8 @@ if __name__ == "__main__":
 }</pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_pacs_008_out_def_json">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_defaults\pacs.008_out_def.json</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_x_pacs_008_out_cny_json">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_defaults\x_pacs.008_out_cny.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
@@ -242,8 +187,8 @@ if __name__ == "__main__":
 }</pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_pacs_008_in_json">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_templates\pacs.008_in.json</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_j_pacs_008_in_json">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_templates\j_pacs.008_in.json</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>{
@@ -277,8 +222,8 @@ if __name__ == "__main__":
 }</pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_pacs_008_out_xml">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_templates\pacs.008_out.xml</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_x_pacs_008_out_xml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_templates\x_pacs.008_out.xml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>&lt;Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02"&gt;
@@ -316,57 +261,6 @@ if __name__ == "__main__":
 &lt;/Document&gt;</pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_sample_create_customer_xml">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_templates\sample_create_customer.xml</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>&lt;create_customer&gt;
-  &lt;name&gt;aaa{{ name }}&lt;/name&gt;
-  &lt;contact&gt;
-    &lt;name&gt;{{ contact.name }}&lt;/name&gt;
-    &lt;email&gt;{{ contact.email }}&lt;/email&gt;
-  &lt;/contact&gt;
-  &lt;address&gt;
-    &lt;street&gt;{{ address.street }}&lt;/street&gt;
-    &lt;city&gt;{{ address.city }}&lt;/city&gt;
-    &lt;zipcode&gt;{{ address.zipcode }}&lt;/zipcode&gt;
-  &lt;/address&gt;
-&lt;/create_customer&gt;
-</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_templates_sample_create_user_json">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\body_templates\sample_create_user.json</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>{
-  "name": "{{ name }}",
-  "email": "{{ email }}",
-  "address": {
-    "street": "{{ address.street }}",
-    "city": "{{ address.city }}",
-    "state": "{{ address.state }}",
-    "zip": "{{ address.zip }}"
-  },
-  "phones": [
-    {% for phone in phones %}
-    {
-      "type": "{{ phone.type }}",
-      "number": "{{ phone.number }}"
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-  ],
-  "preferences": {
-    "newsletter": {{ preferences.newsletter | json_bool }},
-    "notifications": {
-      "email": {{ preferences.notifications.email | json_bool }},
-      "sms": {{ preferences.notifications.sms | json_bool }}
-    }
-  }
-}
-</pre>
-</div>
-
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_config_yaml">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\config.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -381,10 +275,10 @@ environments:
     # Define API endpoints for the DEV environment.
     endpoints:
       pacs.008_inbound:
-        path: "http://localhost:5000/api/inbound_payment_json"
+        path: "http://localhost:5000/api/inbound_payment.json"
         method: "POST"
       pacs.008_outbound:
-        path: "http://localhost:5000/api/outbound_payment_xml"
+        path: "http://localhost:5000/api/outbound_payment.xml"
         method: "POST"
       positions:
         path: "http://localhost:5000/api/positions2"
@@ -393,10 +287,10 @@ environments:
     # Define API endpoints for the SIT (System Integration Testing) environment.
     endpoints:
       pacs.008_inbound:
-        path: "https://vhuang2.free.beeceptor.com/api/outbound_payment_json"
+        path: "https://vhuang2.free.beeceptor.com/api/outbound_payment.json"
         method: "POST"
       pacs.008_outbound:
-        path: "https://vhuang2.free.beeceptor.com/api/outbound_payment_xml"
+        path: "https://vhuang2.free.beeceptor.com/api/outbound_payment.xml"
         method: "POST"
       positions:
         path: "https://vhuang2.free.beeceptor.com/api/positions"
@@ -405,10 +299,10 @@ environments:
     # Define API endpoints for the UAT (User Acceptance Testing) environment.
     endpoints:
       pacs.008_inbound:
-        path: "https://vhuang1.free.beeceptor.com/api/outbound_payment_json"
+        path: "https://vhuang1.free.beeceptor.com/api/outbound_payment.json"
         method: "POST"
       pacs.008_outbound:
-        path: "https://vhuang1.free.beeceptor.com/api/outbound_payment_xml"
+        path: "https://vhuang1.free.beeceptor.com/api/outbound_payment.xml"
         method: "POST"
       positions:
         path: "https://vhuang1.free.beeceptor.com/api/positions"
@@ -422,9 +316,10 @@ environments:
     <pre>{
   "Content-Type": "application/json",
   "accept": "application/json",
-  "Authorization": "token={{ token }}",
-  "test1": "aa{{ test1 }}",
-  "test2": "{{ test2 }}bb",
+  "Authorization": "token={{uuid4}}",
+  "timestamp": "{{timestamp}}",
+  "timestamp2": "{{formated_timestamp}}",
+  "bic": "{{bic}}",
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36"
 }</pre>
 </div>
@@ -436,9 +331,9 @@ environments:
     <pre>{
   "Content-Type": "application/json",
   "accept": "application/json",
-  "Authorization": "{{ token }}",
-  "test1": "{{ 1.response.name }}",
-  "test2": "{{ 1.response.phones[0].type }}",
+  "Authorization": "{{uuid4}}",
+  "test1": "{{PRE_01_01.response[2].balance}}",
+  "test2": "{{1.response.phones[0].type}}",
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36"
 }</pre>
 </div>
@@ -639,9 +534,7 @@ root:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\saved_fields.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>PRE_01_01.response[2].balance: 50000.0
-TC001_01.response.amount: 100
-TC001_02.response.response.amount: '100.0'
+    <pre>TC002_01.response.amount: 100
 </pre>
 </div>
 
@@ -671,9 +564,9 @@ tags:
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>test_case_path : test_cases/e2e_test_cases.xlsx
-browser: chrome
-is_remote: false
-remote_url: http://localhost:4444/wd/hub
+browser: edge
+is_remote: true
+remote_url: http://www.sg1.findhere.org:8044/wd/hub
 chrome_path: E:\Downloads\my files\chrome-win64\chrome.exe
 chromedriver_path: E:\Downloads\my files\chromedriver-win64\chromedriver.exe
 edge_path: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
@@ -683,8 +576,7 @@ browser_options:
   disable-dev-shm-usage: true
   disable-gpu: true
   remote-debugging-port: 9222
-#  headless: true
-</pre>
+#  headless: true</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_web_config_yaml">
@@ -692,9 +584,9 @@ browser_options:
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>test_case_path : test_cases/web_test_cases.xlsx
-browser: chrome
-is_remote: false
-remote_url: http://localhost:4444/wd/hub
+browser: edge
+is_remote: true
+remote_url: http://www.sg1.findhere.org:8044/wd/hub
 chrome_path: E:\Downloads\my files\chrome-win64\chrome.exe
 chromedriver_path: E:\Downloads\my files\chromedriver-win64\chromedriver.exe
 edge_path: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
@@ -884,7 +776,9 @@ class APITestExecutor:
         self.saved_fields_manager.apply_saved_fields(test_step, saved_fields, ['Body Modifications', 'Exp Result'])
         body, format_type = self.body_generator.generate_request_body(test_step, test_step['Defaults'], method)
 
+        logger.info(f"Sending request to {url} with method: {method} for test step {test_step['TSID']}.")
         response, execution_time = RequestSender.send_request(url, method, headers, body, format_type)
+
         return response, execution_time
 
     def _extract_check_with_tc_ids(self, test_step: Dict[str, Union[str, Any]]) -&gt; set:
@@ -1227,10 +1121,10 @@ class HeadersGenerator:
                 matches = re.findall(r'\{\{\s*([^}]+?)\s*\}\}', value)
                 for match in matches:
                     if match in saved_fields:
-                        value = value.replace(f'{{{{ {match} }}}}', str(saved_fields[match]))
+                        value = value.replace(f'{{{{{match}}}}}', str([match]))
                     else:
                         dynamic_value = VariableGenerator.generate_dynamic_value(match)
-                        value = value.replace(f'{{{{ {match} }}}}', str(dynamic_value))
+                        value = value.replace(f'{{{{{match}}}}}', str(dynamic_value))
             return value
         except Exception as e:
             logger.error(
@@ -1335,7 +1229,7 @@ class RequestSender:
                 raise ValueError(f"Unsupported format type: {format_type}")
             response.raise_for_status()
         except (requests.RequestException, ValueError) as e:
-            raise ValueError(f"sending request error: {str(e)}")
+            raise ValueError(f"sending request error: {str(e)}\nwith response text:\n{response.text}")
 
         execution_time = time.time() - start_time
         return response, execution_time
@@ -1596,7 +1490,7 @@ class ResponseHandler:
         except json.JSONDecodeError as json_error:
             logger.warning(f"[TSID:{test_step['TSID']}] JSON decode error: {json_error}. Attempting XML parse.")
             try:
-                logger.info(f"[TSID:{test_step['TSID']}] Response content: \n{response.text}")
+                logger.info(f"[TSID:{test_step['TSID']}] Response content: \n{self.format_xml(response.text)}")
                 return xmltodict.parse(response.text)
             except Exception as xml_error:
                 logger.error(f"[TSID:{test_step['TSID']}] XML parse error: {xml_error}. Returning raw response text.")
@@ -1767,19 +1661,19 @@ class TestCaseManager:
             tcid = row.get('TCID', "")
             test_step = {
                 "TCID": tcid,
-                "TSID": row.get('TSID', ""),
-                "Descriptions": row.get('Descriptions', ""),
-                "Conditions": row.get('Conditions', ""),
-                "Endpoint": row.get('Endpoint', ""),
-                "Headers": row.get('Headers', ""),
-                "Template": row.get('Template', ""),
-                "Defaults": row.get('Defaults', ""),
-                "Body Modifications": row.get('Body Modifications') if row.get('Body Modifications') else '{}',
-                "Run": row.get('Run', ""),
-                "Tags": row.get('Tags', ""),
+                "TSID": row.get('TSID', "").strip(),
+                "Descriptions": row.get('Descriptions', "").strip(),
+                "Conditions": row.get('Conditions', "").strip(),
+                "Endpoint": row.get('Endpoint', "").strip(),
+                "Headers": row.get('Headers', "").strip(),
+                "Template": row.get('Template', "").strip(),
+                "Defaults": row.get('Defaults', "").strip(),
+                "Body Modifications": row.get('Body Modifications').strip() if row.get('Body Modifications') else '{}',
+                "Run": row.get('Run', "").strip(),
+                "Tags": row.get('Tags', "").strip(),
                 "Exp Status": row.get('Exp Status', ""),
-                "Exp Result": row.get('Exp Result', ""),
-                "Save Fields": row.get('Save Fields', ""),
+                "Exp Result": row.get('Exp Result', "").strip(),
+                "Save Fields": row.get('Save Fields', "").strip(),
                 "Act Status": row.get('Act Status', ""),
                 "Act Result": row.get('Act Result', ""),
                 "Result": row.get('Result', ""),
@@ -1931,7 +1825,9 @@ class TestCaseManager:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\variable_generator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import uuid
+    <pre>import random
+import string
+import uuid
 import datetime
 from typing import Any, Dict, Callable
 
@@ -1941,18 +1837,14 @@ class VariableGenerator:
     def generate_dynamic_value(field_name: str) -&gt; Any:
         handlers: Dict[str, Callable[[str], Any]] = {
             'uetr': VariableGenerator._generate_uuid4,
+            'uuid4': VariableGenerator._generate_uuid4,
             'value_date': VariableGenerator._generate_current_day,
             'msg_id': VariableGenerator._generate_msg_id,
-            'age': VariableGenerator._generate_age,
-            'address.street': VariableGenerator._generate_street,
-            'phones.number': VariableGenerator._generate_phone_number,
-            'address.zipcode': VariableGenerator._generate_zipcode,
-            'token': VariableGenerator._generate_token,
-            'test1': VariableGenerator._generate_test1,
-            'test2': VariableGenerator._generate_test2,
+            'timestamp': VariableGenerator._generate_timestamp,
+            'formated_timestamp': VariableGenerator._generate_formated_timestamp,
+            'bic': VariableGenerator._generate_bic
         }
-
-        return handlers.get(field_name, VariableGenerator._generate_default_value)()
+        return handlers.get(field_name, VariableGenerator._generate_error_handling)()
 
     @staticmethod
     def _generate_uuid4() -&gt; str:
@@ -1960,46 +1852,33 @@ class VariableGenerator:
 
     @staticmethod
     def _generate_current_day(date_format: str = "%Y%m%d") -&gt; str:
-        current_date = datetime.datetime.now()
-        return current_date.strftime(date_format)
+        return datetime.datetime.now().strftime(date_format)
 
     @staticmethod
     def _generate_msg_id() -&gt; str:
-        uuid_part = str(uuid.uuid4())
-        timestamp_part = datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        return f"{uuid_part}-{timestamp_part}"
+        prefix = 'MSG'
+        suffix = ''.join(random.choices(string.ascii_lowercase, k=5))
+        timestamp = VariableGenerator._generate_timestamp()
+        msg_id = f'{prefix}{timestamp}{suffix}'
+        return msg_id
 
     @staticmethod
-    def _generate_age() -&gt; int:
-        return 25
+    def _generate_timestamp() -&gt; str:
+        return str(int(datetime.datetime.now().timestamp()))
 
     @staticmethod
-    def _generate_street() -&gt; str:
-        return 'Dynamic Street'
+    def _generate_formated_timestamp() -&gt; str:
+        now = datetime.datetime.now()
+        timestamp_str = now.strftime("%m%d%H%M%S") + f"{now.microsecond // 1000:03d}"
+        return timestamp_str
 
     @staticmethod
-    def _generate_phone_number() -&gt; str:
-        return '5511539'
+    def _generate_bic() -&gt; str:
+        return ''.join(random.choices(string.ascii_uppercase, k=8))
 
     @staticmethod
-    def _generate_zipcode() -&gt; str:
-        return '00000'
-
-    @staticmethod
-    def _generate_token() -&gt; str:
-        return str(uuid.uuid4())
-
-    @staticmethod
-    def _generate_test1() -&gt; str:
-        return 'Dynamic Test1'
-
-    @staticmethod
-    def _generate_test2() -&gt; str:
-        return 'Dynamic Test2'
-
-    @staticmethod
-    def _generate_default_value() -&gt; str:
-        return f'not support this dynamic field.'
+    def _generate_error_handling() -&gt; str:
+        raise ValueError(f"No handler registered for field.")
 </pre>
 </div>
 
@@ -2269,8 +2148,19 @@ class UtilityHelpers:
         :return: Pretty-printed XML string.
         """
         try:
-            parser = etree.XMLParser(remove_blank_text=True)
+            parser = etree.XMLParser(remove_blank_text=True, strip_cdata=False)
             xml_element = etree.fromstring(xml_string, parser)
+
+            # Ensure CDATA sections are preserved
+            def _preserve_cdata(element):
+                if element.text and isinstance(element.text, etree.CDATA):
+                    element.text = etree.CDATA(element.text)
+                for child in element:
+                    _preserve_cdata(child)
+                    if child.tail and isinstance(child.tail, etree.CDATA):
+                        child.tail = etree.CDATA(child.tail)
+
+            _preserve_cdata(xml_element)
             formatted_xml = etree.tostring(xml_element, pretty_print=True, encoding='unicode')
             return formatted_xml.strip()
         except Exception as e:
@@ -2337,7 +2227,7 @@ PROJECT_ROOT = UtilityHelpers.get_project_root()</pre>
 from time import sleep
 
 from libraries.common.log_manager import logger
-from libraries.web.excel_reader import WebTestLoader
+from libraries.web.web_test_loader import WebTestLoader
 from libraries.web.page_object import PageObject
 from libraries.api.api_test_executor import APITestExecutor
 from libraries.common.utility_helpers import PROJECT_ROOT
@@ -2408,57 +2298,6 @@ class E2ETestExecutor:
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre></pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_excel_reader_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\excel_reader.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import pandas as pd
-
-
-class WebTestLoader:
-    def __init__(self, excel_path):
-        self.excel_path = excel_path
-        self.data = self._load_excel_data()
-
-    def _load_excel_data(self):
-        sheets = ['Locators', 'PageObject', 'TestCases', 'TestSteps', 'TestData']
-        return {sheet: pd.read_excel(self.excel_path, sheet_name=sheet).fillna("") for sheet in sheets}
-
-    def get_data(self, sheet_name):
-        return self.data.get(sheet_name, pd.DataFrame())
-
-    def get_test_cases(self):
-        return self.get_data('TestCases')
-
-    def get_test_steps(self, case_id):
-        test_steps = self.get_data('TestSteps')
-        return test_steps[test_steps['Case ID'] == case_id]
-
-    def get_test_data(self, case_id):
-        test_data = self.get_data('TestData')
-        case_data = test_data[test_data['Case ID'] == case_id]
-
-        # Group data by 'Data Set' column
-        grouped_data = case_data.groupby('Data Set')
-
-        # Create a list of dictionaries, each representing a data set
-        data_sets = []
-        for _, group in grouped_data:
-            data_set = {}
-            for _, row in group.iterrows():
-                data_set[row['Parameter Name']] = row['Value']
-            data_sets.append(data_set)
-
-        return data_sets
-
-    def get_page_objects(self):
-        return self.get_data('PageObject')
-
-    def get_locators(self):
-        return self.get_data('Locators')
-</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_page_object_py">
@@ -2914,11 +2753,9 @@ class WebElementActions:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_test_executor.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import os
-from time import sleep
-from libraries.api.api_test_executor import APITestExecutor
+    <pre>from time import sleep
 from libraries.common.log_manager import logger
-from libraries.web.excel_reader import WebTestLoader
+from libraries.web.web_test_loader import WebTestLoader
 from libraries.web.page_object import PageObject
 from libraries.common.utility_helpers import PROJECT_ROOT
 
@@ -2975,6 +2812,57 @@ class WebTestExecutor:
                 parameters[name] = data_set[name]
         logger.debug(f"Extracted parameters: {parameters}")
         return parameters</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_loader_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_test_loader.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import pandas as pd
+
+
+class WebTestLoader:
+    def __init__(self, excel_path):
+        self.excel_path = excel_path
+        self.data = self._load_excel_data()
+
+    def _load_excel_data(self):
+        sheets = ['Locators', 'PageObject', 'TestCases', 'TestSteps', 'TestData']
+        return {sheet: pd.read_excel(self.excel_path, sheet_name=sheet).fillna("") for sheet in sheets}
+
+    def get_data(self, sheet_name):
+        return self.data.get(sheet_name, pd.DataFrame())
+
+    def get_test_cases(self):
+        return self.get_data('TestCases')
+
+    def get_test_steps(self, case_id):
+        test_steps = self.get_data('TestSteps')
+        return test_steps[test_steps['Case ID'] == case_id]
+
+    def get_test_data(self, case_id):
+        test_data = self.get_data('TestData')
+        case_data = test_data[test_data['Case ID'] == case_id]
+
+        # Group data by 'Data Set' column
+        grouped_data = case_data.groupby('Data Set')
+
+        # Create a list of dictionaries, each representing a data set
+        data_sets = []
+        for _, group in grouped_data:
+            data_set = {}
+            for _, row in group.iterrows():
+                data_set[row['Parameter Name']] = row['Value']
+            data_sets.append(data_set)
+
+        return data_sets
+
+    def get_page_objects(self):
+        return self.get_data('PageObject')
+
+    def get_locators(self):
+        return self.get_data('Locators')
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_webdriver_factory_py">
@@ -3072,7 +2960,7 @@ class WebDriverFactory:
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 59000.0
+        "CNY": 57800.0
     },
     "transactions": {
         "USD": {
@@ -3112,14 +3000,24 @@ class WebDriverFactory:
             }
         },
         "CNY": {
-            "2024-07-11": {
+            "2024-06-12": {
                 "inbound": {
-                    "count": 6,
-                    "total_amount": 600.0
+                    "count": 11,
+                    "total_amount": 1100.0
                 },
                 "outbound": {
-                    "count": 2,
-                    "total_amount": 200.0
+                    "count": 11,
+                    "total_amount": 1100.0
+                }
+            },
+            "2024-06-13": {
+                "inbound": {
+                    "count": 1,
+                    "total_amount": 100.0
+                },
+                "outbound": {
+                    "count": 1,
+                    "total_amount": 100.0
                 }
             }
         }
@@ -3138,6 +3036,8 @@ from datetime import datetime
 
 app = Flask(__name__)
 
+def round_to_two_decimals(value):
+    return round(float(value), 2)
 
 def load_positions():
     try:
@@ -3149,7 +3049,6 @@ def load_positions():
             "transactions": {}
         }
 
-    # 确保总是存在 balances 和 transactions 键
     if 'balances' not in data:
         data['balances'] = {}
     if 'transactions' not in data:
@@ -3157,11 +3056,9 @@ def load_positions():
 
     return data
 
-
 def save_positions(data):
     with open('positions.json', 'w') as file:
         json.dump(data, file, indent=4)
-
 
 def clear_old_positions():
     data = load_positions()
@@ -3173,34 +3070,25 @@ def clear_old_positions():
 
     save_positions(data)
 
-
 def parse_iso20022_pacs008(xml_data):
     try:
         root = ET.fromstring(xml_data)
         transaction_id = root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}InstrId').text
-        amount = float(root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}IntrBkSttlmAmt').text)
+        amount = round_to_two_decimals(float(root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}IntrBkSttlmAmt').text))
         currency = root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}IntrBkSttlmAmt').attrib['Ccy']
 
         debtor = {
-            "name": root.find(
-                './/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Nm').text,
-            "phones": [phone.text for phone in root.findall(
-                './/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Phne')],
-            "email": root.find(
-                './/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}CtctDtls/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}EmailAdr').text,
-            "address": root.find(
-                './/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}StrtNm').text
+            "name": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Nm').text,
+            "phones": [phone.text for phone in root.findall('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Phne')],
+            "email": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}CtctDtls/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}EmailAdr').text,
+            "address": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}StrtNm').text
         }
 
         creditor = {
-            "name": root.find(
-                './/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Nm').text,
-            "phones": [phone.text for phone in root.findall(
-                './/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Phne')],
-            "email": root.find(
-                './/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}CtctDtls/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}EmailAdr').text,
-            "address": root.find(
-                './/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}StrtNm').text
+            "name": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Nm').text,
+            "phones": [phone.text for phone in root.findall('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Phne')],
+            "email": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}CtctDtls/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}EmailAdr').text,
+            "address": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}StrtNm').text
         }
         return {
             "transaction_id": transaction_id,
@@ -3211,7 +3099,6 @@ def parse_iso20022_pacs008(xml_data):
         }
     except Exception as e:
         return {"error": str(e)}
-
 
 def dict_to_xml(tag, d):
     elem = ET.Element(tag)
@@ -3224,7 +3111,7 @@ def dict_to_xml(tag, d):
         elem.append(child)
     return elem
 
-@app.route('/api/outbound_payment_xml', methods=['POST'])
+@app.route('/api/outbound_payment.xml', methods=['POST'])
 def outbound_payment_xml():
     xml_data = request.data
     parsed_data = parse_iso20022_pacs008(xml_data)
@@ -3236,11 +3123,10 @@ def outbound_payment_xml():
     amount = parsed_data['amount']
 
     if currency in data['balances']:
-        data['balances'][currency] -= amount
+        data['balances'][currency] = round_to_two_decimals(data['balances'][currency] - amount)
     else:
         return jsonify({"error": f"Currency {currency} not found"}), 400
 
-    # 记录当天出站支付信息
     today = datetime.today().strftime('%Y-%m-%d')
     if currency not in data['transactions']:
         data['transactions'][currency] = {}
@@ -3250,21 +3136,26 @@ def outbound_payment_xml():
                                                  "outbound": {"count": 0, "total_amount": 0.0}}
 
     data['transactions'][currency][today]["outbound"]["count"] += 1
-    data['transactions'][currency][today]["outbound"]["total_amount"] += amount
+    data['transactions'][currency][today]["outbound"]["total_amount"] = round_to_two_decimals(
+        data['transactions'][currency][today]["outbound"]["total_amount"] + amount
+    )
 
     save_positions(data)
 
     response = {
         **parsed_data,
         "status": "Outbound Processed",
-        "new_position": data['balances'][currency]
+        "new_position": round_to_two_decimals(data['balances'][currency]),
+        "cdata_content": f"&lt;![CDATA[This is a CDATA section for currency {currency}]]&gt;"
     }
 
-    response_xml = ET.tostring(dict_to_xml('response', response))
-    return Response(response_xml, content_type='application/xml')
+    response_xml = dict_to_xml('result', response)
+    xml_str = ET.tostring(response_xml, encoding='unicode', method='xml')
+    xml_str = xml_str.replace('&amp;lt;![CDATA[', '&lt;![CDATA[').replace(']]&amp;gt;', ']]&gt;')
 
+    return Response(xml_str, content_type='application/xml')
 
-@app.route('/api/inbound_payment_xml', methods=['POST'])
+@app.route('/api/inbound_payment.xml', methods=['POST'])
 def inbound_payment_xml():
     xml_data = request.data
     parsed_data = parse_iso20022_pacs008(xml_data)
@@ -3276,11 +3167,10 @@ def inbound_payment_xml():
     amount = parsed_data['amount']
 
     if currency in data['balances']:
-        data['balances'][currency] += amount
+        data['balances'][currency] = round_to_two_decimals(data['balances'][currency] + amount)
     else:
-        data['balances'][currency] = amount
+        data['balances'][currency] = round_to_two_decimals(amount)
 
-    # 记录当天入站支付信息
     today = datetime.today().strftime('%Y-%m-%d')
     if currency not in data['transactions']:
         data['transactions'][currency] = {}
@@ -3290,25 +3180,32 @@ def inbound_payment_xml():
                                                  "outbound": {"count": 0, "total_amount": 0.0}}
 
     data['transactions'][currency][today]["inbound"]["count"] += 1
-    data['transactions'][currency][today]["inbound"]["total_amount"] += amount
+    data['transactions'][currency][today]["inbound"]["total_amount"] = round_to_two_decimals(
+        data['transactions'][currency][today]["inbound"]["total_amount"] + amount
+    )
 
     save_positions(data)
 
     response = {
         **parsed_data,
         "status": "Inbound Processed",
-        "new_position": data['balances'][currency]
+        "new_position": round_to_two_decimals(data['balances'][currency]),
+        "cdata_content": f"&lt;![CDATA[This is a CDATA section for currency {currency}]]&gt;"
     }
-    return jsonify(response), 200
 
+    response_xml = dict_to_xml('result', response)
+    xml_str = ET.tostring(response_xml, encoding='unicode', method='xml')
+    xml_str = xml_str.replace('&amp;lt;![CDATA[', '&lt;![CDATA[').replace(']]&amp;gt;', ']]&gt;')
 
-@app.route('/api/outbound_payment_json', methods=['POST'])
+    return Response(xml_str, content_type='application/xml')
+
+@app.route('/api/outbound_payment.json', methods=['POST'])
 def outbound_payment_json():
     request_data = request.json
 
     try:
         transaction_id = request_data['transaction_id']
-        amount = request_data['amount']
+        amount = round_to_two_decimals(request_data['amount'])
         currency = request_data['currency']
         debtor = request_data['debtor']
         creditor = request_data['creditor']
@@ -3318,11 +3215,10 @@ def outbound_payment_json():
     data = load_positions()
 
     if currency in data['balances']:
-        data['balances'][currency] -= amount
+        data['balances'][currency] = round_to_two_decimals(data['balances'][currency] - amount)
     else:
         return jsonify({"error": f"Currency {currency} not found"}), 400
 
-    # 记录当天出站支付信息
     today = datetime.today().strftime('%Y-%m-%d')
     if currency not in data['transactions']:
         data['transactions'][currency] = {}
@@ -3332,7 +3228,9 @@ def outbound_payment_json():
                                                  "outbound": {"count": 0, "total_amount": 0.0}}
 
     data['transactions'][currency][today]["outbound"]["count"] += 1
-    data['transactions'][currency][today]["outbound"]["total_amount"] += amount
+    data['transactions'][currency][today]["outbound"]["total_amount"] = round_to_two_decimals(
+        data['transactions'][currency][today]["outbound"]["total_amount"] + amount
+    )
 
     save_positions(data)
 
@@ -3343,18 +3241,17 @@ def outbound_payment_json():
         "debtor": debtor,
         "creditor": creditor,
         "status": "Outbound Processed",
-        "new_position": data['balances'][currency]
+        "new_position": round_to_two_decimals(data['balances'][currency])
     }
     return jsonify(response), 200
 
-
-@app.route('/api/inbound_payment_json', methods=['POST'])
+@app.route('/api/inbound_payment.json', methods=['POST'])
 def inbound_payment_json():
     request_data = request.json
 
     try:
-        transaction_id = transaction_id = request_data['transaction_id']
-        amount = request_data['amount']
+        transaction_id = request_data['transaction_id']
+        amount = round_to_two_decimals(request_data['amount'])
         currency = request_data['currency']
         debtor = request_data['debtor']
         creditor = request_data['creditor']
@@ -3364,11 +3261,10 @@ def inbound_payment_json():
     data = load_positions()
 
     if currency in data['balances']:
-        data['balances'][currency] += amount
+        data['balances'][currency] = round_to_two_decimals(data['balances'][currency] + amount)
     else:
-        data['balances'][currency] = amount
+        data['balances'][currency] = round_to_two_decimals(amount)
 
-    # 记录当天入站支付信息
     today = datetime.today().strftime('%Y-%m-%d')
     if currency not in data['transactions']:
         data['transactions'][currency] = {}
@@ -3378,7 +3274,9 @@ def inbound_payment_json():
                                                  "outbound": {"count": 0, "total_amount": 0.0}}
 
     data['transactions'][currency][today]["inbound"]["count"] += 1
-    data['transactions'][currency][today]["inbound"]["total_amount"] += amount
+    data['transactions'][currency][today]["inbound"]["total_amount"] = round_to_two_decimals(
+        data['transactions'][currency][today]["inbound"]["total_amount"] + amount
+    )
 
     save_positions(data)
 
@@ -3389,10 +3287,9 @@ def inbound_payment_json():
         "debtor": debtor,
         "creditor": creditor,
         "status": "Inbound Processed",
-        "new_position": data['balances'][currency]
+        "new_position": round_to_two_decimals(data['balances'][currency])
     }
     return jsonify(response), 200
-
 
 @app.route('/api/positions', methods=['POST'])
 def get_positions():
@@ -3412,18 +3309,24 @@ def get_positions():
                                                                        "outbound": {"count": 0, "total_amount": 0.0}})
             results.append({
                 "currency": currency,
-                "balance": data['balances'][currency],
+                "balance": round_to_two_decimals(data['balances'][currency]),
                 "value_date": today,
-                "inbound": transactions["inbound"],
-                "outbound": transactions["outbound"]
+                "inbound": {
+                    "count": transactions["inbound"]["count"],
+                    "total_amount": round_to_two_decimals(transactions["inbound"]["total_amount"])
+                },
+                "outbound": {
+                    "count": transactions["outbound"]["count"],
+                    "total_amount": round_to_two_decimals(transactions["outbound"]["total_amount"])
+                }
             })
         else:
             results.append({
                 "currency": currency,
-                "balance": 0,
+                "balance": 0.00,
                 "value_date": today,
-                "inbound": {"count": 0, "total_amount": 0.0},
-                "outbound": {"count": 0, "total_amount": 0.0}
+                "inbound": {"count": 0, "total_amount": 0.00},
+                "outbound": {"count": 0, "total_amount": 0.00}
             })
 
     return jsonify(results), 200
@@ -3441,14 +3344,19 @@ def get_all_positions():
                                                                    "outbound": {"count": 0, "total_amount": 0.0}})
         results.append({
             "currency": currency,
-            "balance": data['balances'][currency],
+            "balance": round_to_two_decimals(data['balances'][currency]),
             "value_date": today,
-            "inbound": transactions["inbound"],
-            "outbound": transactions["outbound"]
+            "inbound": {
+                "count": transactions["inbound"]["count"],
+                "total_amount": round_to_two_decimals(transactions["inbound"]["total_amount"])
+            },
+            "outbound": {
+                "count": transactions["outbound"]["count"],
+                "total_amount": round_to_two_decimals(transactions["outbound"]["total_amount"])
+            }
         })
 
     return jsonify(results), 200
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
