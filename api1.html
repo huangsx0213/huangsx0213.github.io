@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test Automation Code</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-okaidia.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        pre[class*="language-"] {
+            margin: 1.5em 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Test Automation Code</h1>
+    <pre><code class="language-python">
+import pandas as pd
+import json
+import xmltodict
+from robot.api.deco import keyword
+from robot.api import TestSuite, ResultWriter
+from RequestsLibrary import RequestsLibrary
+
+# 初始化 RequestsLibrary 实例
+requests_lib = RequestsLibrary()
+
+@keyword
+def request_api(url, method, headers=None, content_type='json', body=None):
+    headers = headers if headers else {}
+    
+    # 根据内容类型处理请求体
+    if content_type == 'json':
+        if body:
+            body = json.loads(body)  # 解析 JSON 字符串为字典
+        else:
+            body = {}
+    elif content_type == 'xml':
+        if body:
+            body = xmltodict.unparse(xmltodict.parse(body))  # 确保 body 是有效的 XML 字符串
+        else:
+            body = ''
+    
+    response = None
+    if method == 'GET':
+        response = requests_lib.get_request(url, headers=headers)
+    elif method == 'POST':
+        response = requests_lib.post_request(url, data=body, headers=headers)
+    elif method == 'PUT':
+        response = requests_lib.put_request(url, data=body, headers=headers)
+    elif method == 'DELETE':
+        response = requests_lib.delete_request(url, headers=headers)
+    else:
+        raise ValueError(f"Unsupported method: {method}")
+    return response
+
+@keyword
+def assert_response(response, expected_status, expected_response, content_type='json'):
+    assert response.status_code == expected_status, f"Expected {expected_status}, got {response.status_code}"
+    
+    # 根据内容类型解析响应体
+    if content_type == 'json':
+        response_json = response.json()
+        expected_response = json.loads(expected_response)
+        for key, value in expected_response.items():
+            assert response_json.get(key) == value, f"Expected {key} to be {value}, got {response_json.get(key)}"
+    elif content_type == 'xml':
+        response_xml = xmltodict.parse(response.text)
+        expected_response = xmltodict.parse(expected_response)
+        assert response_xml == expected_response, f"Expected {expected_response}, got {response_xml}"
+
+# 读取Excel文件
+excel_file = 'test_cases.xlsx'
+dataframe = pd.read_excel(excel_file)
+
+# 创建一个新的测试套件
+suite = TestSuite('API Test Suite')
+
+# 遍历Excel中的每一行，生成测试用例
+for index, row in dataframe.iterrows():
+    test_name = row['Test Name']
+    test_url = row['Test URL']
+    test_method = row['Test Method']
+    
+    test_headers = json.loads(row['Test Headers']) if pd.notna(row['Test Headers']) else {}
+    content_type = row['Content Type']
+    test_request_body = row['Request Body'] if pd.notna(row['Request Body']) else ''
+    test_expected_status = row['Expected Status']
+    test_expected_response = row['Expected Response'] if pd.notna(row['Expected Response']) else ''
+
+    # 创建一个新的测试用例
+    test = suite.tests.create(test_name)
+
+    # 添加测试步骤
+    test.keywords.create(
+        'request_api', 
+        args=[test_url, test_method, test_headers, content_type, test_request_body]
+    )
+
+    # 添加验证步骤
+    test.keywords.create(
+        'assert_response', 
+        args=['${OUTPUT[0]}', test_expected_status, test_expected_response, content_type]
+    )
+
+# 运行测试套件
+result = suite.run()
+
+# 保存测试结果
+result_writer = ResultWriter('result.xml')
+result_writer.write_results(result=result)
+result_writer.write_results(log='log.html', report='report.html')
+    </code></pre>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
+</body>
+</html>
