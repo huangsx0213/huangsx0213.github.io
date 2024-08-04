@@ -59,11 +59,12 @@
 │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_api_main_py">api_main.py</a>
 │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_e2e_main_py">e2e_main.py</a>
 │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_web_main_py">web_main.py</a>
+│   ├── configs/
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_logging_config_yaml">logging_config.yaml</a>
 │   │   ├── api/
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_config_yaml">config.yaml</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_logging_config_yaml">logging_config.yaml</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_api_test_config_yaml">api_test_config.yaml</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_environments_yaml">environments.yaml</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_saved_fields_yaml">saved_fields.yaml</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_test_config_yaml">test_config.yaml</a>
 │   │   │   ├── body_defaults/
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_j_pacs_008_in_cny_json">j_pacs.008_in_cny.json</a>
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_body_defaults_x_pacs_008_out_cny_json">x_pacs.008_out_cny.json</a>
@@ -76,23 +77,23 @@
 │   │   │   ├── report_template/
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_report_template_report_template_html">report_template.html</a>
 │   │   ├── e2e/
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_e2e_e2e_config_yaml">e2e_config.yaml</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_e2e_e2e_test_config_yaml">e2e_test_config.yaml</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_e2e_environments_yaml">environments.yaml</a>
 │   │   ├── web/
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_web_config_yaml">web_config.yaml</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_environments_yaml">environments.yaml</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_web_test_config_yaml">web_test_config.yaml</a>
 │   ├── libraries/
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries___init___py">__init__.py</a>
 │   │   ├── api/
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_executor_py">api_test_executor.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_robot_generator_py">api_robot_generator.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_keywords_py">api_test_keywords.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_loader_py">api_test_loader.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_body_generator_py">body_generator.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_excel_operation_manager_py">excel_operation_manager.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_headers_generator_py">headers_generator.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_html_report_generator_py">html_report_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_request_sender_py">request_sender.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_response_comparator_py">response_comparator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_response_handler_py">response_handler.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_saved_fields_manager_py">saved_fields_manager.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_template_renderer_py">template_renderer.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_test_case_manager_py">test_case_manager.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_variable_generator_py">variable_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api___init___py">__init__.py</a>
 │   │   ├── common/
@@ -102,13 +103,13 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_utility_helpers_py">utility_helpers.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common___init___py">__init__.py</a>
 │   │   ├── e2e/
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_test_executor_py">e2e_test_executor.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_robot_generator_py">e2e_robot_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e___init___py">__init__.py</a>
 │   │   ├── web/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_page_object_py">page_object.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_webdriver_factory_py">webdriver_factory.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_element_actions_py">web_element_actions.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_executor_py">web_test_executor.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_robot_generator_py">web_robot_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_loader_py">web_test_loader.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">__init__.py</a>
 │   ├── testing_server/
@@ -120,11 +121,54 @@
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\api_main.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from libraries.api.api_test_executor import APITestExecutor
+    <pre>import os
+from robot.reporting import ResultWriter
+from libraries.api.api_robot_generator import APIRobotCasesGenerator
+from libraries.common.utility_helpers import PROJECT_ROOT
+
+
+def run_test_suite(suite):
+    # Run the test suite and generate output XML
+    output_xml = os.path.join(PROJECT_ROOT, 'output', 'output.xml')
+    report_file = os.path.join(PROJECT_ROOT, 'output', 'report.html')
+    log_file = os.path.join(PROJECT_ROOT, 'output', 'log.html')
+    suite.run(output=output_xml)
+
+    # Generate log and report
+    ResultWriter(output_xml).write_results(
+        report=report_file,
+        log=log_file
+    )
+
 
 if __name__ == "__main__":
-    api_requester = APITestExecutor()
-    api_requester.run_test_suite()
+    rcg = APIRobotCasesGenerator()
+    # Create and run the test suite
+    suite = rcg.create_test_suite()
+    run_test_suite(suite)
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_api_test_config_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\api_test_config.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre># The active environment to be used for the tests.
+# This should match one of the environment keys defined below in 'environments'.
+active_environment: DEV
+# Path to the excel file containing the test cases.
+test_cases_path: 'test_cases/api_test_cases.xlsx'
+clear_saved_fields_after_test: true
+# List of Test Case IDs to run.
+# Specify one or more Test Case IDs here.
+# If this list is empty, all test cases will be run.
+tc_id_list:
+
+
+# List of tags to filter test cases.
+# Only test cases which contain any of these tags will be run.
+# If this list is empty, all test cases will be run.
+tags:
 </pre>
 </div>
 
@@ -261,15 +305,11 @@ if __name__ == "__main__":
 &lt;/Document&gt;</pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_config_yaml">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\config.yaml</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_environments_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\environments.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre># The active environment to be used for the tests.
-# This should match one of the environment keys defined below in 'environments'.
-active_environment: DEV
-
-# Definition of different environments and their respective endpoints.
+    <pre># Definition of different environments and their respective endpoints.
 environments:
   DEV:
     # Define API endpoints for the DEV environment.
@@ -332,45 +372,9 @@ environments:
   "Content-Type": "application/json",
   "accept": "application/json",
   "Authorization": "{{uuid4}}",
-  "test1": "{{PRE_01_01.response[2].balance}}",
-  "test2": "{{1.response.phones[0].type}}",
+  "test": "${TC001.$.amount}",
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36"
 }</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_logging_config_yaml">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\logging_config.yaml</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>version: 1
-disable_existing_loggers: False
-
-formatters:
-  standard:
-    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
-handlers:
-  console:
-    class: logging.StreamHandler
-    formatter: standard
-    level: DEBUG
-    stream: ext://sys.stdout
-
-  file:
-    class: logging.FileHandler
-    formatter: standard
-    level: DEBUG
-    mode: "a"
-
-loggers:
-  e2e_testing:
-    level: DEBUG
-    handlers: [console, file]
-    propagate: no
-
-root:
-  level: INFO
-  handlers: [console, file]</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_report_template_report_template_html">
@@ -534,69 +538,179 @@ root:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\saved_fields.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>TC002_01.response.amount: 100
-</pre>
+    <pre></pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_test_config_yaml">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api\test_config.yaml</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_e2e_e2e_test_config_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\e2e\e2e_test_config.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre># Path to the excel file containing the test cases.
-# Make sure the file exists at this path.
-test_cases_path: 'test_cases/api_test_cases.xlsx'
-clear_saved_fields_on_init: true
+    <pre>active_environment: DEV
+test_case_path : test_cases/e2e_test_cases.xlsx
 # List of Test Case IDs to run.
 # Specify one or more Test Case IDs here.
+# If this list is empty, all test cases will be run.
 tc_id_list:
-  - 'TC001'
-  - 'TC002'
 
 # List of tags to filter test cases.
 # Only test cases which contain any of these tags will be run.
+# If this list is empty, all test cases will be run.
 tags:
-  - 'tag1'
+
 </pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_e2e_e2e_config_yaml">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\e2e\e2e_config.yaml</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_e2e_environments_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\e2e\environments.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>test_case_path : test_cases/e2e_test_cases.xlsx
-browser: edge
-is_remote: true
-remote_url: http://www.sg1.findhere.org:8044/wd/hub
-chrome_path: E:\Downloads\my files\chrome-win64\chrome.exe
-chromedriver_path: E:\Downloads\my files\chromedriver-win64\chromedriver.exe
-edge_path: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
-edgedriver_path: C:\WebDrivers\msedgedriver.exe
-browser_options:
-  no-sandbox: true
-  disable-dev-shm-usage: true
-  disable-gpu: true
-  remote-debugging-port: 9222
-#  headless: true</pre>
+    <pre># Definition of different environments and their respective endpoints.
+environments:
+  DEV:
+    browser: chrome
+    is_remote: false
+    remote_url: http://www.sg2.findhere.org:8044/wd/hub
+    chrome_path: E:\Downloads\my files\chrome-win64\chrome.exe
+    chromedriver_path: E:\Downloads\my files\chromedriver-win64\chromedriver.exe
+    edge_path: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+    edgedriver_path: C:\WebDrivers\msedgedriver.exe
+    browser_options:
+      no-sandbox: true
+      disable-dev-shm-usage: true
+      disable-gpu: true
+      remote-debugging-port: 9222
+    #  headless: true
+  SIT:
+    browser: chrome
+    is_remote: true
+    remote_url: http://www.sg2.findhere.org:8044/wd/hub
+    chrome_path: E:\Downloads\my files\chrome-win64\chrome.exe
+    chromedriver_path: E:\Downloads\my files\chromedriver-win64\chromedriver.exe
+    edge_path: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+    edgedriver_path: C:\WebDrivers\msedgedriver.exe
+    browser_options:
+      no-sandbox: true
+      disable-dev-shm-usage: true
+      disable-gpu: true
+      remote-debugging-port: 9222
+    #  headless: true
+  UAT:
+    browser: chrome
+    is_remote: false
+    remote_url: http://www.sg2.findhere.org:8044/wd/hub
+    chrome_path: E:\Downloads\my files\chrome-win64\chrome.exe
+    chromedriver_path: E:\Downloads\my files\chromedriver-win64\chromedriver.exe
+    edge_path: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+    edgedriver_path: C:\WebDrivers\msedgedriver.exe
+    browser_options:
+      no-sandbox: true
+      disable-dev-shm-usage: true
+      disable-gpu: true
+      remote-debugging-port: 9222
+    #  headless: true</pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_web_config_yaml">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\web\web_config.yaml</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_logging_config_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\logging_config.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>test_case_path : test_cases/web_test_cases.xlsx
-browser: edge
-is_remote: true
-remote_url: http://www.sg1.findhere.org:8044/wd/hub
-chrome_path: E:\Downloads\my files\chrome-win64\chrome.exe
-chromedriver_path: E:\Downloads\my files\chromedriver-win64\chromedriver.exe
-edge_path: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
-edgedriver_path: C:\WebDrivers\msedgedriver.exe
-browser_options:
-  no-sandbox: true
-  disable-dev-shm-usage: true
-  disable-gpu: true
-  remote-debugging-port: 9222
-#  headless: true
+    <pre>version: 1
+disable_existing_loggers: False
+
+formatters:
+  standard:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: standard
+    level: DEBUG
+    stream: ext://sys.stdout
+  file:
+    class: logging.FileHandler
+    formatter: standard
+    level: DEBUG
+    mode: "a"
+
+
+loggers:
+  e2e_testing:
+    level: DEBUG
+    handlers: [console]
+    propagate: no
+
+root:
+  level: INFO
+  handlers: [console,file]</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_environments_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\web\environments.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre># Definition of different environments and their respective endpoints.
+environments:
+  DEV:
+    browser: chrome
+    is_remote: false
+    remote_url: http://www.sg2.findhere.org:8044/wd/hub
+    chrome_path: E:\Downloads\my files\chrome-win64\chrome.exe
+    chromedriver_path: E:\Downloads\my files\chromedriver-win64\chromedriver.exe
+    edge_path: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+    edgedriver_path: C:\WebDrivers\msedgedriver.exe
+    browser_options:
+      no-sandbox: true
+      disable-dev-shm-usage: true
+      disable-gpu: true
+      remote-debugging-port: 9222
+    #  headless: true
+  SIT:
+    browser: chrome
+    is_remote: true
+    remote_url: http://www.sg2.findhere.org:8044/wd/hub
+    chrome_path: E:\Downloads\my files\chrome-win64\chrome.exe
+    chromedriver_path: E:\Downloads\my files\chromedriver-win64\chromedriver.exe
+    edge_path: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+    edgedriver_path: C:\WebDrivers\msedgedriver.exe
+    browser_options:
+      no-sandbox: true
+      disable-dev-shm-usage: true
+      disable-gpu: true
+      remote-debugging-port: 9222
+    #  headless: true
+  UAT:
+    browser: chrome
+    is_remote: false
+    remote_url: http://www.sg2.findhere.org:8044/wd/hub
+    chrome_path: E:\Downloads\my files\chrome-win64\chrome.exe
+    chromedriver_path: E:\Downloads\my files\chromedriver-win64\chromedriver.exe
+    edge_path: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+    edgedriver_path: C:\WebDrivers\msedgedriver.exe
+    browser_options:
+      no-sandbox: true
+      disable-dev-shm-usage: true
+      disable-gpu: true
+      remote-debugging-port: 9222
+    #  headless: true</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_web_test_config_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\web\web_test_config.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>active_environment: SIT
+test_case_path : test_cases/web_test_cases.xlsx
+# List of Test Case IDs to run.
+# Specify one or more Test Case IDs here.
+# If this list is empty, all test cases will be run.
+tc_id_list:
+
+# List of tags to filter test cases.
+# Only test cases which contain any of these tags will be run.
+# If this list is empty, all test cases will be run.
+tags:
+
 </pre>
 </div>
 
@@ -605,30 +719,32 @@ browser_options:
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
-from libraries.common.config_manager import ConfigManager
-from libraries.e2e.e2e_test_executor import E2ETestExecutor
-from libraries.web.webdriver_factory import WebDriverFactory
+from robot.reporting import ResultWriter
 from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.e2e.e2e_robot_generator import E2ERobotCasesGenerator
 
 
-def main():
-    project_root: str = PROJECT_ROOT
-    config_path = os.path.join(project_root, 'configs', 'e2e', 'e2e_config.yaml')
-    test_config = ConfigManager.load_yaml(config_path)
+def run_test_suite(suite):
+    # Run the test suite and generate output XML
+    output_xml = os.path.join(PROJECT_ROOT, 'output', 'output.xml')
+    report_file = os.path.join(PROJECT_ROOT, 'output', 'report.html')
+    log_file = os.path.join(PROJECT_ROOT, 'output', 'log.html')
+    suite.run(output=output_xml)
 
-    test_case_path = test_config.get("test_case_path", None)
+    # Generate log and report
+    ResultWriter(output_xml).write_results(
+        report=report_file,
+        log=log_file
+    )
 
-    driver = WebDriverFactory.create_driver(config_path)
-
-    try:
-        test_executor = E2ETestExecutor(driver, test_case_path)
-        test_executor.run_tests()
-    finally:
-        WebDriverFactory.quit_driver(driver)
 
 
 if __name__ == "__main__":
-    main()
+    rcg = E2ERobotCasesGenerator()
+    # Create and run the test suite
+    suite = rcg.create_test_suite()
+    run_test_suite(suite)
+
 </pre>
 </div>
 
@@ -646,111 +762,192 @@ if __name__ == "__main__":
     <pre></pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_executor_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\api_test_executor.py</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_robot_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\api_robot_generator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import os
-from typing import Dict, List, Union, Any, Tuple
+    <pre>import logging
+import os
+from typing import Dict, List
+import pandas as pd
+from libraries.api.api_test_loader import APITestLoader
+from libraries.common.config_manager import ConfigManager
+from libraries.common.utility_helpers import PROJECT_ROOT
+from robot.api import TestSuite, ResultWriter
+from libraries.common.log_manager import logger_instance
+
+
+class APIRobotCasesGenerator:
+    def __init__(self, env_config_path: str = None, test_config_path: str = None, test_cases_path: str = None) -&gt; None:
+        self.project_root: str = PROJECT_ROOT
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'api', 'api_test_config.yaml')
+        self._load_configuration()
+        self._initialize_components(test_cases_path)
+
+    def _load_configuration(self):
+        self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
+
+    def _initialize_components(self, test_cases_path: str):
+        default_test_cases_path: str = os.path.join('test_cases', 'api_test_cases.xlsx')
+        self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+        self.test_cases_df = APITestLoader(self.test_cases_path)
+
+    def create_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None) -&gt; TestSuite:
+        self.robot_suite = TestSuite('API Test Suite')
+        self.robot_suite.teardown.config(name='clear_saved_fields', args=[])
+        self.robot_suite.resource.imports.library('libraries.api.api_test_keywords.ApiTestKeywords')  # Update as needed
+        tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
+        tags = tags or self.test_config.get('tags', [])
+        try:
+            filtered_cases = self.test_cases_df.filter_cases(tcid_list=tc_id_list, tags=tags)
+            logging.info(f"Successfully loaded test cases from {self.test_cases_path}")
+            self.create_test_cases(filtered_cases)
+        except Exception as e:
+            logging.info(f"Failed to run test suite: {str(e)}")
+        finally:
+            return self.robot_suite
+
+    def create_test_cases(self, filtered_cases) -&gt; None:
+        for _, test_case in filtered_cases.iterrows():
+            robot_test = self.robot_suite.tests.create(name=test_case['TCID'] + '.' + test_case['Name'], doc=test_case['Descriptions'])
+            # Add tags
+            if 'Tags' in test_case and pd.notna(test_case['Tags']):
+                tags = [tag.strip() for tag in test_case['Tags'].split(',')]
+                for tag in tags:
+                    robot_test.tags.add(tag)
+
+            robot_test.body.create_keyword(name='execute_api_test_case', args=[test_case['TCID']])
+
+            # Add Test Setup and Test Teardown
+            conditions = test_case['Conditions'].splitlines() if pd.notna(test_case['Conditions']) else []
+            for condition in conditions:
+                if '[TestSetup]' in condition:
+                    case_ids = condition.strip('[TestSetup]').split(',')
+                    robot_test.setup.config(name='execute_multiple_api_test_cases', args=[case_ids])
+                elif '[TestTeardown]' in condition:
+                    case_ids = condition.strip('[TestTeardown]').split(',')
+                    robot_test.teardown.config(name='execute_multiple_api_test_cases', args=[case_ids])
+                elif '[SuiteSetup]' in condition:
+                    case_ids = condition.strip('[SuiteSetup]').split(',')
+                    self.robot_suite.setup.config(name='execute_multiple_api_test_cases', args=[case_ids])
+                elif '[SuiteTeardown]' in condition:
+                    case_ids = condition.strip('[SuiteTeardown]').split(',')
+                    self.robot_suite.teardown.config(name='execute_multiple_api_test_cases', args=[case_ids])
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_keywords_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\api_test_keywords.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+import os
+from typing import Dict, List, Union, Any
 from libraries.common.config_manager import ConfigManager
 from libraries.api.request_sender import RequestSender
 from libraries.api.body_generator import BodyGenerator
 from libraries.api.headers_generator import HeadersGenerator
-from libraries.api.response_handler import ResponseHandler
 from libraries.api.saved_fields_manager import SavedFieldsManager
-from libraries.api.test_case_manager import TestCaseManager
+from libraries.api.api_test_loader import APITestLoader
 from libraries.common.utility_helpers import UtilityHelpers, PROJECT_ROOT
-from libraries.common.log_manager import logger
+from robot.api.deco import keyword, library
+from libraries.api.response_handler import APIResponseAsserter, APIResponseExtractor
+from robot.libraries.BuiltIn import BuiltIn
+
+builtin_lib = BuiltIn()
 
 
-class APITestExecutor:
-    def __init__(self, config_path: str = None, test_config_path: str = None, test_cases_path: str = None) -&gt; None:
+@library
+class ApiTestKeywords:
+    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
+
+    def __init__(self, env_config_path: str = None, test_config_path: str = None, test_cases_path: str = None) -&gt; None:
         self.project_root: str = PROJECT_ROOT
-        self.config_path = config_path or os.path.join(self.project_root,  'configs', 'api','config.yaml')
-        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'api','test_config.yaml')
+        self.env_config_path = env_config_path or os.path.join(self.project_root, 'configs', 'api', 'environments.yaml')
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'api', 'api_test_config.yaml')
 
-        self._load_configuration()
-        self._initialize_components(test_cases_path)
-        self._initialize_flags()
-
-    def _load_configuration(self):
-        self.config: Dict = ConfigManager.load_yaml(self.config_path)
+        self._load_configuration(test_cases_path)
+        self._initialize_components()
+    def _load_configuration(self,test_cases_path):
+        self.env_config: Dict = ConfigManager.load_yaml(self.env_config_path)
         self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
-        self.active_environment: Dict = self.config['environments'][self.config['active_environment']]
+        self.active_environment: Dict = self.env_config['environments'][self.test_config['active_environment']]
         self.endpoints: Dict = self.active_environment['endpoints']
-
-    def _initialize_components(self, test_cases_path: str):
-        self.template_dir: str = os.path.join(self.project_root, 'configs', 'api','body_templates')
-        self.headers_dir: str = os.path.join(self.project_root, 'configs', 'api','headers')
-        self.body_defaults_dir: str = os.path.join(self.project_root, 'configs', 'api','body_defaults')
+        default_test_cases_path: str = os.path.join('test_cases', 'api_test_cases.xlsx')
+        self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+    def _initialize_components(self):
+        self.template_dir: str = os.path.join(self.project_root, 'configs', 'api', 'body_templates')
+        self.headers_dir: str = os.path.join(self.project_root, 'configs', 'api', 'headers')
+        self.body_defaults_dir: str = os.path.join(self.project_root, 'configs', 'api', 'body_defaults')
 
         self.saved_fields_manager: SavedFieldsManager = SavedFieldsManager()
         self.body_generator: BodyGenerator = BodyGenerator(self.template_dir, self.body_defaults_dir)
         self.headers_generator: HeadersGenerator = HeadersGenerator(self.headers_dir)
-        self.response_handler: ResponseHandler = ResponseHandler()
+        self.api_response_asserter: APIResponseAsserter = APIResponseAsserter()
+        self.api_response_extractor: APIResponseExtractor = APIResponseExtractor()
 
-        default_test_cases_path: str = os.path.join('test_cases', 'api_test_cases.xlsx')
-        self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
-        self.test_case_manager: TestCaseManager = TestCaseManager(self.test_cases_path, self.endpoints, self.headers_dir, self.template_dir, self.body_defaults_dir)
-        if self.test_config.get('clear_saved_fields_on_init', False):
+
+
+
+    @keyword
+    def clear_saved_fields(self):
+        if self.test_config.get('clear_saved_fields_after_test', False):
             self.saved_fields_manager.clear_saved_fields()
+            logging.info("Cleared saved fields")
+    @keyword
+    def execute_multiple_api_test_cases(self, test_case_ids: List[str] = None):
+        """
+        Execute multiple API test cases.
 
-    def _initialize_flags(self):
-        self.suite_setup_run = False
-        self.suite_teardown_run = False
-        self.test_setup_run = False
-        self.test_teardown_run = False
+        :param test_case_ids: List of test case IDs to execute. If None, all test cases will be executed.
+        :return: Dictionary with test case IDs as keys and execution results as values.
+        """
+        api_test_loader = APITestLoader(self.test_cases_path)
+        test_cases = api_test_loader.get_api_test_cases()
 
-    @UtilityHelpers.time_calculation()
-    def run_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None) -&gt; None:
-        tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
-        tags = tags or self.test_config.get('tags', [])
+        if test_case_ids is None:
+            test_case_ids = [tc['TCID'] for tc in test_cases]
+
+        results = {}
+        for tcid in test_case_ids:
+            logging.info(f"Executing test case: {tcid}")
+            result = self.execute_api_test_case(tcid)
+            results[tcid] = result
+
+        return results
+
+    @keyword
+    def execute_api_test_case(self, test_case_id: str, is_dynamic_check: bool = False):
+        """
+        Execute a single API test case by its ID.
+
+        :param test_case_id: The ID of the test case to execute.
+        :param is_dynamic_check: Boolean flag for dynamic check.
+        :return: True if execution is successful, False otherwise. If is_dynamic_check is True, returns response and execution time.
+        """
         try:
-            filtered_cases = self.test_case_manager.filter_test_cases(tcid_list=tc_id_list, tags=tags)
-            logger.info(f"Successfully loaded test cases from {self.test_cases_path}")
+            # Load the specific test case
+            api_test_loader = APITestLoader(self.test_cases_path)
+            test_cases = api_test_loader.get_api_test_cases()
+            test_case = next((tc for _, tc in test_cases.iterrows() if tc['TCID'] == test_case_id), None)
 
-            self._run_suite_setup(filtered_cases)
-            self._run_test_cases(filtered_cases)
-            self._run_suite_teardown(filtered_cases)
+            if test_case is None:
+                raise ValueError(f"Test case with ID {test_case_id} not found.")
+
+            response, execution_time = self.send_request(test_case)
+            logging.info(f"time taken to execute test case {test_case_id}: {execution_time}")
+            self.api_response_asserter.assert_response(test_case['Exp Result'], response)
+            self.api_response_extractor.extract_value(response, test_case)
+
+            logging.info(f"Finished execution of test case {test_case_id}")
+            logging.info("============================================")
+            return True if not is_dynamic_check else (response, execution_time)
         except Exception as e:
-            logger.info(f"Failed to run test suite: {str(e)}")
-        finally:
-            self.response_handler.apply_pending_operations()
-            self.response_handler.generate_html_report()
-
-    def _run_test_cases(self, filtered_cases) -&gt; None:
-        for tc_id, test_case in filtered_cases.items():
-            self._run_test_setup(test_case)
-            logger.info(f"Running test case {tc_id}")
-            self._run_test_case(test_case, tc_id)
-            logger.info(f"Test case {tc_id} ran successfully.")
-            logger.info(f"********************************************\n")
-            self._run_test_teardown(test_case)
-
-    def _run_test_case(self, test_case: List[Dict[str, Union[str, Any]]], tc_id: str) -&gt; None:
-        for test_step in test_case:
-            if self._requires_condition(test_step, "[check with]"):
-                if not self._execute_test_step_with_dynamic_checks(test_step):
-                    logger.info(f"Test case {tc_id} failed, skipping to next case.")
-                    break
-            else:
-                if not self._execute_test_step(test_step):
-                    logger.info(f"Test case {tc_id} failed, skipping to next case.")
-                    break
-
-    def _execute_test_step(self, test_step: Dict[str, Union[str, Any]], is_dynamic_check: bool = False):
-        try:
-            ex_ts_id: str = test_step['TSID']
-            response, execution_time = self._send_request(test_step)
-            self.response_handler.process_step_results(response, test_step, self.test_cases_path, self.test_case_manager, execution_time, is_dynamic_check)
-            logger.info(f"Finished execution of test step {ex_ts_id}")
-            logger.info("============================================")
-            return True if not is_dynamic_check else response, execution_time
-        except Exception as e:
-            logger.error(f"Failed to execute test step {test_step['TSID']}: {str(e)}")
+            logging.error(f"Failed to execute test case {test_case_id}: {str(e)}")
+            raise e
             return False
 
-    def _execute_test_step_with_dynamic_checks(self, test_step: Dict[str, Union[str, Any]]) -&gt; bool:
+    def execute_api_test_case_with_dynamic_checks(self, test_step: Dict[str, Union[str, Any]]) -&gt; bool:
         try:
             check_with_tc_ids = self._extract_check_with_tc_ids(test_step)
             pre_check_responses = self._execute_pre_check_steps(check_with_tc_ids)
@@ -760,95 +957,75 @@ class APITestExecutor:
                                                                            self.test_cases_path, self.test_case_manager, execution_time)
             return True
         except Exception as e:
-            logger.error(f"Failed to execute test step {test_step['TSID']}: {str(e)}")
+            logging.error(f"Failed to execute test step {test_step['TSID']}: {str(e)}")
+            raise e
             return False
 
-    def _send_request(self, test_step: Dict[str, Union[str, Any]]):
-        ex_endpoint: str = test_step['Endpoint']
-        current_endpoint: Union[Dict[str, Any], None] = self.endpoints.get(ex_endpoint, None)
+    def send_request(self, test_case):
+        ex_endpoint = test_case['Endpoint']
+        current_endpoint = self.endpoints.get(ex_endpoint, None)
         if current_endpoint is None:
             raise Exception(f"Endpoint {ex_endpoint} not found in config file")
         method: str = current_endpoint['method']
         url: str = current_endpoint['path']
 
-        saved_fields: Dict[str, Any] = self.saved_fields_manager.load_saved_fields()
-        headers: Dict[str, str] = self.headers_generator.prepare_headers(test_step['Headers'], saved_fields, test_step)
-        self.saved_fields_manager.apply_saved_fields(test_step, saved_fields, ['Body Modifications', 'Exp Result'])
-        body, format_type = self.body_generator.generate_request_body(test_step, test_step['Defaults'], method)
+        saved_fields = self.saved_fields_manager.load_saved_fields()
+        headers = self.headers_generator.prepare_headers(test_case, saved_fields)
+        self.saved_fields_manager.apply_saved_fields(test_case, saved_fields)
+        self.saved_fields_manager.apply_suite_variables(test_case)
+        body, format_type = self.body_generator.generate_request_body(test_case, method)
 
-        logger.info(f"Sending request to {url} with method: {method} for test step {test_step['TSID']}.")
+        logging.info(f"Sending request to {url} with method: {method} for test step {test_case['TCID']}.")
         response, execution_time = RequestSender.send_request(url, method, headers, body, format_type)
 
         return response, execution_time
+</pre>
+</div>
 
-    def _extract_check_with_tc_ids(self, test_step: Dict[str, Union[str, Any]]) -&gt; set:
-        conditions = test_step.get('Conditions', '').splitlines()
-        return {condition.split("[check with]")[1].strip() for condition in conditions if "[check with]" in condition}
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_loader_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\api_test_loader.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import pandas as pd
 
-    def _execute_pre_check_steps(self, check_with_tc_ids: set) -&gt; dict[Any, Union[tuple[Union[bool, Any], Any], bool]]:
-        pre_check_responses = {}
-        for tc_id in check_with_tc_ids:
-            check_step = self.test_case_manager.get_conditions_by_tc_id(tc_id)[0]
-            pre_check_responses[tc_id], _ = self._execute_test_step(check_step, is_dynamic_check=True)
-        return pre_check_responses
 
-    def _execute_post_check_steps(self, check_with_tc_ids: set) -&gt; dict[Any, Union[tuple[Union[bool, Any], Any], bool]]:
-        post_check_responses = {}
-        for tc_id in check_with_tc_ids:
-            check_step = self.test_case_manager.get_conditions_by_tc_id(tc_id)[0]
-            post_check_responses[tc_id], _ = self._execute_test_step(check_step, is_dynamic_check=True)
-        return post_check_responses
+class APITestLoader:
+    def __init__(self, excel_path):
+        self.excel_path = excel_path
+        self.data = self._load_excel_data()
 
-    def _run_suite_setup(self, filtered_cases) -&gt; None:
-        if not self.suite_setup_run:
-            for tc_id, test_case in filtered_cases.items():
-                for test_step in test_case:
-                    if self._requires_condition(test_step, "[suite setup]"):
-                        self._execute_condition(test_step, "[suite setup]", self._execute_setup_teardown)
-                        self.suite_setup_run = True
+    def _load_excel_data(self):
+        sheets = ['API', 'Headers', 'BodyTemplates', 'BodyDefaults']
+        return {sheet: pd.read_excel(self.excel_path, sheet_name=sheet).fillna("") for sheet in sheets}
 
-    def _run_suite_teardown(self, filtered_cases) -&gt; None:
-        if not self.suite_teardown_run:
-            for tc_id, test_case in filtered_cases.items():
-                for test_step in test_case:
-                    if self._requires_condition(test_step, "[suite teardown]"):
-                        self._execute_condition(test_step, "[suite teardown]", self._execute_setup_teardown)
-                        self.suite_teardown_run = True
+    def get_data(self, sheet_name):
+        return self.data.get(sheet_name, pd.DataFrame())
 
-    def _run_test_setup(self, test_case: List[Dict[str, Union[str, Any]]]) -&gt; None:
-        if not self.test_setup_run:
-            for test_step in test_case:
-                if self._requires_condition(test_step, "[test setup]"):
-                    self._execute_condition(test_step, "[test setup]", self._execute_setup_teardown)
-                    self.test_setup_run = True
+    def get_api_test_cases(self):
+        return self.get_data('API')
 
-    def _run_test_teardown(self, test_case: List[Dict[str, Union[str, Any]]]) -&gt; None:
-        if not self.test_teardown_run:
-            for test_step in test_case:
-                if self._requires_condition(test_step, "[test teardown]"):
-                    self._execute_condition(test_step, "[test teardown]", self._execute_setup_teardown)
-                    self.test_teardown_run = True
+    def filter_cases(self, tcid_list=None, tags=None):
+        test_cases = self.get_api_test_cases()
 
-    def _requires_condition(self, test_step: Dict[str, Union[str, Any]], condition_tag: str) -&gt; bool:
-        conditions = test_step.get('Conditions', '').splitlines()
-        return any(condition_tag in condition for condition in conditions)
+        if tcid_list:
+            test_cases = test_cases[test_cases['TCID'].isin(tcid_list)]
 
-    def _execute_condition(self, test_step, condition_tag, execution_func):
-        conditions = test_step.get('Conditions', '').splitlines()
-        for condition in conditions:
-            if condition_tag in condition:
-                condition_id = condition.split(condition_tag)[1].strip()
-                logger.info(f"Running {condition_tag.strip('[]')} {condition_id}")
-                execution_func(condition_id)
-                logger.info(f"{condition_tag.strip('[]')} {condition_id} ran successfully.")
+        if tags:
+            test_cases = test_cases[test_cases['Tags'].apply(lambda x: any(tag in x for tag in tags))]
 
-    def _execute_setup_teardown(self, tc_id: str) -&gt; None:
-        conditions = self.test_case_manager.get_conditions_by_tc_id(tc_id)
-        for condition in conditions:
-            if condition:
-                test_step_result: bool = self._execute_test_step(condition)
-                if not test_step_result:
-                    raise Exception(f"Condition {tc_id} failed, skipping to the next case.")
+        # Filter out the test cases where 'Run' column is not equal to 'Y'
+        test_cases = test_cases[test_cases['Run'] == 'Y']
+
+        return test_cases
+
+    def get_headers(self):
+        return self.get_data('Headers')
+
+    def get_body_templates(self):
+        return self.get_data('BodyTemplates')
+
+    def get_body_defaults(self):
+        return self.get_data('BodyDefaults')
 </pre>
 </div>
 
@@ -857,6 +1034,7 @@ class APITestExecutor:
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
+import logging
 import os
 import re
 from typing import Any, Dict, Union
@@ -864,7 +1042,7 @@ from libraries.common.config_manager import ConfigManager
 from libraries.common.utility_helpers import UtilityHelpers
 from .variable_generator import VariableGenerator
 from .template_renderer import TemplateRenderer
-from libraries.common.log_manager import logger
+
 
 class BodyGenerator:
     def __init__(self, template_dir: str, body_defaults_dir: str) -&gt; None:
@@ -873,88 +1051,88 @@ class BodyGenerator:
         self.format_json = UtilityHelpers.format_json
         self.format_xml = UtilityHelpers.format_xml
 
-    def generate_request_body(self, test_step, default_values_file: str, method) -&gt; (Union[Dict, str], str):
+    def generate_request_body(self, test_case, method) -&gt; (Union[Dict, str], str):
         try:
             if method in ['GET', 'DELETE']:
                 return {}, 'json'
 
-            template_name = test_step['Template']
-            body_modifications = self._validate_and_load_json(test_step['Body Modifications'], test_step)
-            logger.info(f"[TSID:{test_step['TSID']}] Body modifications for test step {test_step['TSID']}: \n{self.format_json(body_modifications)}")
-            template_path = self._resolve_template_path(template_name, test_step)
+            template_name = test_case['Template']
+            body_modifications = self._validate_and_load_json(test_case['Body Modifications'], test_case)
+            logging.info(f"[TCID:{test_case['TCID']}] Body modifications for test case {test_case['TCID']}: \n{self.format_json(body_modifications)}")
+            template_path = self._resolve_template_path(template_name, test_case)
             format_type = UtilityHelpers.get_file_format(template_path)
 
             # Prepare all required request data
-            request_data = self._prepare_request_data(default_values_file, body_modifications, test_step)
-            logger.info(f"[TSID:{test_step['TSID']}] Request data for test step {test_step['TSID']}: \n{self.format_json(request_data)}")
+            request_data = self._prepare_request_data(test_case['Defaults'], body_modifications, test_case)
+            logging.info(f"[TCID:{test_case['TCID']}] Request data for test case {test_case['TCID']}: \n{self.format_json(request_data)}")
 
             # Generate request body
             body = TemplateRenderer.render_template(self.template_dir, template_path, request_data, format_type)
             if format_type == 'json':
-                logger.info(f"[TSID:{test_step['TSID']}] Request body for test step {test_step['TSID']}: \n{self.format_json(body)}")
+                logging.info(f"[TCID:{test_case['TCID']}] Request body for test case {test_case['TCID']}: \n{self.format_json(body)}")
             else:
-                logger.info(f"[TSID:{test_step['TSID']}] Request body for test step {test_step['TSID']}: \n{self.format_xml(body)}")
+                logging.info(f"[TCID:{test_case['TCID']}] Request body for test case {test_case['TCID']}: \n{self.format_xml(body)}")
             return body, format_type
         except Exception as e:
-            logger.error(f"[TSID:{test_step['TSID']}] Error in generate_request_body for test step {test_step['TSID']}: {str(e)}")
+            logging.error(f"[TCID:{test_case['TCID']}] Error in generate_request_body for test case {test_case['TCID']}: {str(e)}")
             raise
 
     def _validate_and_load_json(self, json_string: str, test_step: Dict[str, Any]) -&gt; Dict[str, Any]:
         try:
             return json.loads(json_string)
         except json.JSONDecodeError:
-            logger.error(f"[TSID:{test_step['TSID']}] Invalid JSON format in test step {test_step['TSID']}: {json_string}")
+            logging.error(f"[TSID:{test_step['TSID']}] Invalid JSON format in test step {test_step['TSID']}: {json_string}")
             raise
 
-    def _resolve_template_path(self, template_name: str, test_step: Dict[str, Any]) -&gt; str:
+    def _resolve_template_path(self, template_name: str, test_case: Dict[str, Any]) -&gt; str:
         template_path = os.path.join(self.template_dir, f"{template_name}.json")
         if not os.path.exists(template_path):
             template_path = os.path.join(self.template_dir, f"{template_name}.xml")
         if not os.path.exists(template_path):
-            logger.error(f"[TSID:{test_step['TSID']}] Template '{template_name}' not found for test step {test_step['TSID']} in {self.template_dir}")
+            logging.error(f"[TCID:{test_case['TCID']}] Template '{template_name}' not found for test step {test_case['TCID']} in {self.template_dir}")
             raise
         return template_path
 
     def _prepare_request_data(self, default_values_file: str, modifications: Dict[str, Any],
-                              test_step: Dict[str, Any]) -&gt; Dict[str, Any]:
-        default_values = self._load_default_values(default_values_file, test_step)
-        combined_data = self._merge_values(default_values, modifications, test_step)
-        return self._generate_dynamic_values(combined_data, test_step)
+                              test_case: Dict[str, Any]) -&gt; Dict[str, Any]:
+        default_values = self._load_default_values(default_values_file, test_case)
+        combined_data = self._merge_values(default_values, modifications, test_case)
+        return self._generate_dynamic_values(combined_data, test_case)
 
-    def _load_default_values(self, default_values_file: str, test_step: Dict[str, Any]) -&gt; Dict[str, Any]:
+    def _load_default_values(self, default_values_file: str, test_case: Dict[str, Any]) -&gt; Dict[str, Any]:
         file_path = os.path.join(self.body_defaults_dir, default_values_file)
         if not file_path.endswith('.json'):
             file_path += '.json'
         if not os.path.exists(file_path):
-            logger.error(f"[TSID:{test_step['TSID']}] Default values file '{default_values_file}' not found for test step {test_step['TSID']} in {self.body_defaults_dir}")
+            logging.error(f"[TCID:{test_case['TCID']}] Default values file '{default_values_file}' not found for test step {test_case['TCID']} in {self.body_defaults_dir}")
             raise
         return ConfigManager.load_json(file_path)
 
-    def _merge_values(self, base_values: Dict[str, Any], custom_values: Dict[str, Any], test_step: Dict[str, Any]) -&gt; \
+    def _merge_values(self, base_values: Dict[str, Any], custom_values: Dict[str, Any], test_case: Dict[str, Any]) -&gt; \
             Dict[str, Any]:
         try:
             for key, value in custom_values.items():
                 if key in base_values and isinstance(value, dict) and isinstance(base_values[key], dict):
-                    base_values[key] = self._merge_values(base_values.get(key, {}), value, test_step)
+                    base_values[key] = self._merge_values(base_values.get(key, {}), value, test_case)
                 else:
                     base_values[key] = value
             return base_values
         except Exception as e:
-            logger.error(f"[TSID:{test_step['TSID']}] Error merging default values and custom values in test step {test_step['TSID']} : {str(e)}")
+            logging.error(f"[TCID:{test_case['TCID']}] Error merging default values and custom values in test case {test_case['TCID']} : {str(e)}")
             raise
 
-    def _generate_dynamic_values(self, data: Union[Dict[str, Any], list], test_step: Dict[str, Any]) -&gt; Union[
+    def _generate_dynamic_values(self, data: Union[Dict[str, Any], list], test_case: Dict[str, Any]) -&gt; Union[
         Dict[str, Any], list]:
         try:
             if isinstance(data, dict):
-                return {key: self._generate_dynamic_values(value, test_step) if isinstance(value, (dict, list))
-                else self._replace_placeholders(value, test_step) for key, value in data.items()}
+                return {key: self._generate_dynamic_values(value, test_case) if isinstance(value, (dict, list))
+                else self._replace_placeholders(value, test_case) for key, value in data.items()}
             elif isinstance(data, list):
-                return [self._generate_dynamic_values(item, test_step) if isinstance(item, (dict, list))
-                        else self._replace_placeholders(item, test_step) for item in data]
+                return [self._generate_dynamic_values(item, test_case) if isinstance(item, (dict, list))
+                        else self._replace_placeholders(item, test_case) for item in data]
             return data
         except Exception as e:
-            logger.error(f"[TSID:{test_step['TSID']}] Error generating dynamic values in test step {test_step['TSID']} : {str(e)}")
+            logging.error(f"[TCID:{test_case['TCID']}] Error generating dynamic values in test step {test_case['TCID']} : {str(e)}")
             raise
 
     def _replace_placeholders(self, value: Any, test_step: Dict[str, Any]) -&gt; Any:
@@ -964,109 +1142,25 @@ class BodyGenerator:
                 return VariableGenerator.generate_dynamic_value(placeholder)
             return value
         except Exception as e:
-            logger.log("ERROR",
-                       f"[TSID:{test_step['TSID']}] Error replacing placeholders in test step {test_step['TSID']} : {str(e)}")
+            logging.error(f"[TSID:{test_step['TSID']}] Error replacing placeholders in test step {test_step['TSID']} : {str(e)}")
             raise
 </pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_excel_operation_manager_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\excel_operation_manager.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from openpyxl.styles import Font
-from openpyxl import load_workbook
-from libraries.common.log_manager import logger
-
-
-class ExcelOperationManager:
-    def __init__(self):
-        self.workbook_cache = {}
-        self.pending_operations = []
-
-    def cache_excel_operation(self, test_step, file_path: str, actual_status: int,
-                              formatted_results: str, overall_result: str,
-                              formatted_fields_saved: str, test_case_manager,
-                              execution_time: float) -&gt; None:
-        self.pending_operations.append({
-            "tcid": test_step.get('TCID'),  # 添加TCID
-            "test_step": test_step,  # 修改为test_steps
-            "file_path": file_path,
-            "actual_status": actual_status,
-            "formatted_results": formatted_results,
-            "overall_result": overall_result,
-            "formatted_fields_saved": formatted_fields_saved,
-            "test_case_manager": test_case_manager,
-            "execution_time": execution_time
-        })
-
-    def apply_pending_operations(self) -&gt; None:
-        for operation in self.pending_operations:
-            self.apply_excel_operation(**operation)
-
-        # Save all workbooks in the cache
-        for file_path, workbook in self.workbook_cache.items():
-            workbook.save(file_path)
-
-        return self.pending_operations
-
-    def apply_excel_operation(self, tcid, test_step, file_path: str, actual_status: int,
-                              formatted_results: str, overall_result: str,
-                              formatted_fields_saved: str, test_case_manager,
-                              execution_time: float) -&gt; None:
-        if file_path not in self.workbook_cache:
-            try:
-                self.workbook_cache[file_path] = load_workbook(file_path)
-            except Exception as e:
-                logger.error(f"Failed to load workbook: {str(e)}")
-                raise
-        try:
-            workbook = self.workbook_cache[file_path]
-            sheet = workbook["API"]
-            actual_status_col_idx = self.get_excel_column_index(sheet, "Act Status")
-            actual_result_col_idx = self.get_excel_column_index(sheet, "Act Result")
-            overall_result_col_idx = self.get_excel_column_index(sheet, "Result")
-            fields_saved_col_idx = self.get_excel_column_index(sheet, "Saved Fields")
-            api_execution_time_col_idx = self.get_excel_column_index(sheet, "API Timing")
-
-            row = test_case_manager.get_row_index_by_tsid(test_step["TSID"]) + 2
-            sheet.cell(row=row, column=actual_status_col_idx, value=actual_status)
-            sheet.cell(row=row, column=actual_result_col_idx, value=formatted_results)
-            overall_cell = sheet.cell(row=row, column=overall_result_col_idx, value=overall_result)
-
-            overall_cell.font = Font(color="006400" if overall_result == "PASS" else "8B0000")
-            sheet.cell(row=row, column=fields_saved_col_idx, value=formatted_fields_saved)
-            api_timing_cell = sheet.cell(row=row, column=api_execution_time_col_idx, value=f"{execution_time:.2f}s")
-            if execution_time &gt; 5:
-                api_timing_cell.font = Font(color="8B0000")
-            else:
-                api_timing_cell.font = Font(color="006400")
-
-        except Exception as e:
-            logger.error(f"An error occurred while writing results to the Excel file: {str(e)}")
-            raise
-
-    def get_excel_column_index(self, sheet, column_name: str) -&gt; int:
-        try:
-            for col in sheet.iter_cols(1, sheet.max_column):
-                if col[0].value == column_name:
-                    return col[0].column
-        except Exception as e:
-            logger.error(f"An error occurred while getting the column index for '{column_name}': {str(e)}")
-            return None</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_headers_generator_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\headers_generator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import os
+    <pre>import logging
+import os
 import re
 import json
 from typing import Dict, Any
-from libraries.common.log_manager import logger
 from libraries.common.utility_helpers import UtilityHelpers
 from .variable_generator import VariableGenerator
+from robot.libraries.BuiltIn import BuiltIn
+
+builtin_lib = BuiltIn()
 
 
 class HeadersGenerator:
@@ -1074,130 +1168,72 @@ class HeadersGenerator:
         self.headers_dir: str = headers_dir
         self.format_json = UtilityHelpers.format_json
 
-    def prepare_headers(self, headers_filename: str, saved_fields: Dict[str, Any], test_step: Dict[str, Any]) -&gt; Dict[
-        str, str]:
+    def prepare_headers(self, testcase, saved_fields: Dict[str, Any]) -&gt; Dict[str, str]:
+        headers_filename = testcase['Headers']
         try:
-            original_headers = self._load_headers(headers_filename, test_step)
-            logger.info(
-                f"[TSID:{test_step['TSID']}] Headers for test step '{test_step['TSID']}' loaded from file: \n{self.format_json(original_headers)}")
-            headers = {k: self._replace_placeholders(v, saved_fields, headers_filename, test_step) for k, v in
-                       original_headers.items()}
-            logger.info(
-                f"[TSID:{test_step['TSID']}] Headers for test step '{test_step['TSID']}' replaced placeholders: \n{self.format_json(headers)}")
+            original_headers = self._load_headers(testcase)
+            logging.info(
+                f"[TCID:{testcase['TCID']}] Headers for test step '{testcase['TCID']}' loaded from file: \n{self.format_json(original_headers)}")
+            headers = {k: self._replace_placeholders(v, saved_fields, testcase) for k, v in original_headers.items()}
+            logging.info(f"[TCID:{testcase['TCID']}] Headers for test step '{testcase['TCID']}' replaced placeholders: \n{self.format_json(headers)}")
             return headers
         except KeyError as e:
-            logger.error(f"[TSID:{test_step['TSID']}] Headers file '{headers_filename}' not found in test step '{test_step['TSID']}': {str(e)}")
+            logging.error(f"[TCID:{testcase['TCID']}] Headers file '{headers_filename}' not found in test step '{testcase['TCID']}': {str(e)}")
             raise
 
         except json.JSONDecodeError as e:
-            logger.error(
-                f"[TSID:{test_step['TSID']}] Invalid JSON format in headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}")
+            logging.error(
+                f"[TCID:{testcase['TCID']}] Invalid JSON format in headers file '{headers_filename}' for test step '{testcase['TCID']}': {str(e)}")
             raise
         except Exception as e:
-            logger.error(
-                f"[TSID:{test_step['TSID']}] Error processing headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}")
+            logging.error(
+                f"[TCID:{testcase['TCID']}] Error processing headers file '{headers_filename}' for test step '{testcase['TCID']}': {str(e)}")
             raise
 
-    def _load_headers(self, headers_filename: str, test_step: Dict[str, Any]) -&gt; Dict[str, str]:
+    def _load_headers(self, testcase) -&gt; Dict[str, str]:
+        headers_filename = testcase['Headers']
         try:
             headers_file_path = os.path.join(self.headers_dir, headers_filename)
             if not headers_file_path.endswith('.json'):
                 headers_file_path += '.json'
             if not os.path.exists(headers_file_path):
-                logger.error(
-                    f"[TSID:{test_step['TSID']}] Headers file '{headers_filename}' not found in directory '{self.headers_dir}' for test step '{test_step['TSID']}'")
+                logging.error(
+                    f"[TSID:{testcase['TSID']}] Headers file '{headers_filename}' not found in directory '{self.headers_dir}' for test step '{testcase['TSID']}'")
                 raise
             with open(headers_file_path, 'r') as file:
                 headers = json.load(file)
             return headers
         except Exception as e:
-            logger.error(
-                f"[TSID:{test_step['TSID']}] Error loading headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}")
+            logging.error(
+                f"[TSID:{testcase['TSID']}] Error loading headers file '{headers_filename}' for test step '{testcase['TSID']}': {str(e)}")
             raise
 
-    def _replace_placeholders(self, value: Any, saved_fields: Dict[str, Any], headers_filename: str, test_step: Dict[str, Any]) -&gt; Any:
+    def _replace_placeholders(self, value: Any, saved_fields: Dict[str, Any], testcase) -&gt; Any:
+        headers_filename = testcase['Headers']
         try:
             if isinstance(value, str):
                 matches = re.findall(r'\{\{\s*([^}]+?)\s*\}\}', value)
                 for match in matches:
                     if match in saved_fields:
                         value = value.replace(f'{{{{{match}}}}}', str([match]))
+                        logging.info(f"[Headers] Replaced {match} with saved field '{saved_fields[match]}'")
                     else:
                         dynamic_value = VariableGenerator.generate_dynamic_value(match)
                         value = value.replace(f'{{{{{match}}}}}', str(dynamic_value))
+                        logging.info(f"[Headers] Replaced {match} with dynamic value '{dynamic_value}'")
+
+                matches = re.findall(r'\$\{[^}]+\}', value)
+                for match in matches:
+                    replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
+                    value = value.replace(match, str(replacement_value))
+                    logging.info(f"[Headers] Replaced {match} with variable value '{replacement_value}'")
+
             return value
         except Exception as e:
-            logger.error(
-                f"[TSID:{test_step['TSID']}] Error replacing placeholders in headers file '{headers_filename}' for test step '{test_step['TSID']}': {str(e)}"
+            logging.error(
+                f"[TSID:{testcase['TSID']}] Error replacing placeholders in headers file '{headers_filename}' for test step '{testcase['TSID']}': {str(e)}"
             )
             raise
-</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_html_report_generator_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\html_report_generator.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import os
-from jinja2 import Environment, FileSystemLoader
-from libraries.common.log_manager import logger_instance
-from libraries.common.utility_helpers import UtilityHelpers, PROJECT_ROOT
-
-
-class HTMLReportGenerator:
-    def __init__(self):
-        self.project_root = PROJECT_ROOT
-        self.ensure_log_dir_exists()
-        self.html_log_entries = {}
-        self.report_file_name = ''
-
-    def ensure_log_dir_exists(self, log_dir=None) -&gt; None:
-        log_dir = log_dir or os.path.join(self.project_root, 'output')
-        try:
-            if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
-        except OSError as e:
-            raise ValueError(f"Failed to create log directory {log_dir}: {str(e)}")
-
-    def generate_html_report(self, pending_operations, report_path=None):
-        try:
-            env = Environment(loader=FileSystemLoader(os.path.join(self.project_root, 'configs', 'api', 'report_template')))
-            env.filters['escape_xml'] = UtilityHelpers.escape_xml
-            template = env.get_template('report_template.html')
-            self.html_log_entries = logger_instance.get_html_log_entries()
-            self.report_file_name = logger_instance.log_file_name
-            results = []
-            for operation in pending_operations:
-                test_step = operation['test_step']
-                log_entries = self.html_log_entries.get(test_step['TSID'], [])
-
-                formatted_logs = [{
-                    'log_id': log['id'],
-                    'timestamp': log['timestamp'],
-                    'level': log['level'],
-                    'message': log['message']
-                } for log in log_entries]
-
-                results.append({
-                    'tcid': test_step['TCID'],
-                    'tsid': test_step['TSID'],
-                    'endpoint': test_step['Endpoint'],
-                    'status': operation['actual_status'],
-                    'result': operation['overall_result'],
-                    'expected_result': test_step['Exp Result'],
-                    'actual_result': operation['formatted_results'],
-                    'saved_fields': operation['formatted_fields_saved'],
-                    'execution_time': f"{operation['execution_time']:.2f}s",
-                    'logs': formatted_logs
-                })
-
-            if report_path is None:
-                report_path = os.path.join(self.project_root, 'output', f'{self.report_file_name}.html')
-            html_content = template.render(results=results)
-            with open(report_path, 'w') as report_file:
-                report_file.write(html_content)
-        except Exception as e:
-            raise ValueError(f"Failed to generate HTML report: {str(e)}")
 </pre>
 </div>
 
@@ -1251,282 +1287,118 @@ class RequestSender:
 </pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_response_comparator_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\response_comparator.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import re
-from typing import Dict, Any, Union, List
-from libraries.common.log_manager import logger
-
-
-
-class ResponseComparator:
-    def __init__(self):
-        pass
-
-    def compare_response_field(self, actual_response: Union[Dict[str, Any], str], expectation: str) -&gt; Dict[str, Any]:
-        if expectation:
-            try:
-                field_path, expected_value = expectation.split('=')
-            except ValueError:
-                return self.create_error_comparison_result(expectation, "Invalid [Exp Result] format")
-
-            if field_path.startswith("response"):
-                expected_value = expected_value.strip().strip('""').strip("''")
-                actual_value = self.extract_actual_value(actual_response, field_path)
-
-                if actual_value is None:
-                    return self.create_error_comparison_result(field_path, "Field not found")
-                return self.create_comparison_result(field_path, actual_value, expected_value)
-            return self.create_not_specified_result()
-        else:
-            return self.create_not_specified_result()
-
-    def get_save_result(self, actual_response: Union[Dict[str, Any], str], field_path: str):
-        actual_value = self.extract_actual_value(actual_response, field_path)
-        if actual_value is None:
-            return self.create_error_comparison_result(field_path, "Field not found")
-        else:
-            return self.create_save_result(field_path, actual_value)
-
-    def extract_actual_value(self, actual_response: Union[Dict[str, Any], str], field_path: str) -&gt; str:
-        def _extract_value(data, parts):
-            if not parts:
-                return data
-            current_part = parts[0]
-            if '[' in current_part and ']' in current_part:
-                array_part, idx = re.match(r'(.*)\[(\d+)\]', current_part).groups()
-                if array_part in data:
-                    return _extract_value(array_part[int(idx)], parts[1:])
-                else:
-                    return None
-            else:
-                if isinstance(data, dict) and current_part in data:
-                    return _extract_value(data[current_part], parts[1:])
-                else:
-                    return data
-
-        parts = field_path.split('.')
-
-        if isinstance(actual_response, list) and '[' in parts[0] and ']' in parts[0]:
-            match = re.match(r'([a-zA-Z_][a-zA-Z0-9_]*)(\[\d+\])?', parts[0])
-            array_index = int(match.group(2)[1:-1])
-            actual_response = actual_response[array_index]
-        try:
-            return _extract_value(actual_response, parts[1:])
-        except (KeyError, IndexError, TypeError) as e:
-            logger.error(f"Error retrieving the value for path '{field_path}': {str(e)}")
-            return None
-
-    def create_error_comparison_result(self, field_path: str, error_message: str) -&gt; Dict[str, str]:
-        return {
-            "field": field_path if field_path else "N/A",
-            "actual_value": "N/A",
-            "result": "ERROR",
-            "error": error_message
-        }
-
-    def create_comparison_result(self, field_path: str, actual_value: Any, expected_value: str) -&gt; Dict[str, Any]:
-        return {
-            "field": field_path,
-            "expected_value": expected_value,
-            "actual_value": actual_value,
-            "result": "PASS" if str(actual_value) == expected_value else "FAIL"
-        }
-
-    def create_comparison_result2(self, field_path: str, actual_value: Any, expected_value) -&gt; Dict[str, Any]:
-        return {
-            "field": field_path,
-            "expected_value": expected_value,
-            "actual_value": actual_value,
-            "result": "PASS" if actual_value == expected_value else "FAIL"
-        }
-
-    def create_not_specified_result(self) -&gt; Dict[str, Any]:
-        return {
-            "field": "Exp Result",
-            "actual_value": "N/A",
-            "result": "Not specified"
-        }
-
-    def create_save_result(self, field_path, actual_value) -&gt; Dict[str, Any]:
-        return {
-            "field": field_path,
-            "actual_value": actual_value
-        }
-</pre>
-</div>
-
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_response_handler_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\response_handler.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
+from typing import Any, Union, Tuple
 import pandas as pd
-import requests
+from jsonpath_ng import parse
 import xmltodict
-from typing import Dict, Any, Union
-from decimal import Decimal, getcontext
-from libraries.common.log_manager import logger
-from libraries.api.excel_operation_manager import ExcelOperationManager
-from libraries.api.html_report_generator import HTMLReportGenerator
-from libraries.api.response_comparator import ResponseComparator
-from libraries.api.saved_fields_manager import SavedFieldsManager
+from requests import Response
+import logging
+from robot.libraries.BuiltIn import BuiltIn
 from libraries.common.utility_helpers import UtilityHelpers
 
+builtin_lib = BuiltIn()
 
-class ResponseHandler:
-    def __init__(self) -&gt; None:
-        self.workbook_cache = {}
-        self.pending_operations = []
-        self.sfm = SavedFieldsManager()
-        self.html_report_generator = HTMLReportGenerator()
-        self.excel_manager = ExcelOperationManager()
-        self.response_comparator = ResponseComparator()
-        self.format_xml = UtilityHelpers.format_xml
-        self.format_json = UtilityHelpers.format_json
 
-    def process_step_results(self, response: requests.Response, test_step, test_cases_path: str,
-                             test_case_manager, execution_time: float, is_dynamic_check: bool) -&gt; str:
+class APIResponseProcessor:
+    def process_response(self, response: Union[str, Response]) -&gt; Tuple[str, str]:
+
+        if isinstance(response, str):
+            content = response.strip()
+        elif isinstance(response, Response):
+            content = response.text.strip()
+        else:
+            raise ValueError("Unsupported response type. Expected string or Response object.")
+
         try:
-            fields_to_save_for_excel = ''
-            actual_status: int = response.status_code
-            actual_response: Union[Dict[str, Any], str] = self.extract_response_content(response, test_step)
-
-            # actual_results
-            expected_lines = self._split_lines(test_step['Exp Result'])
-            results = [self.response_comparator.compare_response_field(actual_response, expectation) for expectation in expected_lines]
-            actual_results = self.format_comparison_results(results)
-
-            # overall_result
-            overall_result = "FAIL" if any(res['result'] == "FAIL" for res in results) else "PASS"
-
-            # fields to save to excel and yaml
-            fields_to_save_lines = self._split_lines(test_step['Save Fields'])
-            if fields_to_save_lines != ['']:
-                fields_saved_results = [self.response_comparator.get_save_result(actual_response, field) for field in fields_to_save_lines]
-                fields_to_save_for_excel = self.format_fields_to_save(fields_saved_results)
-                fields_to_save_for_yaml = self.format_fields_to_save_yaml(test_step, fields_saved_results)
-                self.sfm.save_fields(fields_to_save_for_yaml)
-
-            # Cache the operation
-            if not is_dynamic_check:
-                self.excel_manager.cache_excel_operation(test_step, test_cases_path, actual_status, actual_results,
-                                                         overall_result, fields_to_save_for_excel, test_case_manager,
-                                                         execution_time)
-
-            logger.info(json.dumps(results, indent=4))
-            logger.info(f"The Result is: {overall_result}.")
-            return overall_result
-        except Exception as e:
-            logger.error(f"An error occurred while processing and storing results: {str(e)}")
-            raise
-
-    def process_step_results_with_dynamic_checks(self, check_with_tc_ids, target_response, pre_check_responses, post_check_responses, test_step, test_cases_path, test_case_manager,
-                                                 execution_time) -&gt; None:
-        try:
-            fields_to_save_for_excel = ''
-            actual_status: int = target_response.status_code
-            actual_response: Union[Dict[str, Any], str] = self.extract_response_content(target_response, test_step)
-            expected_lines = self._split_lines(test_step['Exp Result'])
-            validate_results = self.get_validate_results_with_dynamic_checks(check_with_tc_ids, expected_lines, post_check_responses, pre_check_responses, target_response,
-                                                                             test_step)
-
-            overall_result = "FAIL" if any(res['result'] == "FAIL" for res in validate_results) else "PASS"
-            actual_results = self.format_comparison_results_with_dynamic_checks(validate_results)
-
-            # fields to save to excel and yaml
-            fields_to_save_lines = self._split_lines(test_step['Save Fields'])
-            if fields_to_save_lines != ['']:
-                fields_saved_results = [self.response_comparator.get_save_result(actual_response, field) for field in fields_to_save_lines]
-                fields_to_save_for_excel = self.format_fields_to_save(fields_saved_results)
-                fields_to_save_for_yaml = self.format_fields_to_save_yaml(test_step, fields_saved_results)
-                self.sfm.save_fields(fields_to_save_for_yaml)
-
-            # Cache the operation for writing to Excel
-            self.excel_manager.cache_excel_operation(test_step, test_cases_path, actual_status, actual_results, overall_result, fields_to_save_for_excel, test_case_manager,
-                                                     execution_time)
-        except Exception as e:
-            logger.error(f"An error occurred while handling validate expectations result: {str(e)}")
-            raise
-
-    def get_validate_results_with_dynamic_checks(self, check_with_tc_ids, expected_lines, post_check_responses, pre_check_responses, target_response, test_step):
-        validate_results = []
-        for expectation in expected_lines:
-            field_path, expected_value = expectation.split('=')
-            field_path = field_path.strip()
-            expected_value = expected_value.strip()
-            getcontext().prec = 5
-            if field_path.startswith(tuple(check_with_tc_ids)):
-                tc_id, _ = field_path.split('.', 1)
-                tc_id, _ = tc_id.split('[', 1)
-                expected_delta = Decimal(expected_value)
-                pre_check_response = self.extract_response_content(pre_check_responses[tc_id], test_step)
-                post_check_response = self.extract_response_content(post_check_responses[tc_id], test_step)
-                pre_value = Decimal(self.response_comparator.extract_actual_value(pre_check_response, field_path))
-                post_value = Decimal(self.response_comparator.extract_actual_value(post_check_response, field_path))
-                delta = post_value - pre_value
-                if delta != expected_delta:
-                    validate_results.append(self.response_comparator.create_comparison_result2(field_path, delta, expected_delta))
-                    logger.error(f"Check-with condition failed for {field_path}: {delta} != {expected_delta}")
-                else:
-                    validate_results.append(self.response_comparator.create_comparison_result2(field_path, delta, expected_delta))
-            else:
-                target_response_content = self.extract_response_content(target_response, test_step)
-                actual_value = self.response_comparator.extract_actual_value(target_response_content, field_path)
-                if str(actual_value) != expected_value:
-                    validate_results.append(self.response_comparator.create_comparison_result(field_path, actual_value, expected_value))
-                    logger.error(f"Expectation failed for {field_path}: {actual_value} != {expected_value}")
-                else:
-                    validate_results.append(self.response_comparator.create_comparison_result(field_path, actual_value, expected_value))
-        return validate_results
-
-    def extract_response_content(self, response: requests.Response, test_step):
-        try:
-            response = response.json()
-            logger.info(f"[TSID:{test_step['TSID']}] Response content: \n{self.format_json(response)}")
-            return response
-        except json.JSONDecodeError as json_error:
-            logger.warning(f"[TSID:{test_step['TSID']}] JSON decode error: {json_error}. Attempting XML parse.")
+            json.loads(content)
+            logging.info(f"Response content is valid JSON: \n{content}")
+            return content, 'json'
+        except json.JSONDecodeError:
             try:
-                logger.info(f"[TSID:{test_step['TSID']}] Response content: \n{self.format_xml(response.text)}")
-                return xmltodict.parse(response.text)
-            except Exception as xml_error:
-                logger.error(f"[TSID:{test_step['TSID']}] XML parse error: {xml_error}. Returning raw response text.")
-                return response.text
+                content = UtilityHelpers.format_xml(content)
+                logging.info(f"Response content is valid XML:\n{content}")
+                return content, 'xml'
+            except ValueError:
+                raise ValueError("Response content is neither valid JSON nor XML.")
 
-    def apply_pending_operations(self) -&gt; None:
-        self.pending_operations = self.excel_manager.apply_pending_operations()
+    def _get_json_value(self, json_string: str, json_path: str) -&gt; Any:
 
-    def generate_html_report(self) -&gt; None:
-        self.html_report_generator.generate_html_report(self.pending_operations)
+        parsed_json = json.loads(json_string)
+        jsonpath_expr = parse(f'$.{json_path}')
+        matches = [match.value for match in jsonpath_expr.find(parsed_json)]
+        if matches:
+            return matches[0]
+        else:
+            raise ValueError(f"No match found for JSONPath: {json_path}")
 
-    def format_comparison_results(self, results: list) -&gt; str:
-        return '\n'.join(f"{res['field']}={res['actual_value']}:{res['result']}" for res in results)
 
-    def format_comparison_results_with_dynamic_checks(self, results: list) -&gt; str:
-        formatted_results = []
-        for res in results:
-            if res['field'].startswith('response'):
-                r = f"{res['field']}={res['actual_value']}:{res['result']}"
-                formatted_results.append(r)
+class APIResponseAsserter(APIResponseProcessor):
+    def assert_response(self, expected_results: str, actual_response: Union[str, Response]) -&gt; None:
+
+        logging.info(f"Type of actual_response: {type(actual_response)}")
+        logging.info(f"Content of actual_response: {actual_response}")
+
+        response_content, response_format = self.process_response(actual_response)
+        expected_lines = expected_results.split('\n')
+        assertion_errors = []
+
+        for line in expected_lines:
+            if line.strip():
+                try:
+                    self._assert_line(line.strip(), response_content, response_format)
+                except AssertionError as e:
+                    logging.error(f"Assertion failed: {str(e)}")
+                    assertion_errors.append(str(e))
+
+        if assertion_errors:
+            raise AssertionError("Assertions failed:\n" + "\n".join(assertion_errors))
+
+    def _assert_line(self, line: str, response_content: str, response_format: str):
+        key, expected_value = line.split('=')
+        key = key.strip()
+        expected_value = expected_value.strip()
+
+        if response_format == 'json':
+            actual_value = self._get_json_value(response_content, key)
+        elif response_format == 'xml':
+            json_content = json.dumps(xmltodict.parse(response_content))
+            actual_value = self._get_json_value(json_content, key)
+        else:
+            raise ValueError("Unsupported response format. Use 'xml' or 'json'.")
+
+        # Convert values to the same type for comparison
+        try:
+            expected_value = type(actual_value)(expected_value)
+        except ValueError:
+            pass  # Keep the original type if conversion fails
+
+        logging.info(f"Key: {key}, Expected value: {expected_value}, Actual value: {actual_value}")
+        assert actual_value == expected_value, f"Assertion failed for key '{key}'. Expected: {expected_value}, Actual: {actual_value}"
+
+
+class APIResponseExtractor(APIResponseProcessor):
+
+    def extract_value(self, response: Union[str, Response], test_case) -&gt; Any:
+
+        response_content, response_format = self.process_response(response)
+        save_fields = test_case['Save Fields'].splitlines() if pd.notna(test_case['Save Fields']) else []
+        for field in save_fields:
+
+            if response_format == 'json':
+                value = self._get_json_value(response_content, field)
+            elif response_format == 'xml':
+                json_content = json.dumps(xmltodict.parse(response_content))
+                value = self._get_json_value(json_content, field)
             else:
-                r = f"{res['field']}=+{res['actual_value']}:{res['result']}" if res['actual_value'] &gt;= 0 else f"{res['field']}=-{res['actual_value']}:{res['result']}"
-                formatted_results.append(r)
+                raise ValueError("Unsupported response format. Use 'xml' or 'json'.")
+            field = f'{test_case["TCID"]}.{field.strip()}'
 
-        return '\n'.join(formatted_results)
-
-    def format_fields_to_save(self, fields_saved_results: list) -&gt; str:
-        return '\n'.join(f"{res['field']}={res['actual_value']}" for res in fields_saved_results)
-
-    def format_fields_to_save_yaml(self, test_step, fields_saved_results: list) -&gt; Dict[str, Any]:
-        return {
-            f"{test_step['TSID']}.{res['field']}": res['actual_value'] for res in fields_saved_results
-        }
-
-    def _split_lines(self, lines: str) -&gt; list:
-        return lines.strip().split('\n') if pd.notna(lines) else []
+            builtin_lib.set_suite_variable(f'${{{field}}}', value)
 </pre>
 </div>
 
@@ -1534,11 +1406,17 @@ class ResponseHandler:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\saved_fields_manager.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import yaml
+    <pre>import logging
+import re
+
+import yaml
 import os
 from typing import Dict, Any
-from libraries.common.log_manager import logger
 from libraries.common.utility_helpers import PROJECT_ROOT
+from robot.libraries.BuiltIn import BuiltIn
+
+
+builtin_lib = BuiltIn()
 
 
 class SavedFieldsManager:
@@ -1558,7 +1436,7 @@ class SavedFieldsManager:
                 saved_fields: Dict[str, Any] = yaml.safe_load(f) or {}
             return saved_fields
         except Exception as e:
-            logger.error(f"Failed to load saved fields from the yaml file: {str(e)}")
+            logging.error(f"Failed to load saved fields from the yaml file: {str(e)}")
             raise
 
     def save_fields(self, field_data: Dict[str, Any]) -&gt; None:
@@ -1568,19 +1446,32 @@ class SavedFieldsManager:
             with open(self.file_path, 'w') as f:
                 yaml.safe_dump(saved_fields, f, default_flow_style=False)
         except Exception as e:
-            logger.error(f"Failed to save fields to the yaml file: {str(e)}")
+            logging.error(f"Failed to save fields to the yaml file: {str(e)}")
             raise
 
-    def apply_saved_fields(self, test_step, saved_fields: Dict, columns: list) -&gt; None:
+    def apply_saved_fields(self, test_case, saved_fields: Dict) -&gt; None:
         try:
             for key, value in saved_fields.items():
-                for column in columns:
-                    if column in test_step and test_step[column] != '':
-                        lines = test_step[column].splitlines()
+                for column in ['Body Modifications', 'Exp Result']:
+                    if column in test_case and test_case[column] != '':
+                        lines = test_case[column].splitlines()
                         replaced_lines = [line.replace(f"${{{key}}}", str(value)) for line in lines]
-                        test_step[column] = "\n".join(replaced_lines)
+                        test_case[column] = "\n".join(replaced_lines)
         except Exception as e:
-            logger.error(f"Failed to apply saved fields to [Body Modifications], [Exp Result]: {str(e)}")
+            logging.error(f"Failed to apply saved fields to [Body Modifications], [Exp Result]: {str(e)}")
+            raise
+
+    def apply_suite_variables(self, test_case) -&gt; None:
+        try:
+            for key in ['Body Modifications', 'Exp Result']:
+                matches = re.findall(r'\$\{[^}]+\}', test_case[key])
+                for match in matches:
+                    replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
+                    test_case[key] = test_case[key].replace(match, str(replacement_value))
+                    logging.info(f"[{key}] Replaced {match} variable value {replacement_value}")
+
+        except Exception as e:
+            logging.error(f"[{key}] Replaced {match} with {replacement_value} failed: {str(e)}")
             raise
 </pre>
 </div>
@@ -1628,196 +1519,6 @@ class TemplateRenderer:
             return rendered_body
         else:
             raise ValueError(f"Unsupported format type: {format_type}")
-</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_test_case_manager_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\test_case_manager.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import os
-import re
-import json
-import pandas as pd
-from collections import defaultdict
-from libraries.common.log_manager import logger
-
-
-class TestCaseManager:
-    def __init__(self, file_path, endpoints, headers_dir, template_dir, body_defaults_dir):
-        self.file_path = file_path
-        self.endpoints = endpoints
-        self.headers_dir = headers_dir
-        self.template_dir = template_dir
-        self.body_defaults_dir = body_defaults_dir
-        self.test_cases_df = None
-        self.test_cases = self._read_test_cases()
-
-    def _read_test_cases(self):
-        self.test_cases_df = pd.read_excel(self.file_path, sheet_name='API').fillna("")
-        test_cases = defaultdict(list)
-
-        for _, row in self.test_cases_df.iterrows():
-            tcid = row.get('TCID', "")
-            test_step = {
-                "TCID": tcid,
-                "TSID": row.get('TSID', "").strip(),
-                "Descriptions": row.get('Descriptions', "").strip(),
-                "Conditions": row.get('Conditions', "").strip(),
-                "Endpoint": row.get('Endpoint', "").strip(),
-                "Headers": row.get('Headers', "").strip(),
-                "Template": row.get('Template', "").strip(),
-                "Defaults": row.get('Defaults', "").strip(),
-                "Body Modifications": row.get('Body Modifications').strip() if row.get('Body Modifications') else '{}',
-                "Run": row.get('Run', "").strip(),
-                "Tags": row.get('Tags', "").strip(),
-                "Exp Status": row.get('Exp Status', ""),
-                "Exp Result": row.get('Exp Result', "").strip(),
-                "Save Fields": row.get('Save Fields', "").strip(),
-                "Act Status": row.get('Act Status', ""),
-                "Act Result": row.get('Act Result', ""),
-                "Result": row.get('Result', ""),
-                "Saved Fields": row.get('Saved Fields', "")
-            }
-            # Validation
-            self._validate_test_step(test_step, test_cases)
-            test_cases[tcid].append(test_step)
-        return test_cases
-
-    def _validate_test_step(self, test_step, test_cases):
-        try:
-            if not test_step["TCID"]:
-                raise ValueError("TCID is required")
-            if not test_step["TSID"]:
-                raise ValueError("TSID is required")
-            if not test_step["Endpoint"]:
-                raise ValueError("Endpoint is required")
-            if not test_step["Headers"]:
-                raise ValueError("Headers is required")
-
-            if test_step["Conditions"]:
-                conditions = test_step["Conditions"].splitlines()
-                for condition in conditions:
-                    if not any(x in condition for x in
-                               ["[suite setup]", "[test setup]", "[suite teardown]", "[test teardown]", "[check with]"]):
-                        raise ValueError(f"Condition '{condition}' is invalid")
-                    referenced_tcid = condition.split("]")[1].strip()
-                    if referenced_tcid not in test_cases:
-                        raise ValueError(
-                            f"Referenced TCID '{referenced_tcid}' in condition '{condition}' does not exist")
-
-            if test_step["Headers"] and not self._file_exists_in_dir(test_step["Headers"], self.headers_dir, "json"):
-                raise ValueError(f"Headers file '{test_step['Headers']}' does not exist in {self.headers_dir}")
-
-            if test_step["Template"] and not self._file_exists_in_dir(test_step["Template"], self.template_dir,
-                                                                      ["json", "xml"]):
-                raise ValueError(f"Template file '{test_step['Template']}' does not exist in {self.template_dir}")
-
-            if test_step["Defaults"] and not self._file_exists_in_dir(test_step["Defaults"], self.body_defaults_dir,
-                                                                      "json"):
-                raise ValueError(f"Defaults file '{test_step['Defaults']}' does not exist in {self.body_defaults_dir}")
-
-            if test_step["Endpoint"] and test_step["Endpoint"] not in self.endpoints:
-                raise ValueError(f"Endpoint '{test_step['Endpoint']}' does not exist in the configuration")
-
-            if test_step["Body Modifications"] and not self._is_valid_body_modifications(
-                    test_step["Body Modifications"]):
-                raise ValueError("Body Modifications must be a valid JSON or contain valid placeholders")
-
-            if test_step["Run"] not in ["Y", "N"]:
-                raise ValueError("Run must be 'Y' or 'N'")
-
-            if test_step["Tags"] and not self._is_valid_tag_format(test_step["Tags"]):
-                raise ValueError("Tags format is invalid")
-
-            if test_step["Exp Status"] and not self._is_valid_http_status(test_step["Exp Status"]):
-                raise ValueError("Exp Status must be a valid HTTP status code")
-
-            if test_step["Exp Result"] and not self._is_valid_exp_result_format(test_step["Exp Result"]):
-                raise ValueError("Exp Result format is invalid")
-
-            if test_step["Save Fields"] and not self._is_valid_save_fields_format(test_step["Save Fields"]):
-                raise ValueError("Save Fields format is invalid")
-            logger.info(f"Validation passed in test step {test_step['TSID']}")
-        except ValueError as e:
-            logger.error(f"[TSID:{test_step['TSID']}]: Validation error in test step {test_step['TSID']}: {str(e)}")
-            raise
-
-    def _file_exists_in_dir(self, file_name, dir_path, extensions):
-        if isinstance(extensions, str):
-            extensions = [extensions]
-        for ext in extensions:
-            if os.path.exists(os.path.join(dir_path, f"{file_name}.{ext}")):
-                return True
-        return False
-
-    def _is_valid_tag_format(self, tags: str) -&gt; bool:
-        # Example tag format validation: tags should be comma separated and non-empty
-        return all(tag.strip() for tag in tags.split(','))
-
-    def _is_valid_http_status(self, status: str) -&gt; bool:
-        try:
-            status_code = int(status)
-            return 100 &lt;= status_code &lt;= 599
-        except ValueError:
-            return False
-
-    def _is_valid_exp_result_format(self, exp_result: str) -&gt; bool:
-        # Example validation: exp_result should be in the format "field_path=expected_value"
-        lines = exp_result.splitlines()
-        for line in lines:
-            if '=' not in line:
-                return False
-            field_path, expected_value = line.split('=')
-            if not self._is_valid_field_path(field_path.strip()):
-                return False
-        return True
-
-    def _is_valid_save_fields_format(self, save_fields: str) -&gt; bool:
-        # Example validation: save_fields should be in the format "field_path"
-        lines = save_fields.splitlines()
-        for line in lines:
-            if not self._is_valid_field_path(line.strip()):
-                return False
-        return True
-
-    def _is_valid_field_path(self, field_path: str) -&gt; bool:
-        # Validation rule: field_path should be separated by dots and should not contain spaces around dots
-        return re.match(r'^[a-zA-Z0-9_\[\]]+(\.[a-zA-Z0-9_\[\]]+)*$', field_path) is not None
-
-    def _is_valid_body_modifications(self, body_modifications: str) -&gt; bool:
-        # Allow JSON with ${...} placeholders
-        try:
-            # Replace placeholders with a dummy value for JSON validation
-            modified_body = re.sub(r'\$\{[^}]+\}', '0', body_modifications)
-            json.loads(modified_body)
-            return True
-        except json.JSONDecodeError:
-            return False
-
-    def get_conditions_by_tc_id(self, tcid: str):
-        return self.test_cases.get(tcid, None)
-
-    def filter_test_cases(self, tcid_list=None, tags=None):
-        filtered = defaultdict(list)
-        for tcid, test_steps in self.test_cases.items():
-            if tcid_list and tcid not in tcid_list:
-                continue
-            for test_step in test_steps:
-                if test_step['Run'].upper() != 'Y':
-                    continue
-                if tags and not any(tag in test_step['Tags'] for tag in tags):
-                    continue
-                filtered[tcid].append(test_step)
-        return filtered
-
-    def get_row_index_by_tsid(self, tsid):
-        try:
-            tsid_list = self.test_cases_df['TSID'].tolist()
-            index = tsid_list.index(tsid)
-            return index
-        except ValueError:
-            return None
 </pre>
 </div>
 
@@ -2046,7 +1747,7 @@ class Logger:
         self.project_root: str = PROJECT_ROOT
 
         if not hasattr(self, 'initialized'):
-            self.config_path: str = config_path or os.path.join(self.project_root, 'configs', 'api', 'logging_config.yaml')
+            self.config_path: str = config_path or os.path.join(self.project_root, 'configs', 'logging_config.yaml')
             self.log_file_name = ''
             self.logger = None
             self.load_config()
@@ -2056,17 +1757,18 @@ class Logger:
         if os.path.exists(self.config_path):
             with open(self.config_path, 'r', encoding='utf-8') as file:
                 config = yaml.safe_load(file)
-                self.log_file_name = f"e2e_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                # Generate dynamic log file name with timestamp
-                log_file_name = os.path.join(self.project_root, 'logs', f"{self.log_file_name}.log")
+                if 'file' in config['handlers']:
+                    self.log_file_name = f"e2e_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    # Generate dynamic log file name with timestamp
+                    log_file_name = os.path.join(self.project_root, 'logs', f"{self.log_file_name}.log")
 
-                # Ensure the directory for the log file exists
-                log_dir = os.path.dirname(log_file_name)
-                if not os.path.exists(log_dir):
-                    os.makedirs(log_dir)
+                    # Ensure the directory for the log file exists
+                    log_dir = os.path.dirname(log_file_name)
+                    if not os.path.exists(log_dir):
+                        os.makedirs(log_dir)
 
-                # Update the log file name in the configuration
-                config['handlers']['file']['filename'] = log_file_name
+                    # Update the log file name in the configuration
+                    config['handlers']['file']['filename'] = log_file_name
 
                 logging.config.dictConfig(config)
                 self.logger = logging.getLogger('e2e_testing')
@@ -2219,78 +1921,113 @@ PROJECT_ROOT = UtilityHelpers.get_project_root()</pre>
     <pre></pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_test_executor_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\e2e\e2e_test_executor.py</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_robot_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\e2e\e2e_robot_generator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import os
-from time import sleep
+    <pre>import logging
+import os
+from typing import Dict, List
 
-from libraries.common.log_manager import logger
-from libraries.web.web_test_loader import WebTestLoader
-from libraries.web.page_object import PageObject
-from libraries.api.api_test_executor import APITestExecutor
+import pandas as pd
+from robot.api import TestSuite
+
+from libraries.api.api_robot_generator import APIRobotCasesGenerator
+from libraries.common.config_manager import ConfigManager
 from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.web.web_test_loader import WebTestLoader
 
 
-class E2ETestExecutor:
-    def __init__(self, driver, test_case_path):
-        self.driver = driver
-        self.web_test_loader = WebTestLoader(test_case_path)
-        self.page_object = PageObject(
-            driver,
-            self.web_test_loader.get_locators(),
-            self.web_test_loader.get_page_objects()
-        )
+class E2ERobotCasesGenerator:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
         self.project_root: str = PROJECT_ROOT
-        api_test_cases_path = os.path.join(self.project_root, test_case_path)
-        self.api_test_executor = APITestExecutor(test_cases_path=api_test_cases_path)
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'e2e', 'e2e_test_config.yaml')
+        self.env_config_path = os.path.join(self.project_root, 'configs', 'e2e', 'environments.yaml')
+        self._load_configuration()
+        self._initialize_components(test_cases_path)
 
+    def _load_configuration(self):
+        self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
 
-    def run_tests(self):
-        test_cases = self.web_test_loader.get_test_cases()
+    def _initialize_components(self, test_cases_path: str):
+        default_test_cases_path: str = os.path.join('test_cases', 'e2e_test_cases.xlsx')
+        self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+        self.web_test_loader = WebTestLoader(self.test_cases_path)
+        self.api_robot_generator = APIRobotCasesGenerator()
+
+    def create_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None) -&gt; TestSuite:
+        self.robot_suite = TestSuite('End to End Test Suite')
+
+        tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
+        tags = tags or self.test_config.get('tags', [])
+        test_cases = self.web_test_loader.filter_cases(tc_id_list, tags)
         for _, test_case in test_cases.iterrows():
-            case_id = test_case['Case ID']
-            if test_case['Run'] == 'Y':
-                try:
-                    self.run_test_case(case_id)
-                except Exception as e:
-                    logger.error(f"Error running test case {case_id}: {str(e)}")
-                sleep(1)
+            self.create_test_case(test_case)
+        return self.robot_suite
 
-    def run_test_case(self, case_id):
-        logger.info(f"Starting E2E test case {case_id}")
-        test_steps = self.web_test_loader.get_test_steps(case_id)
-        test_data_sets = self.web_test_loader.get_test_data(case_id)
+    def create_test_case(self, test_case: Dict):
+        logging.info(f"Creating E2E test case {test_case['Case ID']}")
+        test_steps = self.web_test_loader.get_test_steps(test_case['Case ID'])
+        test_data_sets = self.web_test_loader.get_test_data(test_case['Case ID'])
+        if not test_data_sets:
+            test_data_sets = [{}]
+        self.child_suite = TestSuite(name=test_case['Case ID'], doc=test_case['Descriptions'])
+        self.robot_suite.suites.append(self.child_suite)
+
+        # Convert the paths to raw string format to avoid issues with backslashes
+        env_config_path_arg = os.path.normpath(self.env_config_path).replace('\\', '\\\\')
+        test_config_path_arg = os.path.normpath(self.test_config_path).replace('\\', '\\\\')
+        test_cases_path_arg = os.path.normpath(self.test_cases_path).replace('\\', '\\\\')
+        self.child_suite.resource.imports.library('libraries.web.page_object.PageObject', args=[env_config_path_arg, test_config_path_arg, test_cases_path_arg])
 
         for data_set_index, data_set in enumerate(test_data_sets, 1):
-            logger.info(f"Running E2E test case {case_id} with data set {data_set_index}")
-            for _, step in test_steps.iterrows():
-                page_name = step['Page Name']
-                method_name = step['Method Name']
-                parameters = self._get_parameters(data_set, step['Parameter Name'])
+            test_name = f"{test_case['Case ID']}.{test_case['Name']}.{data_set_index}"
+            robot_test = self.child_suite.tests.create(name=test_name)
+            if 'Tags' in test_case and pd.notna(test_case['Tags']):
+                tags = [tag.strip() for tag in test_case['Tags'].split(',')]
+                for tag in tags:
+                    robot_test.tags.add(tag)
+            try:
+                self.create_test_steps(robot_test, test_steps, data_set)
 
-                try:
-                    if page_name == 'API' and method_name:
-                        logger.info(f"Executing API test: {method_name}")
-                        self.api_test_executor.run_test_suite(tc_id_list=[method_name])
-                    else:
-                        logger.info(f"Executing web step: {page_name}.{method_name}")
-                        self.page_object.execute_method(page_name, method_name, parameters)
-                except Exception as e:
-                    logger.error(f"Error executing step {page_name}.{method_name}: {str(e)}")
-                    raise
+                logging.info(f"E2E test case {test_case['Case ID']} with data set {data_set_index} created successfully")
+            except Exception as e:
+                logging.error(f"Error creating test case {test_case['Case ID']} with data set {data_set_index}: {str(e)}")
+                raise
 
-            logger.info(f"Completed E2E test case {case_id} with data set {data_set_index}")
-            sleep(1)  # Add a small delay between data sets
+    def create_test_steps(self, robot_test, test_steps: List[Dict], data_set: Dict):
+        for _, step in test_steps.iterrows():
+            page_name = step['Page Name']
+            module_name = step['Module Name']
+            parameters = self.extract_parameters(data_set, step['Parameter Name'])
 
-    def _get_parameters(self, data_set, parameter_names):
+            try:
+                logging.info(f"Creating e2e step: {page_name}.{module_name}")
+                if module_name == 'API':
+                    self.child_suite.tests.remove(robot_test)
+                    tc_id_list = step['Parameter Name'].split(',')
+                    api_test_suite = self.api_robot_generator.create_test_suite(tc_id_list)
+                    self.child_suite.suites.append(api_test_suite)
+                else:
+                    robot_test.body.create_keyword(name='execute_module', args=[page_name, module_name, parameters])
+                    self.child_suite.teardown.config(name='close_browser', args=[])
+            except Exception as e:
+                logging.error(f"Error Creating web step {page_name}.{module_name}: {str(e)}")
+                raise
+
+    @staticmethod
+    def extract_parameters(data_set: Dict, parameter_names: str) -&gt; Dict:
         parameters = {}
         for name in parameter_names.split(','):
             if name in data_set:
-                parameters[name] = data_set[name]
-        logger.debug(f"Extracted parameters: {parameters}")
-        return parameters</pre>
+                value = data_set[name]
+                # Add type conversion here if needed
+                parameters[name] = value
+            else:
+                logging.warning(f"Parameter {name} not found in data set")
+        logging.debug(f"Extracted parameters: {parameters}")
+        return parameters
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">
@@ -2304,145 +2041,178 @@ class E2ETestExecutor:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\page_object.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from libraries.web.web_element_actions import WebElementActions
-from libraries.common.log_manager import logger
+    <pre>import logging
+import os
+from typing import Dict, Tuple, List
+from robot.api.deco import keyword, library
+from libraries.web.web_element_actions import WebElementActions
+from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.common.config_manager import ConfigManager
+from libraries.web.web_test_loader import WebTestLoader
+from libraries.web.webdriver_factory import WebDriverFactory
 
 
+class WebDriverSingleton:
+    _instance = None
+
+    @classmethod
+    def get_instance(cls, driver_config=None):
+        logging.info("Getting WebDriver instance")
+        if cls._instance is None:
+            if driver_config is None:
+                raise ValueError("Config path must be provided when creating the first instance")
+            cls._instance = WebDriverFactory.create_driver(driver_config)
+            logging.info("WebDriver instance created")
+        return cls._instance
+
+    @classmethod
+    def quit(cls):
+        if cls._instance:
+            cls._instance.quit()
+            cls._instance = None
+            logging.info("WebDriver instance closed")
+
+
+@library
 class PageObject:
-    def __init__(self, driver, locators_df, page_object_df):
-        self.driver = driver
-        self.locators_df = locators_df
-        self.page_object_df = page_object_df
-        self.web_actions = WebElementActions(driver)
-        self.page_elements = self._load_page_elements()
-        self.page_methods = self._load_page_methods()
+    def __init__(self, env_config_path: str = None, test_config_path: str = None, test_cases_path: str = None):
+        self.project_root: str = PROJECT_ROOT
+        self.env_config_path = env_config_path or os.path.join(self.project_root, 'configs', 'web', 'environments.yaml')
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'web', 'web_test_config.yaml')
 
-    def _load_page_elements(self):
+        self._load_configuration(test_cases_path)
+        self._initialize_components()
+
+    def _load_configuration(self, test_cases_path):
+        self.env_config: Dict = ConfigManager.load_yaml(self.env_config_path)
+        self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
+        self.active_driver_config: Dict = self.env_config['environments'][self.test_config['active_environment']]
+        default_test_cases_path: str = os.path.join('test_cases', 'web_test_cases.xlsx')
+        self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+
+    def _initialize_components(self):
+        self.web_test_loader = WebTestLoader(self.test_config['test_case_path'])
+        self.locators_df = self.web_test_loader.get_locators()
+        self.page_object_df = self.web_test_loader.get_page_objects()
+        self.driver = self._load_webdriver()
+        self.web_actions = WebElementActions(self.driver)
+        self.page_elements = self._load_page_elements()
+        self.page_modules = self._load_page_modules()
+
+    def _load_webdriver(self):
+        return WebDriverSingleton.get_instance(self.active_driver_config)
+
+    def _load_page_elements(self) -&gt; Dict[str, Dict[str, Tuple[str, str]]]:
         elements = {}
         for _, row in self.locators_df.iterrows():
             page_name = row['Page Name']
             element_name = row['Element Name']
-            locator_type = row['Locator Type']
-            locator_value = row['Locator Value']
-
-            if page_name not in elements:
-                elements[page_name] = {}
-            elements[page_name][element_name] = (locator_type, locator_value)
+            locator = (row['Locator Type'], row['Locator Value'])
+            elements.setdefault(page_name, {})[element_name] = locator
         return elements
 
-    def _load_page_methods(self):
-        methods = {}
+    def _load_page_modules(self) -&gt; Dict[str, Dict[str, List[Dict]]]:
+        modules = {}
         for _, row in self.page_object_df.iterrows():
             page_name = row['Page Name']
-            method_name = row['Method Name']
-            element_name = row['Element Name']
-            action = row['Actions']
-            parameter_name = row['Parameter Name']
-
-            if page_name not in methods:
-                methods[page_name] = {}
-            methods[page_name][method_name] = {
-                'element_name': element_name,
-                'action': action,
-                'parameter_name': parameter_name.split(',') if parameter_name else []
+            module_name = row['Module Name']
+            action_info = {
+                'element_name': row['Element Name'],
+                'action': row['Actions'],
+                'parameter_name': row['Parameter Name'].split(',') if row['Parameter Name'] else []
             }
-        return methods
+            modules.setdefault(page_name, {}).setdefault(module_name, []).append(action_info)
+        return modules
 
-    def execute_method(self, page_name, method_name, parameters=None):
-        if parameters is None:
-            parameters = {}
-        method_info = self.page_methods[page_name][method_name]
-        element_name = method_info['element_name']
-        action = method_info['action']
+    @keyword
+    def execute_module(self, page_name: str, module_name: str, parameters: Dict = None):
+        logging.info(f"Executing module: {module_name} on page: {page_name}")
+        parameters = parameters or {}
+        module_actions = self.page_modules[page_name][module_name]
 
-        if ',' in action:  # Composite action
-            for sub_action in action.split(','):
-                self.execute_method(page_name, sub_action, parameters)
-        else:
+        for action_info in module_actions:
+            element_name = action_info['element_name']
+            action = action_info['action']
+            param_names = action_info['parameter_name']
+
+            element = None
             if element_name:
                 locator = self.page_elements[page_name][element_name]
                 element = self._get_element_with_appropriate_condition(locator, action)
-            else:
-                element = None
 
-            if action == 'open_url':
-                self.web_actions.open_url(parameters[method_info['parameter_name'][0]])
-            elif action == 'send_keys':
-                self.web_actions.send_keys(element, parameters[method_info['parameter_name'][0]])
-            elif action == 'click':
-                self.web_actions.click(element)
-            elif action == 'clear':
-                self.web_actions.clear(element)
-            elif action == 'select_by_value':
-                self.web_actions.select_by_value(element, parameters[method_info['parameter_name'][0]])
-            elif action == 'select_by_visible_text':
-                self.web_actions.select_by_visible_text(element, parameters[method_info['parameter_name'][0]])
-            elif action == 'select_by_index':
-                self.web_actions.select_by_index(element, parameters[method_info['parameter_name'][0]])
-            elif action == 'hover':
-                self.web_actions.hover(element)
-            elif action == 'double_click':
-                self.web_actions.double_click(element)
-            elif action == 'right_click':
-                self.web_actions.right_click(element)
-            elif action == 'scroll_into_view':
-                self.web_actions.scroll_into_view(element)
-            elif action == 'scroll_to_element':
-                self.web_actions.scroll_to_element(element)
-            elif action == 'get_text':
-                return self.web_actions.get_text(element)
-            elif action == 'get_attribute':
-                return self.web_actions.get_attribute(element, parameters[method_info['parameter_name'][0]])
-            elif action == 'is_element_present':
-                return self.web_actions.is_element_present(locator)
-            elif action == 'is_element_visible':
-                return self.web_actions.is_element_visible(locator, parameters.get('timeout'))
-            elif action == 'is_element_clickable':
-                return self.web_actions.is_element_clickable(locator, parameters.get('timeout'))
-            elif action == 'is_element_selected':
-                return self.web_actions.is_element_selected(element)
-            elif action == 'is_element_enabled':
-                return self.web_actions.is_element_enabled(element)
-            elif action == 'element_text_should_be':
-                return self.web_actions.element_text_should_be(element, parameters[method_info['parameter_name'][0]])
-            elif action == 'element_text_should_contains':
-                return self.web_actions.element_text_should_contains(element, parameters[method_info['parameter_name'][0]])
-            elif action == 'title_should_be':
-                return self.web_actions.title_should_be(parameters[method_info['parameter_name'][0]])
-            elif action == 'title_should_contains':
-                return self.web_actions.title_should_contains(parameters[method_info['parameter_name'][0]])
-            elif action == 'wait_for_text_to_be_present':
-                return self.web_actions.wait_for_text_to_be_present(locator, parameters[method_info['parameter_name'][0]])
-            elif action == 'wait_for_element_to_disappear':
-                return self.web_actions.wait_for_element_to_disappear(locator)
-            elif action == 'switch_to_frame':
-                self.web_actions.switch_to_frame(element)
-            elif action == 'switch_to_default_content':
-                self.web_actions.switch_to_default_content()
-            elif action == 'execute_script':
-                return self.web_actions.execute_script(parameters[method_info['parameter_name'][0]], element)
-            elif action == 'accept_alert':
-                self.web_actions.accept_alert()
-            elif action == 'dismiss_alert':
-                self.web_actions.dismiss_alert()
-            elif action == 'get_alert_text':
-                return self.web_actions.get_alert_text()
-            elif action == 'highlight_element':
-                self.web_actions.highlight_element(element)
-            else:
-                raise ValueError(f"Unsupported action: {action}")
+            action_params = [parameters.get(param) for param in param_names]
 
-    def _get_element_with_appropriate_condition(self, locator, action):
-        if action in ['click', 'select_by_value', 'select_by_visible_text', 'select_by_index', 'double_click', 'right_click']:
-            element = self.web_actions.wait_for_element(locator, condition="clickable")
-        elif action in ['send_keys', 'clear', 'hover']:
-            element = self.web_actions.wait_for_element(locator, condition="visibility")
-        elif action in ['switch_to_frame']:
-            element = self.web_actions.wait_for_element(locator, condition="presence")
-        else:
-            element = self.web_actions.wait_for_element(locator)
-        logger.debug(f"Located element {locator} for action: {action}")
+            msg = f"Executing action: {action}"
+            if action_params:
+                msg += f" with parameters: {action_params}"
+            if element:
+                msg += f" on element: {page_name}.{element_name}"
+            logging.info(msg)
+            self._execute_action(action, element, *action_params)
+            logging.info("=" * 80)
+
+    def _get_element_with_appropriate_condition(self, locator: Tuple[str, str], action: str):
+        condition_map = {
+            'click': 'clickable',
+            'select_by_value': 'clickable',
+            'select_by_visible_text': 'clickable',
+            'select_by_index': 'clickable',
+            'double_click': 'clickable',
+            'right_click': 'clickable',
+            'send_keys': 'visibility',
+            'clear': 'visibility',
+            'hover': 'visibility',
+            'switch_to_frame': 'presence'
+        }
+        condition = condition_map.get(action, 'presence')
+        element = self.web_actions.wait_for_element(locator, condition=condition)
+        logging.debug(f"Located element {locator} for action: {action}")
         return element
+
+    def _execute_action(self, action: str, element, *params):
+        action_map = {
+            'open_url': self.web_actions.open_url,
+            'send_keys': self.web_actions.send_keys,
+            'click': self.web_actions.click,
+            'clear': self.web_actions.clear,
+            'select_by_value': self.web_actions.select_by_value,
+            'select_by_visible_text': self.web_actions.select_by_visible_text,
+            'select_by_index': self.web_actions.select_by_index,
+            'hover': self.web_actions.hover,
+            'double_click': self.web_actions.double_click,
+            'right_click': self.web_actions.right_click,
+            'scroll_into_view': self.web_actions.scroll_into_view,
+            'scroll_to_element': self.web_actions.scroll_to_element,
+            'get_text': self.web_actions.get_text,
+            'get_attribute': self.web_actions.get_attribute,
+            'is_element_present': self.web_actions.is_element_present,
+            'is_element_visible': self.web_actions.is_element_visible,
+            'is_element_clickable': self.web_actions.is_element_clickable,
+            'is_element_selected': self.web_actions.is_element_selected,
+            'is_element_enabled': self.web_actions.is_element_enabled,
+            'element_text_should_be': self.web_actions.element_text_should_be,
+            'element_text_should_contains': self.web_actions.element_text_should_contains,
+            'title_should_be': self.web_actions.title_should_be,
+            'title_should_contains': self.web_actions.title_should_contains,
+            'wait_for_text_to_be_present': self.web_actions.wait_for_text_to_be_present,
+            'wait_for_element_to_disappear': self.web_actions.wait_for_element_to_disappear,
+            'switch_to_frame': self.web_actions.switch_to_frame,
+            'switch_to_default_content': self.web_actions.switch_to_default_content,
+            'execute_script': self.web_actions.execute_script,
+            'accept_alert': self.web_actions.accept_alert,
+            'dismiss_alert': self.web_actions.dismiss_alert,
+            'get_alert_text': self.web_actions.get_alert_text,
+            'highlight_element': self.web_actions.highlight_element,
+        }
+
+        if action not in action_map:
+            raise ValueError(f"Unsupported action: {action}")
+
+        return action_map[action](element, *params) if element else action_map[action](*params)
+
+    @keyword
+    def close_browser(self):
+        WebDriverSingleton.quit()
 </pre>
 </div>
 
@@ -2450,15 +2220,15 @@ class PageObject:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_element_actions.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import time
-
+    <pre>import logging
+import time
 from selenium.common import NoSuchElementException, TimeoutException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.remote.webelement import WebElement
-from libraries.common.log_manager import logger
+
 
 
 class WebElementActions:
@@ -2470,7 +2240,7 @@ class WebElementActions:
         if timeout is None:
             timeout = self.default_timeout
 
-        logger.info(f"Waiting for element with locator {locator}, condition: {condition}, timeout: {timeout}")
+        logging.info(f"Waiting for element with locator {locator}, condition: {condition}, timeout: {timeout}")
         wait = WebDriverWait(self.driver, timeout)
 
         try:
@@ -2485,234 +2255,234 @@ class WebElementActions:
             else:
                 raise ValueError(f"Unsupported condition: {condition}")
 
-            logger.info(f"Element found successfully: {locator}")
+            logging.info(f"Element found successfully: {locator}")
             return result
         except TimeoutException:
-            logger.error(f"Timeout waiting for element: {locator}, condition: {condition}")
+            logging.error(f"Timeout waiting for element: {locator}, condition: {condition}")
             raise
 
     def open_url(self, url):
-        logger.info(f"Opening URL: {url}")
+        logging.info(f"Opening URL: {url}")
         self.driver.maximize_window()
         self.driver.get(url)
-        logger.info(f"URL opened successfully: {url}")
+        logging.info(f"URL opened successfully: {url}")
 
     def send_keys(self, element, value):
         element_desc = self._get_element_description(element)
-        logger.info(f"Sending keys to element: {element_desc}, value: {value}")
+        logging.info(f"Sending keys to element: {element_desc}, value: {value}")
         element.send_keys(value)
-        logger.info(f"Keys sent successfully to element: {element_desc}")
+        logging.info(f"Keys sent successfully to element: {element_desc}")
 
     def click(self, element):
         element_desc = self._get_element_description(element)
-        logger.info(f"Clicking element: {element_desc}")
+        logging.info(f"Clicking element: {element_desc}")
         element.click()
-        logger.info(f"Element clicked successfully: {element_desc}")
+        logging.info(f"Element clicked successfully: {element_desc}")
 
     def clear(self, element):
         element_desc = self._get_element_description(element)
-        logger.info(f"Clearing element: {element_desc}")
+        logging.info(f"Clearing element: {element_desc}")
         element.clear()
-        logger.info(f"Element cleared successfully: {element_desc}")
+        logging.info(f"Element cleared successfully: {element_desc}")
 
     def select_by_value(self, element, value):
         element_desc = self._get_element_description(element)
-        logger.info(f"Selecting option by value: {value} for element: {element_desc}")
+        logging.info(f"Selecting option by value: {value} for element: {element_desc}")
         Select(element).select_by_value(value)
-        logger.info(f"Option selected successfully: {value} for element: {element_desc}")
+        logging.info(f"Option selected successfully: {value} for element: {element_desc}")
 
     def select_by_visible_text(self, element, text):
         element_desc = self._get_element_description(element)
-        logger.info(f"Selecting option by visible text: {text} for element: {element_desc}")
+        logging.info(f"Selecting option by visible text: {text} for element: {element_desc}")
         Select(element).select_by_visible_text(text)
-        logger.info(f"Option selected successfully: {text} for element: {element_desc}")
+        logging.info(f"Option selected successfully: {text} for element: {element_desc}")
 
     def select_by_index(self, element, index):
         element_desc = self._get_element_description(element)
-        logger.info(f"Selecting option by index: {index} for element: {element_desc}")
+        logging.info(f"Selecting option by index: {index} for element: {element_desc}")
         Select(element).select_by_index(int(index))
-        logger.info(f"Option selected successfully at index: {index} for element: {element_desc}")
+        logging.info(f"Option selected successfully at index: {index} for element: {element_desc}")
 
     def hover(self, element):
         element_desc = self._get_element_description(element)
-        logger.info(f"Hovering over element: {element_desc}")
+        logging.info(f"Hovering over element: {element_desc}")
         ActionChains(self.driver).move_to_element(element).perform()
-        logger.info(f"Hovered over element successfully: {element_desc}")
+        logging.info(f"Hovered over element successfully: {element_desc}")
 
     def double_click(self, element):
         element_desc = self._get_element_description(element)
-        logger.info(f"Double clicking element: {element_desc}")
+        logging.info(f"Double clicking element: {element_desc}")
         ActionChains(self.driver).double_click(element).perform()
-        logger.info(f"Double clicked element successfully: {element_desc}")
+        logging.info(f"Double clicked element successfully: {element_desc}")
 
     def right_click(self, element):
         element_desc = self._get_element_description(element)
-        logger.info(f"Right clicking element: {element_desc}")
+        logging.info(f"Right clicking element: {element_desc}")
         ActionChains(self.driver).context_click(element).perform()
-        logger.info(f"Right clicked element successfully: {element_desc}")
+        logging.info(f"Right clicked element successfully: {element_desc}")
 
     def scroll_into_view(self, element):
         element_desc = self._get_element_description(element)
-        logger.info(f"Scrolling element into view: {element_desc}")
+        logging.info(f"Scrolling element into view: {element_desc}")
         self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
-        logger.info(f"Scrolled element into view successfully: {element_desc}")
+        logging.info(f"Scrolled element into view successfully: {element_desc}")
 
     def scroll_to_element(self, element):
         element_desc = self._get_element_description(element)
-        logger.info(f"Scrolling to element: {element_desc}")
+        logging.info(f"Scrolling to element: {element_desc}")
         self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center', inline: 'nearest'});", element)
-        logger.info(f"Scrolled to element successfully: {element_desc}")
+        logging.info(f"Scrolled to element successfully: {element_desc}")
 
     def get_text(self, element):
         element_desc = self._get_element_description(element)
-        logger.info(f"Getting text from element: {element_desc}")
+        logging.info(f"Getting text from element: {element_desc}")
         text = element.text
-        logger.info(f"Text retrieved: {text} from element: {element_desc}")
+        logging.info(f"Text retrieved: {text} from element: {element_desc}")
         return text
 
     def get_attribute(self, element, attribute_name):
         element_desc = self._get_element_description(element)
-        logger.info(f"Getting attribute '{attribute_name}' from element: {element_desc}")
+        logging.info(f"Getting attribute '{attribute_name}' from element: {element_desc}")
         attribute_value = element.get_attribute(attribute_name)
-        logger.info(f"Attribute '{attribute_name}' value: {attribute_value} for element: {element_desc}")
+        logging.info(f"Attribute '{attribute_name}' value: {attribute_value} for element: {element_desc}")
         return attribute_value
 
     def is_element_present(self, locator):
-        logger.info(f"Checking if element is present: {locator}")
+        logging.info(f"Checking if element is present: {locator}")
         try:
             self.driver.find_element(*locator)
-            logger.info(f"Element is present: {locator}")
+            logging.info(f"Element is present: {locator}")
             return True
         except NoSuchElementException:
-            logger.info(f"Element is not present: {locator}")
+            logging.info(f"Element is not present: {locator}")
             return False
 
     def is_element_visible(self, locator, timeout=None):
-        logger.info(f"Checking if element is visible: {locator}, timeout: {timeout}")
+        logging.info(f"Checking if element is visible: {locator}, timeout: {timeout}")
         try:
             self.wait_for_element(locator, condition="visibility", timeout=timeout)
-            logger.info(f"Element is visible: {locator}")
+            logging.info(f"Element is visible: {locator}")
             return True
         except TimeoutException:
-            logger.info(f"Element is not visible: {locator}")
+            logging.info(f"Element is not visible: {locator}")
             return False
 
     def is_element_clickable(self, locator, timeout=None):
-        logger.info(f"Checking if element is clickable: {locator}, timeout: {timeout}")
+        logging.info(f"Checking if element is clickable: {locator}, timeout: {timeout}")
         try:
             self.wait_for_element(locator, condition="clickable", timeout=timeout)
-            logger.info(f"Element is clickable: {locator}")
+            logging.info(f"Element is clickable: {locator}")
             return True
         except TimeoutException:
-            logger.info(f"Element is not clickable: {locator}")
+            logging.info(f"Element is not clickable: {locator}")
             return False
 
     def is_element_selected(self, element):
         element_desc = self._get_element_description(element)
-        logger.info(f"Checking if element is selected: {element_desc}")
+        logging.info(f"Checking if element is selected: {element_desc}")
         is_selected = element.is_selected()
-        logger.info(f"Element selected status: {is_selected} for element: {element_desc}")
+        logging.info(f"Element selected status: {is_selected} for element: {element_desc}")
         return is_selected
 
     def is_element_enabled(self, element):
         element_desc = self._get_element_description(element)
-        logger.info(f"Checking if element is enabled: {element_desc}")
+        logging.info(f"Checking if element is enabled: {element_desc}")
         is_enabled = element.is_enabled()
-        logger.info(f"Element enabled status: {is_enabled} for element: {element_desc}")
+        logging.info(f"Element enabled status: {is_enabled} for element: {element_desc}")
         return is_enabled
 
     def element_text_should_be(self, element, expected_text):
         element_desc = self._get_element_description(element)
-        logger.info(f"Checking if element text matches expected: {element_desc}, expected text: {expected_text}")
+        logging.info(f"Checking if element text matches expected: {element_desc}, expected text: {expected_text}")
         actual_text = self.get_text(element)
         result = actual_text == expected_text
-        logger.info(f"Text match result: {result}, Actual text: {actual_text} for element: {element_desc}")
+        logging.info(f"Text match result: {result}, Actual text: {actual_text} for element: {element_desc}")
         return result
 
     def element_text_should_contains(self, element, expected_text):
         element_desc = self._get_element_description(element)
-        logger.info(f"Checking if element text contains expected: {element_desc}, expected text: {expected_text}")
+        logging.info(f"Checking if element text contains expected: {element_desc}, expected text: {expected_text}")
         actual_text = self.get_text(element)
         result = expected_text in actual_text
-        logger.info(f"Text contain result: {result}, Actual text: {actual_text} for element: {element_desc}")
+        logging.info(f"Text contain result: {result}, Actual text: {actual_text} for element: {element_desc}")
         return result
 
     def title_should_be(self, expected_title):
-        logger.info(f"Checking if page title matches expected: {expected_title}")
+        logging.info(f"Checking if page title matches expected: {expected_title}")
         actual_title = self.driver.title
         result = actual_title == expected_title
-        logger.info(f"Title match result: {result}, Actual title: {actual_title}")
+        logging.info(f"Title match result: {result}, Actual title: {actual_title}")
         return result
 
     def title_should_contains(self, expected_title):
-        logger.info(f"Checking if page title contains expected: {expected_title}")
+        logging.info(f"Checking if page title contains expected: {expected_title}")
         actual_title = self.driver.title
         result = expected_title in actual_title
-        logger.info(f"Title contain result: {result}, Actual title: {actual_title}")
+        logging.info(f"Title contain result: {result}, Actual title: {actual_title}")
         return result
 
     def wait_for_text_to_be_present(self, locator, text, timeout=None):
         if timeout is None:
             timeout = self.default_timeout
-        logger.info(f"Waiting for text '{text}' to be present in element: {locator}, timeout: {timeout}")
+        logging.info(f"Waiting for text '{text}' to be present in element: {locator}, timeout: {timeout}")
         try:
             WebDriverWait(self.driver, timeout).until(
                 EC.text_to_be_present_in_element(locator, text)
             )
-            logger.info(f"Text '{text}' is present in element: {locator}")
+            logging.info(f"Text '{text}' is present in element: {locator}")
             return True
         except TimeoutException:
-            logger.warning(f"Text '{text}' is not present in element: {locator} after {timeout} seconds")
+            logging.warning(f"Text '{text}' is not present in element: {locator} after {timeout} seconds")
             return False
 
     def wait_for_element_to_disappear(self, locator, timeout=None):
         if timeout is None:
             timeout = self.default_timeout
-        logger.info(f"Waiting for element to disappear: {locator}, timeout: {timeout}")
+        logging.info(f"Waiting for element to disappear: {locator}, timeout: {timeout}")
         try:
             self.wait_for_element(locator, condition="invisibility", timeout=timeout)
-            logger.info(f"Element disappeared: {locator}")
+            logging.info(f"Element disappeared: {locator}")
             return True
         except TimeoutException:
-            logger.warning(f"Element did not disappear: {locator} after {timeout} seconds")
+            logging.warning(f"Element did not disappear: {locator} after {timeout} seconds")
             return False
 
     def switch_to_frame(self, element):
         element_desc = self._get_element_description(element)
-        logger.info(f"Switching to frame: {element_desc}")
+        logging.info(f"Switching to frame: {element_desc}")
         self.driver.switch_to.frame(element)
-        logger.info(f"Switched to frame successfully: {element_desc}")
+        logging.info(f"Switched to frame successfully: {element_desc}")
 
     def switch_to_default_content(self):
-        logger.info("Switching to default content")
+        logging.info("Switching to default content")
         self.driver.switch_to.default_content()
-        logger.info("Switched to default content successfully")
+        logging.info("Switched to default content successfully")
 
     def execute_script(self, script, *args):
-        logger.info(f"Executing JavaScript: {script}, Arguments: {args}")
+        logging.info(f"Executing JavaScript: {script}, Arguments: {args}")
         result = self.driver.execute_script(script, *args)
-        logger.info(f"JavaScript executed successfully, Result: {result}")
+        logging.info(f"JavaScript executed successfully, Result: {result}")
         return result
 
     def accept_alert(self):
-        logger.info("Accepting alert")
+        logging.info("Accepting alert")
         self.driver.switch_to.alert.accept()
-        logger.info("Alert accepted successfully")
+        logging.info("Alert accepted successfully")
 
     def dismiss_alert(self):
-        logger.info("Dismissing alert")
+        logging.info("Dismissing alert")
         self.driver.switch_to.alert.dismiss()
-        logger.info("Alert dismissed successfully")
+        logging.info("Alert dismissed successfully")
 
     def get_alert_text(self):
-        logger.info("Getting alert text")
+        logging.info("Getting alert text")
         alert_text = self.driver.switch_to.alert.text
-        logger.info(f"Alert text retrieved: {alert_text}")
+        logging.info(f"Alert text retrieved: {alert_text}")
         return alert_text
 
     def highlight_element(self, element, duration=2, color="lightgreen", border="3px solid red"):
         element_desc = self._get_element_description(element)
-        logger.info(f"Highlighting element: {element_desc}")
+        logging.info(f"Highlighting element: {element_desc}")
         def apply_style(s):
             self.driver.execute_script("arguments[0].setAttribute('style', arguments[1]);", element, s)
 
@@ -2724,7 +2494,7 @@ class WebElementActions:
             apply_style(original_style)
             time.sleep(0.25)
 
-        logger.info(f"Finished highlighting element: {element_desc}")
+        logging.info(f"Finished highlighting element: {element_desc}")
     def _get_element_description(self, element):
         if isinstance(element, WebElement):
             tag_name = element.tag_name
@@ -2749,69 +2519,92 @@ class WebElementActions:
 </pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_executor_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_test_executor.py</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_robot_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_robot_generator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from time import sleep
-from libraries.common.log_manager import logger
-from libraries.web.web_test_loader import WebTestLoader
-from libraries.web.page_object import PageObject
+    <pre>import logging
+import os
+from typing import Dict, List
+import pandas as pd
+from robot.api import TestSuite
+from libraries.common.config_manager import ConfigManager
 from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.web.web_test_loader import WebTestLoader
+from libraries.common.log_manager import Logger
 
 
-class WebTestExecutor:
-    def __init__(self, driver, test_case_path):
-        self.driver = driver
-        self.web_test_loader = WebTestLoader(test_case_path)
-        self.page_object = PageObject(
-            driver,
-            self.web_test_loader.get_locators(),
-            self.web_test_loader.get_page_objects()
-        )
+class WebUIRobotCasesGenerator:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
         self.project_root: str = PROJECT_ROOT
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'web', 'web_test_config.yaml')
+        self._load_configuration()
+        self._initialize_components(test_cases_path)
 
+    def _load_configuration(self):
+        self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
 
-    def run_tests(self):
-        test_cases = self.web_test_loader.get_test_cases()
+    def _initialize_components(self, test_cases_path: str):
+        default_test_cases_path: str = os.path.join('test_cases', 'web_test_cases.xlsx')
+        self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+        self.web_test_loader = WebTestLoader(self.test_cases_path)
+
+    def create_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None) -&gt; TestSuite:
+        self.robot_suite = TestSuite('WebUI Test Suite')
+        self.robot_suite.resource.imports.library('libraries.web.page_object.PageObject')
+        tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
+        tags = tags or self.test_config.get('tags', [])
+        test_cases = self.web_test_loader.filter_cases(tc_id_list, tags)
         for _, test_case in test_cases.iterrows():
-            case_id = test_case['Case ID']
-            if test_case['Run'] == 'Y':
-                try:
-                    self.run_test_case(case_id)
-                except Exception as e:
-                    logger.error(f"Error running test case {case_id}: {str(e)}")
-                sleep(1)
+            self.create_test_case(test_case)
+        self.robot_suite.teardown.config(name='close_browser', args=[])
+        return self.robot_suite
 
-    def run_test_case(self, case_id):
-        logger.info(f"Starting E2E test case {case_id}")
-        test_steps = self.web_test_loader.get_test_steps(case_id)
-        test_data_sets = self.web_test_loader.get_test_data(case_id)
+    def create_test_case(self, test_case: Dict):
+        logging.info(f"Creating E2E test case {test_case['Case ID']}")
+        test_steps = self.web_test_loader.get_test_steps(test_case['Case ID'])
+        test_data_sets = self.web_test_loader.get_test_data(test_case['Case ID'])
 
         for data_set_index, data_set in enumerate(test_data_sets, 1):
-            logger.info(f"Running E2E test case {case_id} with data set {data_set_index}")
-            for _, step in test_steps.iterrows():
-                page_name = step['Page Name']
-                method_name = step['Method Name']
-                parameters = self._get_parameters(data_set, step['Parameter Name'])
+            test_name = f"{test_case['Case ID']}.{test_case['Name']}.{data_set_index}"
+            robot_test = self.robot_suite.tests.create(name=test_name, doc=test_case['Descriptions'])
+            if 'Tags' in test_case and pd.notna(test_case['Tags']):
+                tags = [tag.strip() for tag in test_case['Tags'].split(',')]
+                for tag in tags:
+                    robot_test.tags.add(tag)
+            try:
+                self.create_test_steps(robot_test, test_steps, data_set)
+                logging.info(f"E2E test case {test_case['Case ID']} with data set {data_set_index} created successfully")
+            except Exception as e:
+                logging.error(f"Error creating test case {test_case['Case ID']} with data set {data_set_index}: {str(e)}")
+                raise
 
-                try:
-                    logger.info(f"Executing web step: {page_name}.{method_name}")
-                    self.page_object.execute_method(page_name, method_name, parameters)
-                except Exception as e:
-                    logger.error(f"Error executing step {page_name}.{method_name}: {str(e)}")
-                    raise
+    def create_test_steps(self, robot_test, test_steps: List[Dict], data_set: Dict):
+        for _, step in test_steps.iterrows():
+            page_name = step['Page Name']
+            module_name = step['Module Name']
+            parameters = self.extract_parameters(data_set, step['Parameter Name'])
 
-            logger.info(f"Completed E2E test case {case_id} with data set {data_set_index}")
-            sleep(1)  # Add a small delay between data sets
+            try:
+                logging.info(f"Creating web step: {page_name}.{module_name}")
+                robot_test.body.create_keyword(name='execute_module', args=[page_name, module_name, parameters])
+            except Exception as e:
+                logging.error(f"Error Creating web step {page_name}.{module_name}: {str(e)}")
+                raise
 
-    def _get_parameters(self, data_set, parameter_names):
+    @staticmethod
+    def extract_parameters(data_set: Dict, parameter_names: str) -&gt; Dict:
         parameters = {}
         for name in parameter_names.split(','):
             if name in data_set:
-                parameters[name] = data_set[name]
-        logger.debug(f"Extracted parameters: {parameters}")
-        return parameters</pre>
+                value = data_set[name]
+                # Add type conversion here if needed
+                parameters[name] = value
+            else:
+                logging.warning(f"Parameter {name} not found in data set")
+        logging.debug(f"Extracted parameters: {parameters}")
+        return parameters
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_loader_py">
@@ -2827,7 +2620,7 @@ class WebTestLoader:
         self.data = self._load_excel_data()
 
     def _load_excel_data(self):
-        sheets = ['Locators', 'PageObject', 'TestCases', 'TestSteps', 'TestData']
+        sheets = ['Locators', 'PageModules', 'TestCases', 'TestSteps', 'TestData']
         return {sheet: pd.read_excel(self.excel_path, sheet_name=sheet).fillna("") for sheet in sheets}
 
     def get_data(self, sheet_name):
@@ -2835,7 +2628,19 @@ class WebTestLoader:
 
     def get_test_cases(self):
         return self.get_data('TestCases')
+    def filter_cases(self, tcid_list=None, tags=None):
+        test_cases = self.get_test_cases()
 
+        if tcid_list:
+            test_cases = test_cases[test_cases['Case ID'].isin(tcid_list)]
+
+        if tags:
+            test_cases = test_cases[test_cases['Tags'].apply(lambda x: any(tag in x for tag in tags))]
+
+        # Filter out the test cases where 'Run' column is not equal to 'Y'
+        test_cases = test_cases[test_cases['Run'] == 'Y']
+
+        return test_cases
     def get_test_steps(self, case_id):
         test_steps = self.get_data('TestSteps')
         return test_steps[test_steps['Case ID'] == case_id]
@@ -2858,7 +2663,7 @@ class WebTestLoader:
         return data_sets
 
     def get_page_objects(self):
-        return self.get_data('PageObject')
+        return self.get_data('PageModules')
 
     def get_locators(self):
         return self.get_data('Locators')
@@ -2869,86 +2674,80 @@ class WebTestLoader:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\webdriver_factory.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import yaml
+    <pre>import logging
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.edge.options import Options as EdgeOptions
-from libraries.common.log_manager import logger
 
 
 class WebDriverFactory:
     @staticmethod
-    def create_driver(config_path):
-        logger.info(f"Creating WebDriver using config file: {config_path}")
+    def create_driver(driver_config):
+        browser = driver_config['browser']
+        is_remote = driver_config.get('is_remote', False)
+        remote_url = driver_config.get('remote_url')
+        browser_options = driver_config.get('browser_options', {})
 
-        with open(config_path, 'r') as file:
-            config = yaml.safe_load(file)
-        logger.debug(f"Loaded configuration: {config}")
-
-        browser = config['browser']
-        is_remote = config.get('is_remote', False)
-        remote_url = config.get('remote_url')
-        browser_options = config.get('browser_options', {})
-
-        logger.info(f"Configuring for browser: {browser}")
-        logger.info(f"Remote execution: {'Yes' if is_remote else 'No'}")
+        logging.info(f"Configuring for browser: {browser}")
+        logging.info(f"Remote execution: {'Yes' if is_remote else 'No'}")
 
         if browser.lower() == 'chrome':
             options = ChromeOptions()
-            service = ChromeService(executable_path=config.get('chromedriver_path'))
-            browser_path = config.get('chrome_path')
-            logger.info(f"Using ChromeDriver path: {config.get('chromedriver_path')}")
+            service = ChromeService(executable_path=driver_config.get('chromedriver_path'))
+            browser_path = driver_config.get('chrome_path')
+            logging.info(f"Using ChromeDriver path: {driver_config.get('chromedriver_path')}")
         elif browser.lower() == 'edge':
             options = EdgeOptions()
-            service = EdgeService(executable_path=config.get('edgedriver_path'))
-            browser_path = config.get('edge_path')
-            logger.info(f"Using EdgeDriver path: {config.get('edgedriver_path')}")
+            service = EdgeService(executable_path=driver_config.get('edgedriver_path'))
+            browser_path = driver_config.get('edge_path')
+            logging.info(f"Using EdgeDriver path: {driver_config.get('edgedriver_path')}")
         else:
-            logger.error(f"Unsupported browser: {browser}")
+            logging.error(f"Unsupported browser: {browser}")
             raise ValueError(f"Unsupported browser: {browser}")
 
         # 设置浏览器路径
         if browser_path and not is_remote:
             options.binary_location = browser_path
-            logger.info(f"Set browser binary location: {browser_path}")
+            logging.info(f"Set browser binary location: {browser_path}")
 
         # 设置浏览器选项
-        logger.info("Configuring browser options:")
+        logging.info("Configuring browser options:")
         for option, value in browser_options.items():
             if isinstance(value, bool) and value:
                 options.add_argument(f'--{option}')
-                logger.debug(f"Added browser option: --{option}")
+                logging.info(f"Added browser option: --{option}")
             elif isinstance(value, str):
                 options.add_argument(f'--{option}={value}')
-                logger.debug(f"Added browser option: --{option}={value}")
+                logging.info(f"Added browser option: --{option}={value}")
 
         if is_remote:
             if not remote_url:
-                logger.error("Remote URL is required for remote execution")
+                logging.error("Remote URL is required for remote execution")
                 raise ValueError("Remote URL is required for remote execution")
-            logger.info(f"Creating remote WebDriver with URL: {remote_url}")
+            logging.info(f"Creating remote WebDriver with URL: {remote_url}")
             driver = webdriver.Remote(command_executor=remote_url, options=options)
         else:
             if browser.lower() == 'chrome':
-                logger.info("Creating local Chrome WebDriver")
+                logging.info("Creating local Chrome WebDriver")
                 driver = webdriver.Chrome(service=service, options=options)
             elif browser.lower() == 'edge':
-                logger.info("Creating local Edge WebDriver")
+                logging.info("Creating local Edge WebDriver")
                 driver = webdriver.Edge(service=service, options=options)
 
-        logger.info("WebDriver created successfully")
+        logging.info("WebDriver created successfully")
         return driver
 
     @staticmethod
     def quit_driver(driver):
         if driver:
-            logger.info("Quitting WebDriver")
+            logging.info("Quitting WebDriver")
             driver.quit()
-            logger.info("WebDriver quit successfully")
+            logging.info("WebDriver quit successfully")
         else:
-            logger.warning("Attempted to quit a non-existent WebDriver")</pre>
+            logging.warning("Attempted to quit a non-existent WebDriver")
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_positions_json">
@@ -2960,7 +2759,7 @@ class WebDriverFactory:
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 57800.0
+        "CNY": 60700.0
     },
     "transactions": {
         "USD": {
@@ -3000,24 +2799,14 @@ class WebDriverFactory:
             }
         },
         "CNY": {
-            "2024-06-12": {
+            "2024-08-04": {
                 "inbound": {
-                    "count": 11,
-                    "total_amount": 1100.0
+                    "count": 44,
+                    "total_amount": 4400.0
                 },
                 "outbound": {
-                    "count": 11,
-                    "total_amount": 1100.0
-                }
-            },
-            "2024-06-13": {
-                "inbound": {
-                    "count": 1,
-                    "total_amount": 100.0
-                },
-                "outbound": {
-                    "count": 1,
-                    "total_amount": 100.0
+                    "count": 15,
+                    "total_amount": 1500.0
                 }
             }
         }
@@ -3368,30 +3157,31 @@ if __name__ == '__main__':
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
-from libraries.common.config_manager import ConfigManager
-from libraries.web.web_test_executor import WebTestExecutor
-from libraries.web.webdriver_factory import WebDriverFactory
+
+from robot.reporting import ResultWriter
+from libraries.web.web_robot_generator import WebUIRobotCasesGenerator
 from libraries.common.utility_helpers import PROJECT_ROOT
 
 
-def main():
-    project_root: str = PROJECT_ROOT
-    config_path = os.path.join(project_root, 'configs', 'web', 'web_config.yaml')
-    test_config = ConfigManager.load_yaml(config_path)
+def run_test_suite(suite):
+    # Run the test suite and generate output XML
+    output_xml = os.path.join(PROJECT_ROOT, 'output', 'output.xml')
+    report_file = os.path.join(PROJECT_ROOT, 'output', 'report.html')
+    log_file = os.path.join(PROJECT_ROOT, 'output', 'log.html')
+    suite.run(output=output_xml)
 
-    test_case_path = test_config.get("test_case_path", None)
-
-    driver = WebDriverFactory.create_driver(config_path)
-
-    try:
-        test_executor = WebTestExecutor(driver, test_case_path)
-        test_executor.run_tests()
-    finally:
-        WebDriverFactory.quit_driver(driver)
+    # Generate log and report
+    ResultWriter(output_xml).write_results(
+        report=report_file,
+        log=log_file
+    )
 
 
 if __name__ == "__main__":
-    main()
+    rcg = WebUIRobotCasesGenerator()
+    # Create and run the test suite
+    suite = rcg.create_test_suite()
+    run_test_suite(suite)
 </pre>
 </div>
 
