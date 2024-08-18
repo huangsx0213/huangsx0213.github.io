@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      "Automated Testing Framework"
-subtitle:   "[ End to End Auto Testing ]"
+subtitle:   "「 End to End Auto Testing 」" 
 date:       2024-08-18 23:00:00
 author:     "Vick Huang"
 header-img: "img/bg-walle.jpg"
