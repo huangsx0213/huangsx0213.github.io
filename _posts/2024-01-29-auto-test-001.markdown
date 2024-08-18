@@ -4,7 +4,7 @@ title:      "Automated Testing Framework User Manual"
 subtitle:   "\"End to End Auto Testing\""
 date:       2024-08-18 23:00:00
 author:     "Vick Huang"
-header-img: "img/post-bg-2015.jpg"
+header-img: "img/bg-walle.jpg"
 catalog: true
 tags:
     - Testing
