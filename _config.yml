@@ -1,5 +1,5 @@
 # Site settings
-title: Vick Wong's Blog
+title: Vick's Blog
 SEOTitle: Automated Testing | Testing
 header-img: img/home-bg.jpg
 email: huangsx0213@gmail.com
@@ -91,5 +91,5 @@ page-mathjax: false
 # Friends
 friends:
   [
-    { title: "Vick Wong's Blog", href: "http://huangsx0213.github.io/" },
+    { title: "Vick's Blog", href: "http://huangsx0213.github.io/" },
   ]
