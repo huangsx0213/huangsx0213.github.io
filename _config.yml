@@ -91,5 +91,5 @@ page-mathjax: false
 # Friends
 friends:
   [
-    { title: "Automated Testing", href: "/e2e_test_framework.html" },
+    { title: "Automated Testing", href: "/pages/e2e_test_framework.html" },
   ]
