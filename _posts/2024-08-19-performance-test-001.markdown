@@ -1,6 +1,6 @@
 ---
 layout:     post
-title:      "Automated Testing Framework"
+title:      "JMeter API编程方式创建、修改和执行性能测试"
 subtitle:   "「 Performance Testing 」" 
 date:       2024-08-19 17:00:00
 author:     "Vick Huang"
