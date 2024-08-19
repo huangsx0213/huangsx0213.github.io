@@ -74,7 +74,7 @@ ga_domain: www.sg1.findhere.org
 
 # Sidebar settings
 sidebar: true # whether or not using Sidebar.
-sidebar-about-description: "这里是Vick的测试天地，专注软件测试 @ Meta"
+sidebar-about-description: "这里是Vick的测试天地，专注软件测试"
 sidebar-avatar: /img/vi.jpg # use absolute URL, seeing it's used in both `/` and `/about/`
 
 # Featured Tags
@@ -91,5 +91,5 @@ page-mathjax: false
 # Friends
 friends:
   [
-    { title: "Automated Testing", href: "/pages/e2e_test_framework.html" },
+    { title: "Automated Testing Framework", href: "/pages/e2e_test_framework.html" },
   ]
