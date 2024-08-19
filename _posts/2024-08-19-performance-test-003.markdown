@@ -10,9 +10,7 @@ tags:
     - Testing
     - Performance Testing
 ---
-好的,我将根据您提供的信息重新整理一份完整的JMeter线程组和定时器使用说明。
 
----
 
 # JMeter线程组和定时器详细使用说明
 
