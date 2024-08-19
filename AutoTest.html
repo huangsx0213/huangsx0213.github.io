@@ -1,12 +1,10 @@
-import os
-
-html_template = '''---
+---
 layout: default
 title: "Framework"
 description: "「Automated Testing Framework」"
 header-img: "img/bg-walle.jpg"
 ---
-{{% include intro-header.html type='page' short=false %}}
+{% include intro-header.html type='page' short=false %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -15,12 +13,12 @@ header-img: "img/bg-walle.jpg"
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API Automatic Testing Framework</title>
     <style>
-        body {{
+        body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f9 !important;
             color: #333 !important;
-        }}
-        .code-container, .directory-container {{
+        }
+        .code-container, .directory-container {
             background-color: #282c34 !important;
             color: #abb2bf !important;
             padding: 20px;
@@ -28,16 +26,16 @@ header-img: "img/bg-walle.jpg"
             margin: 20px 0;
             overflow-x: auto;
             position: relative;
-        }}
-        .code-container pre, .directory-container pre {{
+        }
+        .code-container pre, .directory-container pre {
             margin: 0;
-        }}
-        .class-header, .directory-header {{
+        }
+        .class-header, .directory-header {
             font-size: 1.5em;
             color: #61dafb !important;
             margin-bottom: 10px;
-        }}
-        .copy-button, .return-button {{
+        }
+        .copy-button, .return-button {
             position: absolute;
             right: 20px;
             top: 20px;
@@ -48,119 +46,3487 @@ header-img: "img/bg-walle.jpg"
             cursor: pointer;
             border-radius: 3px;
             margin-left: 5px;
-        }}
-        .return-button {{
+        }
+        .return-button {
             right: 100px;
-        }}
-        .directory a {{
+        }
+        .directory a {
             color: #98c379 !important;
             text-decoration: none;
-        }}
-        .directory a:hover {{
+        }
+        .directory a:hover {
             text-decoration: underline;
-        }}
+        }
     </style>
 </head>
 <body>
     <h1>E2E Automatic Testing Framework</h1>
     <div class="directory-container">
         <div class="directory-header">File Directory</div>
-        <pre class="directory">{file_structure}</pre>
+        <pre class="directory">./
+│   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_main_py">main.py</a>
+│   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_README_md">README.md</a>
+│   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_yaml_config_cli_py">yaml_config_cli.py</a>
+│   ├── configs/
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_test_config_yaml">api_test_config.yaml</a>
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_e2e_test_config_yaml">e2e_test_config.yaml</a>
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_logging_config_yaml">logging_config.yaml</a>
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_saved_fields_yaml">saved_fields.yaml</a>
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_test_config_yaml">web_test_config.yaml</a>
+│   ├── libraries/
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries___init___py">__init__.py</a>
+│   │   ├── api/
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_robot_generator_py">api_robot_generator.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_keywords_py">api_test_keywords.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_loader_py">api_test_loader.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_body_generator_py">body_generator.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_headers_generator_py">headers_generator.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_request_sender_py">request_sender.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_response_handler_py">response_handler.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_saved_fields_manager_py">saved_fields_manager.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_template_renderer_py">template_renderer.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_variable_generator_py">variable_generator.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api___init___py">__init__.py</a>
+│   │   ├── common/
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_config_manager_py">config_manager.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_gen_temp_default_py">gen_temp_default.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_log_manager_py">log_manager.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_utility_helpers_py">utility_helpers.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common___init___py">__init__.py</a>
+│   │   ├── e2e/
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_robot_generator_py">e2e_robot_generator.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e___init___py">__init__.py</a>
+│   │   ├── web/
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_page_object_py">page_object.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_table_verifier_py">table_verifier.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_webdriver_factory_py">webdriver_factory.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_element_actions_py">web_element_actions.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_robot_generator_py">web_robot_generator.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_loader_py">web_test_loader.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">__init__.py</a>
+│   ├── testing_server/
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_positions_json">positions.json</a>
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_server_py">server.py</a>
+│   ├── test_cases/
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_test_cases_test_json">test.json</a>
+</pre>
     </div>
-    {code_blocks}
+    <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_README_md">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\README.md</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>
+# Automated Testing Framework User Manual
+
+## Table of Contents
+1. Installation and Setup
+2. Configuration
+3. Test Case Excel Structure
+4. Writing Test Cases
+5. Running Tests
+6. Viewing Results
+7. Best Practices
+8. Troubleshooting
+9. Advanced Features
+10. Maintenance and Updates
+
+## 1. Installation and Setup
+
+### 1.1 Python and pip
+
+Ensure you have Python 3.7 or higher installed. You can download it from [python.org](https://www.python.org/downloads/).
+
+### 1.2 Required Python Packages
+
+Install the required packages using pip:
+
+```bash
+pip install -r requirements.txt
+```
+
+The `requirements.txt` file should include (but is not limited to):
+
+```
+robot-framework
+requests
+pandas
+openpyxl
+pyyaml
+jinja2
+jsonpath-ng
+lxml
+selenium
+```
+
+### 1.3 WebDriver Setup
+
+For Web UI testing, ensure you have the appropriate WebDriver installed and configured in your system PATH:
+- ChromeDriver for Google Chrome
+- EdgeDriver for Microsoft Edge
+
+## 2. Configuration
+
+### 2.1 API Test Configuration (api_test_config.yaml)
+
+- `active_environment`: Set the active environment (e.g., DEV, SIT, UAT, PROD)
+- `test_cases_path`: Specify the path to the Excel file containing API test cases
+- `clear_saved_fields_after_test`: Set to true/false to clear saved fields after each test
+- `tc_id_list`: List of specific Test Case IDs to run (leave empty to run all)
+- `tags`: List of tags to filter test cases (leave empty to run all)
+
+### 2.2 Web UI Test Configuration (web_test_config.yaml)
+
+- `active_environment`: Set the active environment (e.g., DEV, SIT, UAT, PROD)
+- `test_cases_path`: Specify the path to the Excel file containing Web UI test cases
+- `tc_id_list`: List of specific Test Case IDs to run (leave empty to run all)
+- `tags`: List of tags to filter test cases (leave empty to run all)
+
+### 2.3 E2E Test Configuration (e2e_test_config.yaml)
+
+- `active_environment`: Set the active environment (e.g., DEV, SIT, UAT, PROD)
+- `test_cases_path`: Specify the path to the Excel file containing E2E test cases
+- `tc_id_list`: List of specific Test Case IDs to run (leave empty to run all)
+- `tags`: List of tags to filter test cases (leave empty to run all)
+
+## 3. Test Case Excel Structure
+
+### 3.1 API Test Cases Excel
+
+#### Sheets:
+1. API: Main test case information
+2. BodyTemplates: Request body templates
+3. BodyDefaults: Default values for request bodies
+4. Headers: Header templates
+5. Endpoints: Environment-specific endpoint configurations
+
+#### API Sheet Columns:
+- TCID: Unique test case ID
+- Name: Test case name
+- Descriptions: Test case description
+- Run: 'Y' to include in test run, 'N' to exclude
+- Tags: Comma-separated tags for filtering
+- Endpoint: Endpoint name (must match Endpoints sheet)
+- Headers: Header template name (must match Headers sheet)
+- Body Template: Body template name (must match BodyTemplates sheet)
+- Body Default: Default body name (must match BodyDefaults sheet)
+- Body User-defined Fields: Custom fields for the request body (JSON format)
+- Exp Result: Expected results (use JSONPath for assertions)
+- Save Fields: Fields to save from the response (use JSONPath)
+- Conditions: Special conditions (e.g., [Checkwith], [TestSetup], [TestTeardown])
+
+### 3.2 Web UI Test Cases Excel
+
+#### Sheets:
+1. TestCases: Main test case information
+2. TestSteps: Steps for each test case
+3. TestData: Test data for parameterization
+4. Locators: Element locators
+5. PageModules: Page object definitions
+6. WebEnvironments: Environment-specific configurations
+
+#### TestCases Sheet Columns:
+- Case ID: Unique test case ID
+- Name: Test case name
+- Descriptions: Test case description
+- Run: 'Y' to include in test run, 'N' to exclude
+- Tags: Comma-separated tags for filtering
+
+#### TestSteps Sheet Columns:
+- Case ID: Corresponding test case ID
+- Step Order: Order of execution
+- Page Name: Page object name
+- Module Name: Module name within the page object
+- Parameter Name: Comma-separated parameter names
+
+#### TestData Sheet Columns:
+- Case ID: Corresponding test case ID
+- Data Set: Data set identifier
+- Parameter Name: Name of the parameter
+- Value: Value for the parameter
+
+## 4. Writing Test Cases
+
+### 4.1 API Test Cases
+
+1. Fill in the API sheet with test case details.
+2. Create body templates in the BodyTemplates sheet.
+3. Define default body values in the BodyDefaults sheet.
+4. Create header templates in the Headers sheet.
+5. Define endpoints in the Endpoints sheet.
+
+#### Body-related fields:
+- Body Template: Use Jinja2 syntax for dynamic values.
+- Body Default: Provide default values in JSON format.
+- Body User-defined Fields: Override default values or add new fields in JSON format.
+  - Supports dynamic values using `${variable_name}` syntax.
+  - These variables are replaced with actual values from the Robot Framework variable scope.
+- Use `{{variable_name}}` in templates for dynamic values.
+- Supported dynamic values: uetr, uuid4, value_date, msg_id, timestamp, formated_timestamp, bic
+
+#### Expected Results:
+- Exp Result: Define expected results for assertions.
+  - Supports dynamic values using `${variable_name}` syntax.
+  - These variables are replaced with actual values from the Robot Framework variable scope.
+- Use JSONPath for precise assertions on the response.
+
+#### Headers:
+- Define headers in YAML format in the Headers sheet.
+- Use `{{variable_name}}` for dynamic values.
+- Use `${variable_name}` for Robot Framework variables.
+
+#### Example of using dynamic values:
+```
+Body User-defined Fields: {"user_id": "${USER_ID}", "timestamp": "{{timestamp}}"}
+Exp Result: $.response.status=${EXPECTED_STATUS}
+```
+
+In this example:
+- `${USER_ID}` will be replaced with the value of the USER_ID variable from the Robot Framework scope.
+- `{{timestamp}}` will be replaced with a dynamically generated timestamp.
+- `${EXPECTED_STATUS}` in the Exp Result will be replaced with the value of the EXPECTED_STATUS variable from the Robot Framework scope.
+
+### 4.2 Web UI Test Cases
+
+1. Fill in the TestCases sheet with test case details.
+2. Define test steps in the TestSteps sheet.
+3. Provide test data in the TestData sheet.
+4. Define element locators in the Locators sheet.
+5. Create page objects and modules in the PageModules sheet.
+6. Configure environments in the WebEnvironments sheet.
+
+## 5. Running Tests
+
+### 5.1 API Tests
+```bash
+python main.py --api
+```
+
+### 5.2 Web UI Tests
+```bash
+python main.py --web
+```
+
+### 5.3 E2E Tests
+```bash
+python main.py --e2e
+```
+
+
+
+## 6. Viewing Results
+
+- Test results are generated in the `report` folder.
+- Open `report.html` for a detailed test report.
+- Check `log.html` for step-by-step execution logs.
+- Screenshots for Web UI tests are embedded in the logs.
+
+## 7. Best Practices
+
+1. Use meaningful test case IDs and names.
+2. Leverage tags for easy filtering and organization.
+3. Maintain clear and concise test step descriptions.
+4. Regularly update and maintain test data.
+5. Keep locators and page objects up-to-date with the application.
+6. Use parameterization to create data-driven tests.
+7. Implement proper error handling and logging in test scripts.
+8. Regularly review and optimize test suites for efficiency.
+
+## 8. Troubleshooting
+
+- Check log files for detailed error messages.
+- Verify configuration files for correct settings.
+- Ensure all required dependencies are installed.
+- Validate Excel file structure and content.
+- Check for proper WebDriver setup for Web UI tests.
+- If you encounter "ModuleNotFoundError", ensure you've installed all required packages (see Section 1.2).
+
+## 9. Advanced Features
+
+### 9.1 Dynamic Values in API Tests
+
+The framework supports the use of dynamic values in two key areas of API tests:
+
+1. Body User-defined Fields
+2. Expected Results (Exp Result)
+
+#### Usage:
+- Use the syntax `${variable_name}` in these fields to reference Robot Framework variables.
+- These variables will be dynamically replaced with their actual values during test execution.
+- This feature allows for more flexible and reusable test cases, especially when combined with Robot Framework's variable management capabilities.
+
+#### Example:
+```yaml
+Body User-defined Fields: {"token": "${AUTH_TOKEN}", "user_id": "${CURRENT_USER_ID}"}
+Exp Result: $.status_code=200
+$.response.user.name=${EXPECTED_USER_NAME}
+```
+
+In this example:
+- `${AUTH_TOKEN}` and `${CURRENT_USER_ID}` in the Body User-defined Fields will be replaced with their respective values from the Robot Framework variable scope.
+- `${EXPECTED_USER_NAME}` in the Exp Result will be replaced with the actual expected user name from the Robot Framework variable scope.
+
+#### Benefits:
+- Increased test case reusability across different environments or scenarios.
+- Easier management of test data and expected results.
+- Support for data-driven testing when combined with Robot Framework's variable files or command-line variable setting.
+
+Remember to set these variables in your Robot Framework test suite setup, or pass them as arguments when running your tests for this feature to work effectively.
+
+## 10. Maintenance and Updates
+
+- Regularly update your Python packages to ensure compatibility and security:
+  ```bash
+  pip install --upgrade -r requirements.txt
+  ```
+- Keep your WebDrivers up-to-date with your browser versions.
+- Periodically review and update your test cases to align with application changes.
+- Consider version controlling your test cases and configurations for better tracking and collaboration.
+- Implement a process for reviewing and updating test data to ensure it remains relevant and effective.
+- Regularly backup your test artifacts, including Excel files, configurations, and custom scripts.
+- Set up automated jobs to run your test suites on a scheduled basis, ensuring continuous validation of your application.
+
+This comprehensive guide provides a complete overview of the automated testing framework, including setup, configuration, test case creation, execution, and maintenance. It covers both API and Web UI testing scenarios, as well as advanced features like dynamic value handling in API tests. By following this guide, users should be able to effectively leverage the framework for their testing needs.</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_api_test_config_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\api_test_config.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre># The active environment to be used for the tests.
+# This should match one of the environment keys defined below in 'environments'.
+active_environment: DEV
+# Path to the excel file containing the test cases.
+test_cases_path: 'test_cases/api_test_cases.xlsx'
+clear_saved_fields_after_test: true
+# List of Test Case IDs to run.
+# Specify one or more Test Case IDs here.
+# If this list is empty, all test cases will be run.
+tc_id_list:
+
+
+# List of tags to filter test cases.
+# Only test cases which contain any of these tags will be run.
+# If this list is empty, all test cases will be run.
+tags:
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_e2e_test_config_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\e2e_test_config.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>active_environment: DEV
+test_case_path : test_cases/e2e_test_cases.xlsx
+# List of Test Case IDs to run.
+# Specify one or more Test Case IDs here.
+# If this list is empty, all test cases will be run.
+tc_id_list:
+
+# List of tags to filter test cases.
+# Only test cases which contain any of these tags will be run.
+# If this list is empty, all test cases will be run.
+tags:
+
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_logging_config_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\logging_config.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>version: 1
+disable_existing_loggers: False
+
+formatters:
+  standard:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: standard
+    level: DEBUG
+    stream: ext://sys.stdout
+  file:
+    class: logging.FileHandler
+    formatter: standard
+    level: DEBUG
+    mode: "a"
+
+
+root:
+  level: INFO
+  handlers: [console,file]</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_saved_fields_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\saved_fields.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre></pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_test_config_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\web_test_config.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>active_environment: SIT
+test_case_path : test_cases/web_test_cases.xlsx
+# List of Test Case IDs to run.
+# Specify one or more Test Case IDs here.
+# If this list is empty, all test cases will be run.
+tc_id_list:
+
+# List of tags to filter test cases.
+# Only test cases which contain any of these tags will be run.
+# If this list is empty, all test cases will be run.
+tags:
+
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries___init___py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\__init__.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre></pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api___init___py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\__init__.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre></pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_robot_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\api_robot_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+import os
+from typing import Dict, List
+import pandas as pd
+from libraries.api.api_test_loader import APITestLoader
+from libraries.common.config_manager import ConfigManager
+from libraries.common.utility_helpers import PROJECT_ROOT
+from robot.api import TestSuite
+from libraries.common.log_manager import logger_instance
+
+
+class APIRobotCasesGenerator:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None) -&gt; None:
+        self.project_root: str = PROJECT_ROOT
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'api_test_config.yaml')
+        self._load_configuration()
+        self._initialize_components(test_cases_path)
+
+    def _load_configuration(self):
+        self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
+
+    def _initialize_components(self, test_cases_path: str):
+        default_test_cases_path: str = os.path.join('test_cases', 'api_test_cases.xlsx')
+        self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+        self.test_cases_df = APITestLoader(self.test_cases_path)
+
+    def create_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None, test_suite=None) -&gt; TestSuite:
+        self.api_suite = test_suite if test_suite else TestSuite('API TestSuite')
+        self.api_suite.teardown.config(name='clear_saved_fields', args=[])
+        test_cases_path_arg = os.path.normpath(self.test_cases_path).replace(os.path.sep, '/')
+        logging.info(f"{self.__class__.__name__}: Currently using test cases from {test_cases_path_arg}")
+        self.api_suite.resource.imports.library('libraries.api.api_test_keywords.APITestKeywords', args=[None, test_cases_path_arg])  # Update as needed
+        tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
+        tags = tags or self.test_config.get('tags', [])
+        try:
+            filtered_cases = self.test_cases_df.filter_cases(tcid_list=tc_id_list, tags=tags)
+            self.create_test_cases(filtered_cases)
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Failed to create test suite: {str(e)}")
+        finally:
+            return self.api_suite
+
+    def create_test_cases(self, filtered_cases) -&gt; None:
+        for _, test_case in filtered_cases.iterrows():
+            robot_api_test_name = f"API.{test_case['TCID']}.{test_case['Name']}"
+            robot_api_test = self.api_suite.tests.create(name=robot_api_test_name, doc=test_case['Descriptions'])
+            # Add tags
+            if 'Tags' in test_case and pd.notna(test_case['Tags']):
+                tags = [tag.strip() for tag in test_case['Tags'].split(',')]
+                for tag in tags:
+                    robot_api_test.tags.add(tag)
+
+            robot_api_test.body.create_keyword(name='execute_api_test_case', args=[test_case['TCID']])
+
+            # Add Test Setup and Test Teardown
+            conditions = test_case['Conditions'].splitlines() if pd.notna(test_case['Conditions']) else []
+            for condition in conditions:
+                if '[TestSetup]' in condition:
+                    case_ids = condition.strip('[TestSetup]').split(',')
+                    robot_api_test.setup.config(name='execute_multiple_api_test_cases', args=[case_ids])
+                if '[TestTeardown]' in condition:
+                    case_ids = condition.strip('[TestTeardown]').split(',')
+                    robot_api_test.teardown.config(name='execute_multiple_api_test_cases', args=[case_ids])
+                if '[SuiteSetup]' in condition:
+                    case_ids = condition.strip('[SuiteSetup]').split(',')
+                    self.api_suite.setup.config(name='execute_multiple_api_test_cases', args=[case_ids])
+                if '[SuiteTeardown]' in condition:
+                    case_ids = condition.strip('[SuiteTeardown]').split(',')
+                    self.api_suite.teardown.config(name='execute_multiple_api_test_cases', args=[case_ids])
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_keywords_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\api_test_keywords.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+import os
+import re
+from typing import Dict, List
+import pandas as pd
+from libraries.common.config_manager import ConfigManager
+from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.api.request_sender import RequestSender
+from libraries.api.body_generator import BodyGenerator
+from libraries.api.headers_generator import HeadersGenerator
+from libraries.api.saved_fields_manager import SavedFieldsManager
+from libraries.api.response_handler import APIResponseAsserter, APIResponseExtractor
+from libraries.api.api_test_loader import APITestLoader
+from robot.libraries.BuiltIn import BuiltIn
+from robot.api.deco import keyword, library
+
+builtin_lib = BuiltIn()
+
+
+@library
+class APITestKeywords:
+    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
+
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None) -&gt; None:
+        self.project_root: str = PROJECT_ROOT
+        self._load_configuration(test_config_path, test_cases_path)
+        self._initialize_components()
+
+
+
+    def _load_configuration(self, test_config_path, test_cases_path):
+
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'api_test_config.yaml')
+
+        self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
+
+        default_test_cases_path: str = os.path.join('test_cases', 'api_test_cases.xlsx')
+        self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+
+    def _load_endpoints(self):
+
+        endpoints = self.api_test_loader.get_endpoints()
+        self.active_environment = self.test_config['active_environment']
+        self.endpoints = {}
+        for _, row in endpoints[endpoints['Environment'] == self.active_environment].iterrows():
+            self.endpoints[row['Endpoint']] = {
+                'method': row['Method'],
+                'path': row['Path']
+            }
+
+    def _initialize_components(self):
+        self.saved_fields_manager: SavedFieldsManager = SavedFieldsManager()
+        self.api_test_loader = APITestLoader(self.test_cases_path)
+        self._load_endpoints()
+        self.body_generator: BodyGenerator = BodyGenerator(self.api_test_loader)
+        self.headers_generator: HeadersGenerator = HeadersGenerator(self.api_test_loader)
+        self.api_response_asserter: APIResponseAsserter = APIResponseAsserter()
+        self.api_response_extractor: APIResponseExtractor = APIResponseExtractor()
+
+    @keyword
+    def clear_saved_fields(self):
+        if self.test_config.get('clear_saved_fields_after_test', False):
+            self.saved_fields_manager.clear_saved_fields()
+            logging.info(f"{self.__class__.__name__}: Cleared saved fields")
+
+    @keyword
+    def execute_multiple_api_test_cases(self, test_case_ids: List[str] = None):
+
+        test_cases = self.api_test_loader = APITestLoader(self.test_cases_path).get_api_test_cases()
+
+        if test_case_ids is None:
+            test_case_ids = [tc['TCID'] for tc in test_cases]
+
+        results = {}
+        for tcid in test_case_ids:
+            logging.info(f"{self.__class__.__name__}: Executing test case: {tcid}")
+            result = self.execute_api_test_case(tcid)
+            results[tcid] = result
+
+        return results
+
+    @keyword
+    def execute_api_test_case(self, test_case_id: str, is_dynamic_check: bool = False):
+        try:
+
+            test_cases = self.api_test_loader = APITestLoader(self.test_cases_path).get_api_test_cases()
+            test_case = next((tc for _, tc in test_cases.iterrows() if tc['TCID'] == test_case_id), None)
+
+            if test_case is None:
+                raise ValueError(f"{self.__class__.__name__}: Test case with ID {test_case_id} not found.")
+
+            check_with_tcids = self._extract_check_with_tcids(test_case)
+
+            if check_with_tcids:
+                pre_check_responses = self._execute_check_with_cases(check_with_tcids)
+                response, execution_time = self._execute_single_test_case(test_case)
+                post_check_responses = self._execute_check_with_cases(check_with_tcids)
+                self._validate_dynamic_checks(test_case, pre_check_responses, post_check_responses)
+            else:
+                response, execution_time = self._execute_single_test_case(test_case)
+
+            logging.info(f"{self.__class__.__name__}: Finished execution of test case {test_case_id}")
+            logging.info("============================================")
+
+            return True if not is_dynamic_check else (response, execution_time)
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Failed to execute test case {test_case_id}: {str(e)}")
+            raise e
+
+    def _execute_single_test_case(self, test_case):
+        response, execution_time = self.send_request(test_case)
+        logging.info(f"{self.__class__.__name__}: Time taken to execute test case {test_case['TCID']}: {execution_time:.2f} seconds")
+        self.api_response_asserter.validate_response(test_case['Exp Result'], response)
+        self.api_response_extractor.extract_value(response, test_case)
+        logging.info("============================================")
+        return response, execution_time
+
+    def _extract_check_with_tcids(self, test_case):
+        conditions = test_case['Conditions']
+        if pd.isna(conditions):
+            return []
+
+        check_with_match = re.search(r'\[Checkwith\](.*)', conditions)
+        if check_with_match:
+            return [tcid.strip() for tcid in check_with_match.group(1).split(',')]
+        return []
+
+    def _execute_check_with_cases(self, check_with_tcids):
+        responses = {}
+        for tcid in check_with_tcids:
+            logging.info(f"{self.__class__.__name__}: Executing test case {tcid} for dynamic check")
+            response, _ = self.execute_api_test_case(tcid, is_dynamic_check=True)
+            responses[tcid] = response
+        return responses
+
+    def _validate_dynamic_checks(self, test_case, pre_check_responses, post_check_responses):
+        logging.info(f"{self.__class__.__name__}: Validating dynamic checks for test case {test_case['TCID']}:")
+        self.api_response_asserter.validate_dynamic_checks(test_case, pre_check_responses, post_check_responses)
+
+    def send_request(self, test_case):
+        ex_endpoint = test_case['Endpoint']
+        current_endpoint = self.endpoints.get(ex_endpoint, None)
+        if current_endpoint is None:
+            raise Exception(f"{self.__class__.__name__}: Endpoint {ex_endpoint} not found in config file")
+        method: str = current_endpoint['method']
+        url: str = current_endpoint['path']
+
+        saved_fields = self.saved_fields_manager.load_saved_fields()
+        headers = self.headers_generator.prepare_headers(test_case, saved_fields)
+        self.saved_fields_manager.apply_saved_fields(test_case, saved_fields)
+        self.saved_fields_manager.apply_suite_variables(test_case)
+        body, format_type = self.body_generator.generate_request_body(test_case, method)
+
+        logging.info(f"{self.__class__.__name__}: Sending request to {url} with method: {method} for test step {test_case['TCID']}.")
+        response, execution_time = RequestSender.send_request(url, method, headers, body, format_type)
+
+        return response, execution_time
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_loader_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\api_test_loader.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import json
+import pandas as pd
+import yaml
+
+
+class APITestLoader:
+    def __init__(self, excel_path: str):
+        self.excel_path = excel_path
+        self.data = {}
+        self.validate_excel_structure()
+
+    def _load_excel_data(self, sheet_name: str) -&gt; pd.DataFrame:
+        if sheet_name not in self.data:
+            try:
+                self.data[sheet_name] = pd.read_excel(self.excel_path, sheet_name=sheet_name).fillna('')
+                self.validate_sheet_data(sheet_name, self.data[sheet_name])
+            except ValueError as e:
+                raise ValueError(f"Error loading sheet '{sheet_name}': {e}")
+        return self.data[sheet_name]
+
+    def get_data(self, sheet_name: str) -&gt; pd.DataFrame:
+        return self._load_excel_data(sheet_name)
+
+    def get_api_test_cases(self) -&gt; pd.DataFrame:
+        return self.get_data('API')
+
+    def get_body_templates(self) -&gt; pd.DataFrame:
+        return self.get_data('BodyTemplates')
+
+    def get_body_defaults(self) -&gt; pd.DataFrame:
+        return self.get_data('BodyDefaults')
+
+    def get_headers(self) -&gt; pd.DataFrame:
+        return self.get_data('Headers')
+
+    def get_endpoints(self) -&gt; pd.DataFrame:
+        return self.get_data('Endpoints')
+
+    def filter_cases(self, tcid_list: list = None, tags: list = None) -&gt; pd.DataFrame:
+        test_cases = self.get_api_test_cases()
+
+        if tcid_list:
+            test_cases = test_cases[test_cases['TCID'].isin(tcid_list)]
+
+        if tags:
+            test_cases = test_cases[test_cases['Tags'].apply(lambda x: any(tag in x for tag in tags))]
+
+        # Filter out the test cases where 'Run' column is not equal to 'Y'
+        return test_cases[test_cases['Run'] == 'Y']
+
+    def validate_excel_structure(self):
+        required_sheets = ['API', 'BodyTemplates', 'BodyDefaults', 'Headers', 'Endpoints']
+        existing_sheets = pd.ExcelFile(self.excel_path).sheet_names
+        missing_sheets = set(required_sheets) - set(existing_sheets)
+        if missing_sheets:
+            raise ValueError(f"Missing required sheets: {', '.join(missing_sheets)}")
+
+    def validate_sheet_data(self, sheet_name: str, df: pd.DataFrame):
+        validation_methods = {
+            'API': self._validate_api_sheet,
+            'BodyTemplates': self._validate_body_templates_sheet,
+            'BodyDefaults': self._validate_body_defaults_sheet,
+            'Headers': self._validate_headers_sheet,
+            'Endpoints': self._validate_endpoints_sheet
+        }
+        if sheet_name in validation_methods:
+            validation_methods[sheet_name](df)
+
+    def _validate_api_sheet(self, df: pd.DataFrame):
+        required_columns = ['TCID', 'Name', 'Run', 'Endpoint', 'Body Template', 'Body Default', 'Body User-defined Fields', 'Headers']
+        missing_columns = set(required_columns) - set(df.columns)
+        if missing_columns:
+            raise ValueError(f"Missing required columns in API sheet: {', '.join(missing_columns)}")
+
+        # Check for duplicate TCID
+        if df['TCID'].duplicated().any():
+            raise ValueError("Duplicate TCID found in API sheet")
+
+        # Ensure 'Run' column has only 'Y' or 'N'
+        if not df['Run'].isin(['Y', 'N']).all():
+            raise ValueError("Invalid values in 'Run' column. Only 'Y' or 'N' are allowed.")
+
+        # Validate mandatory fields, considering GET and DELETE requests
+        for index, row in df.iterrows():
+            method = self.get_endpoints().loc[self.get_endpoints()['Endpoint'] == row['Endpoint'], 'Method'].iloc[0]
+            if method in ['GET', 'DELETE']:
+                # Allow '' for 'Body Template' and 'Body Default'
+                fields_to_check = ['TCID', 'Name', 'Endpoint', 'Headers']
+            else:
+                # Do not allow '' for any mandatory field
+                fields_to_check = required_columns
+
+            for field in fields_to_check:
+                if row[field] == '':
+                    raise ValueError(f"Empty value found in mandatory column '{field}' for TCID '{row['TCID']}' in API sheet")
+
+    def _validate_body_templates_sheet(self, df: pd.DataFrame):
+        required_columns = ['TemplateName', 'Content', 'Format']
+        missing_columns = set(required_columns) - set(df.columns)
+        if missing_columns:
+            raise ValueError(f"Missing required columns in BodyTemplates sheet: {', '.join(missing_columns)}")
+
+        if df['TemplateName'].duplicated().any():
+            raise ValueError("Duplicate TemplateName found in BodyTemplates sheet")
+
+        if not df['Format'].isin(['json', 'xml']).all():
+            raise ValueError("Invalid values in 'Format' column. Only 'json' or 'xml' are allowed.")
+
+        # Check for empty values in mandatory fields
+        for field in required_columns:
+            if df[field].eq('').any():
+                raise ValueError(f"Empty value found in mandatory column '{field}' in BodyTemplates sheet")
+
+    def _validate_body_defaults_sheet(self, df: pd.DataFrame):
+        required_columns = ['Name', 'Content']
+        missing_columns = set(required_columns) - set(df.columns)
+        if missing_columns:
+            raise ValueError(f"Missing required columns in BodyDefaults sheet: {', '.join(missing_columns)}")
+
+        if df['Name'].duplicated().any():
+            raise ValueError("Duplicate Name found in BodyDefaults sheet")
+
+        # Check for empty values in mandatory fields
+        for field in required_columns:
+            if df[field].eq('').any():
+                raise ValueError(f"Empty value found in mandatory column '{field}' in BodyDefaults sheet")
+
+        # Validate that Content is valid JSON
+        for _, row in df.iterrows():
+            try:
+                json.loads(row['Content'])
+            except json.JSONDecodeError:
+                raise ValueError(f"Invalid JSON in BodyDefaults sheet for Name: {row['Name']}")
+
+    def _validate_headers_sheet(self, df: pd.DataFrame):
+        required_columns = ['HeaderName', 'Content']
+        missing_columns = set(required_columns) - set(df.columns)
+        if missing_columns:
+            raise ValueError(f"Missing required columns in Headers sheet: {', '.join(missing_columns)}")
+
+        if df['HeaderName'].duplicated().any():
+            raise ValueError("Duplicate HeaderName found in Headers sheet")
+
+        # Check for empty values in mandatory fields
+        for field in required_columns:
+            if df[field].eq('').any():
+                raise ValueError(f"Empty value found in mandatory column '{field}' in Headers sheet")
+
+        # Validate that Content is valid YAML
+        for _, row in df.iterrows():
+            try:
+                yaml.safe_load(row['Content'])
+            except yaml.YAMLError:
+                raise ValueError(f"Invalid YAML in Headers sheet for HeaderName: {row['HeaderName']}")
+
+    def _validate_endpoints_sheet(self, df: pd.DataFrame):
+        required_columns = ['Environment', 'Endpoint', 'Method', 'Path']
+        missing_columns = set(required_columns) - set(df.columns)
+        if missing_columns:
+            raise ValueError(f"Missing required columns in Endpoints sheet: {', '.join(missing_columns)}")
+
+        if df.duplicated(subset=['Environment', 'Endpoint']).any():
+            raise ValueError("Duplicate Environment-Endpoint combination found in Endpoints sheet")
+
+        valid_methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+        if not df['Method'].isin(valid_methods).all():
+            raise ValueError(f"Invalid values in 'Method' column. Allowed values are: {', '.join(valid_methods)}")
+
+        # Check for empty values in mandatory fields
+        for field in required_columns:
+            if df[field].eq('').any():
+                raise ValueError(f"Empty value found in mandatory column '{field}' in Endpoints sheet")
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_body_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\body_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import json
+import logging
+import re
+
+from typing import Any, Dict, Union
+from libraries.common.utility_helpers import UtilityHelpers
+from libraries.api.template_renderer import TemplateRenderer
+from libraries.api.variable_generator import VariableGenerator
+
+
+class BodyGenerator:
+    def __init__(self, api_test_loader):
+        self.api_test_loader = api_test_loader
+        self.format_json = UtilityHelpers.format_json
+        self.format_xml = UtilityHelpers.format_xml
+
+    def generate_request_body(self, test_case, method) -&gt; (Union[Dict, str], str):
+        try:
+            if method in ['GET', 'DELETE']:
+                return {}, 'json'
+
+            template_content, template_format = self.load_template(test_case['Body Template'])
+            default_values = self.load_default_values(test_case['Body Default'])
+            user_defined_fields = self.parse_user_defined_fields(test_case['Body User-defined Fields'])
+            logging.info(f"{self.__class__.__name__}:Body user-defined fields for test case {test_case['TCID']}: \n{user_defined_fields}")
+            combined_data = self.merge_values(default_values, user_defined_fields, test_case)
+            request_data = self.generate_dynamic_values(combined_data, test_case)
+            logging.info(f"{self.__class__.__name__}:Request data for test case {test_case['TCID']}: \n{self.format_json(request_data)}")
+
+            # Generating request body
+            body = TemplateRenderer.render_template(template_content, request_data, template_format)
+            if template_format == 'json':
+                logging.info(f"{self.__class__.__name__}:Request body for test case {test_case['TCID']}: \n{self.format_json(body)}")
+            else:
+                logging.info(f"{self.__class__.__name__}:Request body for test case {test_case['TCID']}: \n{self.format_xml(body)}")
+            return body, template_format
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}:Error in generate_request_body for test case {test_case['TCID']}: {str(e)}")
+            raise
+
+    def load_template(self, template_name):
+        templates = self.api_test_loader.get_body_templates()
+        try:
+            template = templates[templates['TemplateName'] == template_name]
+            if template.empty:
+                raise ValueError(f"Template '{template_name}' not found.")
+            content = template.iloc[0]['Content']
+            format = template.iloc[0]['Format']
+            return content, format
+        except Exception as e:
+            logging.error(f"Error loading template: {e}")
+            raise
+
+    def load_default_values(self, default_name):
+        defaults = self.api_test_loader.get_body_defaults()
+        try:
+            default = defaults[defaults['Name'] == default_name]
+            if default.empty:
+                raise ValueError(f"Default values '{default_name}' not found.")
+            return json.loads(default.iloc[0]['Content'])
+        except Exception as e:
+            logging.error(f"Error loading default values: {e}")
+            raise
+
+    def parse_user_defined_fields(self, field_string):
+        try:
+            return json.loads(field_string)
+        except json.JSONDecodeError as e:
+            logging.error(f"Error parsing user-defined fields: {e}")
+            raise
+
+    def merge_values(self, base_values: Dict[str, Any], custom_values: Dict[str, Any], test_case: Dict[str, Any]) -&gt; Dict[str, Any]:
+        try:
+            for key, value in custom_values.items():
+                if key in base_values and isinstance(value, dict) and isinstance(base_values[key], dict):
+                    base_values[key] = self.merge_values(base_values.get(key, {}), value, test_case)
+                else:
+                    base_values[key] = value
+            return base_values
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}:Error merging default values and custom values in test case {test_case['TCID']} : {str(e)}")
+            raise
+
+    def generate_dynamic_values(self, data: Union[Dict[str, Any], list], test_case: Dict[str, Any]) -&gt; Union[
+        Dict[str, Any], list]:
+        try:
+            if isinstance(data, dict):
+                return {key: self.generate_dynamic_values(value, test_case) if isinstance(value, (dict, list))
+                        else self.replace_placeholders(value, test_case) for key, value in data.items()}
+            elif isinstance(data, list):
+                return [self.generate_dynamic_values(item, test_case) if isinstance(item, (dict, list))
+                        else self.replace_placeholders(item, test_case) for item in data]
+            return data
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}:Error generating dynamic values in test case {test_case['TCID']} : {str(e)}")
+            raise
+
+    def replace_placeholders(self, value: Any, test_case) -&gt; Any:
+        try:
+            if isinstance(value, str) and re.match(r'\{\{\s*[^}]+?\s*\}\}', value):
+                placeholder = re.findall(r'\{\{\s*([^}]+?)\s*\}\}', value)[0]
+                return VariableGenerator.generate_dynamic_value(placeholder)
+            return value
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}:Error replacing placeholders in test case {test_case['TCID']}: {str(e)}")
+            raise
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_headers_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\headers_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+import re
+import yaml
+from typing import Dict, Any
+import pandas as pd
+from libraries.common.utility_helpers import UtilityHelpers
+from .variable_generator import VariableGenerator
+from robot.libraries.BuiltIn import BuiltIn
+
+builtin_lib = BuiltIn()
+
+
+class HeadersGenerator:
+    def __init__(self, api_test_loader) -&gt; None:
+        self.format_json = UtilityHelpers.format_json
+        self.api_test_loader = api_test_loader
+
+    def prepare_headers(self, testcase, saved_fields):
+        try:
+            headers_name = testcase['Headers']
+            headers = self.api_test_loader.get_headers()
+
+            # Ensure headers_name exists and is valid
+            if headers_name not in headers['HeaderName'].values:
+                raise ValueError(f"Headers name '{headers_name}' not found in the headers dataframe.")
+
+            # Convert to string explicitly before checking
+            header_content = str(headers[headers['HeaderName'] == headers_name]['Content'].iloc[0])
+            logging.info(f"{self.__class__.__name__}: Headers for test case '{testcase['TCID']}' loaded from file: \n{header_content}")
+
+            # Check if header_content is empty
+            if pd.isna(header_content):
+                raise ValueError("Header content is empty.")
+
+            # Parse the YAML-like content
+            original_headers = yaml.safe_load(header_content)
+
+            headers = {k: self.replace_placeholders(v, saved_fields, testcase) for k, v in original_headers.items()}
+            logging.info(f"{self.__class__.__name__}: Headers for test case '{testcase['TCID']}' replaced placeholders: \n{self.format_json(headers)}")
+
+            return headers
+
+        except KeyError as e:
+            logging.error(f"{self.__class__.__name__}: Headers file '{headers_name}' not found in test case '{testcase['TCID']}': {str(e)}")
+            raise
+
+        except yaml.YAMLError as e:
+            logging.error(f"{self.__class__.__name__}: Invalid YAML format in headers file '{headers_name}' for test case '{testcase['TCID']}': {str(e)}")
+            raise
+
+        except pd.errors.EmptyDataError as e:
+            logging.error(f"{self.__class__.__name__}: No data found in headers dataframe: {str(e)}")
+            raise
+
+        except TypeError as e:
+            logging.error(f"{self.__class__.__name__}: TypeError when parsing YAML content for headers file '{headers_name}' for test case '{testcase['TCID']}': {str(e)}")
+            raise
+
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error processing headers file '{headers_name}' for test case '{testcase['TCID']}': {str(e)}")
+            raise
+
+    def replace_placeholders(self, value: Any, saved_fields: Dict[str, Any], testcase) -&gt; Any:
+        headers_filename = testcase['Headers']
+        try:
+            if isinstance(value, str):
+                # Replace {{...}}
+                value = re.sub(r'\{\{\s*([^}]+?)\s*\}\}', lambda m: str(saved_fields.get(m.group(1), VariableGenerator.generate_dynamic_value(m.group(1)))), value,
+                               flags=re.DOTALL | re.MULTILINE)
+
+                # Logging
+                for match in re.findall(r'\{\{\s*([^}]+?)\s*\}\}', value):
+                    if match in saved_fields:
+                        logging.info(f"{self.__class__.__name__}:Replaced {{{{{match}}}}} with saved field '{saved_fields[match]}' for test case '{testcase['TCID']}'")
+                    else:
+                        dynamic_value = VariableGenerator.generate_dynamic_value(match)
+                        logging.info(f"{self.__class__.__name__}:Replaced {{{{{match}}}}} with dynamic value '{dynamic_value}' for test case '{testcase['TCID']}'")
+
+                # Replace ${...}
+                value = re.sub(r'\$\{([^}]+)\}', lambda m: str(builtin_lib.get_variable_value('${' + m.group(1) + '}')), value, flags=re.DOTALL | re.MULTILINE)
+
+                # Logging
+                for match in re.findall(r'\$\{([^}]+)\}', value):
+                    replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
+                    logging.info(f"{self.__class__.__name__}:Replaced ${{{match}}} with variable value '{replacement_value}' for test case '{testcase['TCID']}'")
+
+            return value
+        except (ValueError, KeyError) as e:
+            logging.error(
+                f"{self.__class__.__name__}:Error replacing placeholders in headers file '{headers_filename}' for test case '{testcase['TCID']}': {str(e)}"
+            )
+            raise
+        except Exception as e:
+            logging.error(
+                f"{self.__class__.__name__}:Unexpected error replacing placeholders in headers file '{headers_filename}' for test case '{testcase['TCID']}': {str(e)}"
+            )
+            raise
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_request_sender_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\request_sender.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import requests
+from typing import Dict, Union, Optional
+import time
+import logging
+
+
+class RequestSender:
+    @staticmethod
+    def send_request(url: str, method: str, headers: Optional[Dict[str, str]] = None,
+                     body: Optional[Union[Dict, str]] = None, format_type: str = 'json',
+                     ca_cert_path: Optional[str] = None) -&gt; (requests.Response, float, Optional[str]):
+        requests_method = RequestSender._get_request_method(method)
+        start_time = time.time()
+
+        try:
+            if format_type == 'json':
+                response = requests_method(url, headers=headers, json=body, verify=ca_cert_path)
+            elif format_type == 'xml':
+                if headers is not None:
+                    headers['Content-Type'] = 'application/xml'
+                response = requests_method(url, headers=headers, data=body, verify=ca_cert_path)
+            else:
+                logging.error(f"Unsupported format type: {format_type}")
+                raise ValueError(f"RequestSender: Unsupported format type: {format_type}")
+            response.raise_for_status()
+        except requests.exceptions.SSLError as e:
+            logging.error(f"SSL verification failed: {str(e)}")
+            raise
+        except requests.RequestException as e:
+            logging.error(f"Sending request error: {str(e)}")
+            raise
+        except ValueError as e:
+            logging.error(str(e))
+            raise
+
+        execution_time = time.time() - start_time
+        return response, execution_time
+
+    @staticmethod
+    def _get_request_method(method: str):
+        methods = {
+            'GET': requests.get,
+            'POST': requests.post,
+            'PUT': requests.put,
+            'DELETE': requests.delete,
+            'PATCH': requests.patch
+        }
+
+        if method in methods:
+            return methods[method]
+        else:
+            logging.warning(f"Unsupported HTTP method: {method}")
+            return methods['GET']  # 返回默认方法 GET
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_response_handler_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\response_handler.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import json
+import re
+from typing import Any, Union, Tuple
+import pandas as pd
+from jsonpath_ng import parse
+import xmltodict
+from requests import Response
+import logging
+from robot.libraries.BuiltIn import BuiltIn
+from libraries.common.utility_helpers import UtilityHelpers
+
+builtin_lib = BuiltIn()
+
+
+class APIResponseProcessor:
+    def process_response(self, response: Union[str, Response]) -&gt; Tuple[str, str]:
+        if isinstance(response, str):
+            content = response.strip()
+        elif isinstance(response, Response):
+            content = response.text.strip()
+        else:
+            raise ValueError(f"{self.__class__.__name__}: Unsupported response type. Expected string or Response object.")
+
+        if self._is_json(content):
+            return content, 'json'
+        elif self._is_xml(content):
+            content = UtilityHelpers.format_xml(content)
+            return content, 'xml'
+        else:
+            raise ValueError(f"{self.__class__.__name__}: Response content is neither valid JSON nor XML.")
+
+    @staticmethod
+    def _is_json(content: str) -&gt; bool:
+        try:
+            json.loads(content)
+            logging.info("APIResponseProcessor: Response content is valid JSON string.")
+            return True
+        except json.JSONDecodeError:
+            return False
+
+    @staticmethod
+    def _is_xml(content: str) -&gt; bool:
+        try:
+            xmltodict.parse(content)
+            logging.info("APIResponseProcessor: Response content is valid XML string.")
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def _get_json_value(json_string: str, json_path: str) -&gt; Any:
+        parsed_json = json.loads(json_string)
+        jsonpath_expr = parse(f'$.{json_path}')
+        matches = [match.value for match in jsonpath_expr.find(parsed_json)]
+        if matches:
+            return matches[0]
+        else:
+            raise ValueError(f"APIResponseProcessor: No match found for JSONPath: {json_path}")
+
+    def _extract_value_from_response(self, response: Union[str, Response], json_path: str) -&gt; Any:
+        response_content, response_format = self.process_response(response)
+
+        if response_format == 'json':
+            return self._get_json_value(response_content, json_path)
+        elif response_format == 'xml':
+            json_content = json.dumps(xmltodict.parse(response_content))
+            return self._get_json_value(json_content, json_path)
+        else:
+            raise ValueError(f"{self.__class__.__name__}: Unsupported response format. Use 'xml' or 'json'.")
+
+    @staticmethod
+    def _compare_diff(actual_diff: float, expected_diff: str) -&gt; bool:
+        expected_operator = expected_diff[0]
+        expected_value = float(expected_diff[1:])
+
+        if expected_operator == '+':
+            return actual_diff == expected_value
+        elif expected_operator == '-':
+            return actual_diff == -expected_value
+        else:
+            raise ValueError(f"APIResponseProcessor: Unsupported operator in expected diff: {expected_operator}")
+
+
+class APIResponseAsserter(APIResponseProcessor):
+    def validate_response(self, expected_results: str, actual_response: Union[str, Response]) -&gt; None:
+        response_content, response_format = self.process_response(actual_response)
+        logging.info(f"{self.__class__.__name__}: Actual response:\n{response_content}")
+
+        expected_lines = expected_results.splitlines()
+        assertion_errors = []
+
+        for line in expected_lines:
+            if line.strip().startswith('$'):
+                try:
+                    self._assert_line(line.strip(), response_content, response_format)
+                except AssertionError as e:
+                    logging.error(f"{self.__class__.__name__}: Assertion failed: {str(e)}")
+                    assertion_errors.append(str(e))
+
+        if assertion_errors:
+            raise AssertionError(f"{self.__class__.__name__}: Assertions failed:\n" + "\n".join(assertion_errors))
+
+    def _assert_line(self, line: str, response_content: str, response_format: str) -&gt; None:
+        key, expected_value = map(str.strip, line.split('=', 1))
+
+        actual_value = self._extract_value_from_response(response_content, key)
+
+        # Convert values to the same type for comparison
+        try:
+            expected_value = type(actual_value)(expected_value)
+        except (ValueError, TypeError):
+            pass  # Keep the original type if conversion fails
+
+        logging.info(f"{self.__class__.__name__}: Asserting: {key}, Expected: {expected_value}, Actual: {actual_value}")
+        assert actual_value == expected_value, f"{self.__class__.__name__}: Assertion failed for key '{key}'. Expected: {expected_value}, Actual: {actual_value}"
+
+    def validate_dynamic_checks(self, test_case: dict, pre_check_responses: dict, post_check_responses: dict) -&gt; None:
+        exp_results = test_case['Exp Result'].splitlines()
+        for exp_result in exp_results:
+            dynamic_checks = re.findall(r'(\w+)\.(\$[.\[\]\w]+)=([+-]\d+)', exp_result)
+            if dynamic_checks:
+                logging.info(f"{self.__class__.__name__}: Expected result: {exp_result}")
+
+            for check in dynamic_checks:
+                tcid, json_path, expected_value = check
+                pre_value = self._extract_value_from_response(pre_check_responses[tcid], json_path)
+                post_value = self._extract_value_from_response(post_check_responses[tcid], json_path)
+                actual_value = post_value - pre_value
+
+                logging.info(f"{self.__class__.__name__}: Actual diff: {actual_value}, Expected diff: {expected_value}")
+
+                if not self._compare_diff(actual_value, expected_value):
+                    raise AssertionError(f"{self.__class__.__name__}: Dynamic check failed for {tcid}.{json_path}. Expected: {expected_value}, Actual: {actual_value}")
+
+                logging.info(f"{self.__class__.__name__}: Dynamic check passed for {tcid}.{json_path}")
+
+
+class APIResponseExtractor(APIResponseProcessor):
+    def extract_value(self, response: Union[str, Response], test_case: dict) -&gt; None:
+        response_content, response_format = self.process_response(response)
+        save_fields = test_case.get('Save Fields', '').splitlines()
+
+        for field in save_fields:
+            try:
+                value = self._extract_value_from_response(response_content, field)
+                field_name = f'{test_case["TCID"]}.{field.strip()}'
+                logging.info(f"{self.__class__.__name__}: Setting suite variable {field_name} to {value}.")
+                BuiltIn().set_global_variable(f'${{{field_name}}}', value)
+            except Exception as e:
+                logging.error(f"{self.__class__.__name__}: Failed to process field '{field}': {e}")
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_saved_fields_manager_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\saved_fields_manager.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+import re
+import yaml
+import os
+from typing import Dict, Any
+from libraries.common.utility_helpers import PROJECT_ROOT
+from robot.libraries.BuiltIn import BuiltIn
+
+
+builtin_lib = BuiltIn()
+
+
+class SavedFieldsManager:
+    def __init__(self, file_path: str = None) -&gt; None:
+        self.project_root: str = PROJECT_ROOT
+        self.file_path: str = file_path or os.path.join(self.project_root, 'configs', 'saved_fields.yaml')
+
+    def clear_saved_fields(self):
+        with open(self.file_path, 'w') as f:
+            f.write('')
+
+    def load_saved_fields(self) -&gt; Dict[str, Any]:
+        if not os.path.exists(self.file_path):
+            return {}
+        try:
+            with open(self.file_path, 'r') as f:
+                saved_fields: Dict[str, Any] = yaml.safe_load(f) or {}
+            return saved_fields
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Failed to load saved fields from the yaml file: {str(e)}")
+            raise
+
+    def save_fields(self, field_data: Dict[str, Any]) -&gt; None:
+        saved_fields: Dict[str, Any] = self.load_saved_fields()
+        saved_fields.update(field_data)
+        try:
+            with open(self.file_path, 'w') as f:
+                yaml.safe_dump(saved_fields, f, default_flow_style=False)
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Failed to save fields to the yaml file: {str(e)}")
+            raise
+
+    def apply_saved_fields(self, test_case, saved_fields: Dict) -&gt; None:
+        try:
+            for key, value in saved_fields.items():
+                for column in ['Body User-defined Fields', 'Exp Result']:
+                    if column in test_case and test_case[column] != '':
+                        lines = test_case[column].splitlines()
+                        replaced_lines = [line.replace(f"${{{key}}}", str(value)) for line in lines]
+                        test_case[column] = "\n".join(replaced_lines)
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Failed to apply saved fields to [Body User-defined Fields], [Exp Result]: {str(e)}")
+            raise
+
+    def apply_suite_variables(self, test_case) -&gt; None:
+        try:
+            for key in ['Body User-defined Fields', 'Exp Result']:
+                matches = re.findall(r'\$\{[^}]+\}', test_case[key])
+                for match in matches:
+                    replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
+                    test_case[key] = test_case[key].replace(match, str(replacement_value))
+                    logging.info(f"{self.__class__.__name__}: [{key}] Replaced {match} variable value {replacement_value}")
+
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: [{key}] Replaced {match} with {replacement_value} failed: {str(e)}")
+            raise
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_template_renderer_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\template_renderer.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import json
+from jinja2 import Environment, TemplateNotFound
+from typing import Dict, Any, Union
+
+
+class TemplateRenderer:
+    @staticmethod
+    def render_template(template_content, render_by: Dict[str, Any], format_type: str) -&gt; Union[Dict, str]:
+        try:
+            env = TemplateRenderer._create_environment()
+            template = env.from_string(template_content)
+            rendered_body: str = template.render(render_by)
+            format_body = TemplateRenderer._format_rendered_body(rendered_body, format_type)
+            return format_body
+        except (TemplateNotFound, json.JSONDecodeError) as e:
+            raise ValueError(f"TemplateRenderer: Error rendering template: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"TemplateRenderer: An unexpected error occurred while rendering template: {str(e)}")
+
+    @staticmethod
+    def _create_environment() -&gt; Environment:
+        env = Environment()
+        env.filters['json_bool'] = lambda value: str(value).lower()
+        return env
+
+    @staticmethod
+    def _format_rendered_body(rendered_body: str, format_type: str) -&gt; Union[Dict, str]:
+        if format_type == 'json':
+            return json.loads(rendered_body)
+        elif format_type == 'xml':
+            return rendered_body
+        else:
+            raise ValueError(f"TemplateRenderer: Unsupported format type: {format_type}")
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_variable_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\variable_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import random
+import string
+import uuid
+import datetime
+from typing import Any, Dict, Callable
+
+
+class VariableGenerator:
+    @staticmethod
+    def generate_dynamic_value(field_name: str) -&gt; Any:
+        handlers: Dict[str, Callable[[str], Any]] = {
+            'uetr': VariableGenerator._generate_uuid4,
+            'uuid4': VariableGenerator._generate_uuid4,
+            'value_date': VariableGenerator._generate_current_day,
+            'msg_id': VariableGenerator._generate_msg_id,
+            'timestamp': VariableGenerator._generate_timestamp,
+            'formated_timestamp': VariableGenerator._generate_formated_timestamp,
+            'bic': VariableGenerator._generate_bic
+        }
+        return handlers.get(field_name, VariableGenerator._generate_error_handling)()
+
+    @staticmethod
+    def _generate_uuid4() -&gt; str:
+        return str(uuid.uuid4())
+
+    @staticmethod
+    def _generate_current_day(date_format: str = "%Y%m%d") -&gt; str:
+        return datetime.datetime.now().strftime(date_format)
+
+    @staticmethod
+    def _generate_msg_id() -&gt; str:
+        prefix = 'MSG'
+        suffix = ''.join(random.choices(string.ascii_lowercase, k=5))
+        timestamp = VariableGenerator._generate_timestamp()
+        msg_id = f'{prefix}{timestamp}{suffix}'
+        return msg_id
+
+    @staticmethod
+    def _generate_timestamp() -&gt; str:
+        return str(int(datetime.datetime.now().timestamp()))
+
+    @staticmethod
+    def _generate_formated_timestamp() -&gt; str:
+        now = datetime.datetime.now()
+        timestamp_str = now.strftime("%m%d%H%M%S") + f"{now.microsecond // 1000:03d}"
+        return timestamp_str
+
+    @staticmethod
+    def _generate_bic() -&gt; str:
+        return ''.join(random.choices(string.ascii_uppercase, k=8))
+
+    @staticmethod
+    def _generate_error_handling() -&gt; str:
+        raise ValueError(f"VariableGenerator: No handler registered for field.")
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common___init___py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\__init__.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre></pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_config_manager_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\config_manager.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import yaml
+import json
+import os
+from typing import Dict
+
+
+class ConfigManager:
+
+    @staticmethod
+    def load_json(file_path: str) -&gt; Dict:
+        with open(file_path, 'r') as file:
+            config = json.load(file)
+        return config
+
+    @staticmethod
+    def load_yaml(file_path: str) -&gt; Dict:
+        with open(file_path, 'r') as file:
+            config = yaml.safe_load(file)
+        return config
+
+    @staticmethod
+    def load_templates(template_dir: str) -&gt; Dict[str, str]:
+        templates = {}
+        for filename in os.listdir(template_dir):
+            if filename.endswith('.json') or filename.endswith('.xml'):
+                template_name = os.path.splitext(filename)[0]
+                templates[template_name] = os.path.join(template_dir, filename)
+        return templates
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_gen_temp_default_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\gen_temp_default.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import os
+import re
+import json
+from collections import defaultdict
+
+TEMPLATE_DIR = '../../configs/api/body_templates'
+OUTPUT_DIR = '../../report'
+
+
+def extract_placeholders(template_content):
+    # 提取{{}}中的占位符，支持嵌套
+    placeholders = re.findall(r'\{\{\s*([^}]+?)\s*\}\}', template_content)
+    return placeholders
+
+
+def nest_keys(keys):
+    nested_dict = {}
+    for key in keys:
+        parts = key.split('.')
+        current_level = nested_dict
+        for part in parts[:-1]:
+            if part not in current_level:
+                current_level[part] = {}
+            current_level = current_level[part]
+        current_level[parts[-1]] = ""
+    return nested_dict
+
+
+def merge_dicts(dict1, dict2):
+    for key in dict2:
+        if key in dict1:
+            if isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
+                merge_dicts(dict1[key], dict2[key])
+            else:
+                dict1[key] = dict2[key]
+        else:
+            dict1[key] = dict2[key]
+    return dict1
+
+
+def generate_json_from_template(template_filename):
+    template_path = os.path.join(TEMPLATE_DIR, template_filename)
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"The template file {template_filename} does not exist in {TEMPLATE_DIR}")
+
+    with open(template_path, 'r', encoding='utf-8') as file:
+        template_content = file.read()
+
+    placeholders = extract_placeholders(template_content)
+    nested_structure = {}
+
+    for placeholder in placeholders:
+        nested_dict = nest_keys([placeholder])
+        nested_structure = merge_dicts(nested_structure, nested_dict)
+
+    output_path = os.path.join(OUTPUT_DIR, f"{os.path.splitext(template_filename)[0]}_placeholders.json")
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(output_path, 'w', encoding='utf-8') as outfile:
+        json.dump(nested_structure, outfile, indent=4)
+
+    print(f"Generated JSON file with placeholders: {output_path}")
+
+
+if __name__ == "__main__":
+    template_filename = 'pacs.008_out.xml'  # 你可以更改为你想指定的模板文件名
+    generate_json_from_template(template_filename)</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_log_manager_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\log_manager.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+import logging.config
+import os
+import yaml
+from libraries.common.utility_helpers import PROJECT_ROOT
+
+
+class Logger:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(Logger, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, config_path=None):
+        if not hasattr(self, 'initialized'):
+            self.config_path = config_path or os.path.join(PROJECT_ROOT, 'configs', 'logging_config.yaml')
+            self.log_file_name = "robot_testing"
+            self.load_config()
+            self.initialized = True
+
+    def load_config(self):
+        if os.path.exists(self.config_path):
+            with open(self.config_path, 'r', encoding='utf-8') as file:
+                config = yaml.safe_load(file)
+
+            log_file_path = os.path.join(PROJECT_ROOT, 'report', f"{self.log_file_name}.log")
+            os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+
+            if 'file' in config['handlers']:
+                config['handlers']['file']['filename'] = log_file_path
+
+            logging.config.dictConfig(config)
+        else:
+            logging.basicConfig(level=logging.DEBUG)
+
+        self.logger = logging.getLogger('e2e_testing')
+
+    def get_logger(self):
+        return self.logger
+
+
+logger_instance = Logger()
+logger = logger_instance.get_logger()
+
+__all__ = ['logger', 'logger_instance']
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_utility_helpers_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\utility_helpers.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import json
+import os
+import time
+from functools import wraps
+from lxml import etree
+
+
+class UtilityHelpers:
+    @staticmethod
+    def get_file_format(file_path: str) -&gt; str:
+        """
+        Determine the format of the file based on its extension.
+        """
+        if file_path.endswith('.json'):
+            return 'json'
+        elif file_path.endswith('.xml'):
+            return 'xml'
+        else:
+            raise ValueError(f"UtilityHelpers: Unsupported file format for file: {file_path}")
+
+    @staticmethod
+    def escape_xml(value):
+        """Escape XML characters."""
+        return (
+            value.replace("&amp;", "&amp;amp;")
+            .replace("&lt;", "&amp;lt;")
+            .replace("&gt;", "&amp;gt;")
+            .replace('"', "&amp;quot;")
+            .replace("'", "&amp;apos;")
+        )
+
+    @staticmethod
+    def format_json(data):
+        """
+        Formats a given dictionary as a pretty-printed JSON string.
+
+        :param data: Dictionary to format.
+        :return: Pretty-printed JSON string.
+        """
+        return json.dumps(data, indent=4)
+
+    @staticmethod
+    def format_xml(xml_string: str) -&gt; str:
+        """
+        Formats a given XML string as a pretty-printed XML string without extra newlines.
+
+        :param xml_string: XML string to format.
+        :return: Pretty-printed XML string.
+        """
+        try:
+            # check for XML declaration
+            xml_declaration = ""
+            if xml_string.startswith("&lt;?xml"):
+                declaration_end_index = xml_string.find("?&gt;") + 2
+                xml_declaration = xml_string[:declaration_end_index]
+                xml_string = xml_string[declaration_end_index:].strip()
+
+            parser = etree.XMLParser(remove_blank_text=True, strip_cdata=False)
+            xml_element = etree.fromstring(xml_string, parser)
+
+            # Ensure CDATA sections are preserved
+            def _preserve_cdata(element):
+                if element.text and isinstance(element.text, etree.CDATA):
+                    element.text = etree.CDATA(element.text)
+                for child in element:
+                    _preserve_cdata(child)
+                    if child.tail and isinstance(child.tail, etree.CDATA):
+                        child.tail = etree.CDATA(child.tail)
+
+            _preserve_cdata(xml_element)
+            formatted_xml = etree.tostring(xml_element, pretty_print=True, encoding='unicode')
+            if xml_declaration:
+                formatted_xml = xml_declaration + "\n" + formatted_xml
+            return formatted_xml.strip()
+        except Exception as e:
+            raise ValueError(f"UtilityHelpers: Invalid XML data: {str(e)}")
+
+    @staticmethod
+    def time_calculation():
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                start_time = time.time()
+                result = func(*args, **kwargs)
+                end_time = time.time()
+                execution_time = end_time - start_time
+                from libraries.common.log_manager import logger
+                logger.info(f"UtilityHelpers: Function {func.__name__} executed in {execution_time:.4f} seconds")
+                return result
+
+            return wrapper
+
+        return decorator
+
+    @staticmethod
+    def _find_project_root(current_dir=os.getcwd()):
+        while True:
+            if os.path.exists(os.path.join(current_dir, '.project_root')):
+                return current_dir
+            parent = os.path.dirname(current_dir)
+            if parent == current_dir:
+                raise FileNotFoundError("UtilityHelpers: Project root not found")
+            current_dir = parent
+
+    @staticmethod
+    def get_project_root():
+        # 尝试从脚本所在目录查找
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = UtilityHelpers._find_project_root(script_dir)
+
+        if project_root is None:
+            # 如果失败，尝试从当前工作目录查找
+            current_dir = os.getcwd()
+            project_root = UtilityHelpers._find_project_root(current_dir)
+
+        if project_root is None:
+            raise FileNotFoundError("UtilityHelpers: Project root not found")
+
+        return project_root
+
+
+PROJECT_ROOT = UtilityHelpers.get_project_root()
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e___init___py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\e2e\__init__.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre></pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_robot_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\e2e\e2e_robot_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+import os
+from typing import Dict, List
+
+import pandas as pd
+from robot.api import TestSuite
+
+from libraries.api.api_robot_generator import APIRobotCasesGenerator
+from libraries.common.config_manager import ConfigManager
+from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.web.web_test_loader import WebTestLoader
+
+
+class E2ERobotCasesGenerator:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
+        self.project_root: str = PROJECT_ROOT
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'e2e_test_config.yaml')
+
+        self._load_configuration()
+        self._initialize_components(test_cases_path)
+
+    def _load_configuration(self):
+        self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
+
+    def _initialize_components(self, test_cases_path: str):
+        default_test_cases_path: str = os.path.join('test_cases', 'e2e_test_cases.xlsx')
+        self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+        self.web_test_loader = WebTestLoader(self.test_cases_path)
+        self.api_robot_generator = APIRobotCasesGenerator(None, self.test_cases_path)
+
+    def create_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None) -&gt; TestSuite:
+        self.robot_suite = TestSuite('End To End TestSuite')
+
+        tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
+        tags = tags or self.test_config.get('tags', [])
+        test_cases = self.web_test_loader.filter_cases(tc_id_list, tags)
+        for _, test_case in test_cases.iterrows():
+            self.create_test_case(test_case)
+        return self.robot_suite
+
+    def create_test_case(self, test_case: Dict):
+        logging.info(f"{self.__class__.__name__}: Creating E2E test case {test_case['Case ID']}")
+        test_steps = self.web_test_loader.get_test_steps(test_case['Case ID'])
+        test_data_sets = self.web_test_loader.get_test_data(test_case['Case ID'])
+        if not test_data_sets:
+            test_data_sets = [{}]
+        self.child_suite = TestSuite(name=test_case['Case ID'], doc=test_case['Descriptions'])
+        self.robot_suite.suites.append(self.child_suite)
+
+        # Convert the paths to raw string format to avoid issues with backslashes
+        test_config_path_arg = os.path.normpath(self.test_config_path).replace(os.path.sep, '/')
+        test_cases_path_arg = os.path.normpath(self.test_cases_path).replace(os.path.sep, '/')
+        self.child_suite.resource.imports.library('libraries.web.page_object.PageObject', args=[test_config_path_arg, test_cases_path_arg])
+
+        for data_set_index, data_set in enumerate(test_data_sets, 1):
+            test_name = f"UI.{test_case['Case ID']}.{test_case['Name']}.{data_set_index}"
+            robot_ui_test = self.child_suite.tests.create(name=test_name)
+            if 'Tags' in test_case and pd.notna(test_case['Tags']):
+                tags = [tag.strip() for tag in test_case['Tags'].split(',')]
+                for tag in tags:
+                    robot_ui_test.tags.add(tag)
+            try:
+                self.create_test_steps(robot_ui_test, test_steps, data_set)
+
+                logging.info(f"{self.__class__.__name__}: E2E test case {test_case['Case ID']} with data set {data_set_index} created successfully")
+            except Exception as e:
+                logging.error(f"{self.__class__.__name__}: Error creating test case {test_case['Case ID']} with data set {data_set_index}: {str(e)}")
+                raise
+
+    def create_test_steps(self, robot_ui_test, test_steps: List[Dict], data_set: Dict):
+        for _, step in test_steps.iterrows():
+            page_name = step['Page Name']
+            module_name = step['Module Name']
+            parameters = self.extract_parameters(data_set, step['Parameter Name'])
+
+            try:
+                logging.info(f"{self.__class__.__name__}: Creating e2e step: {page_name}.{module_name}")
+                if module_name == 'API':
+                    self.child_suite.tests.remove(robot_ui_test)
+                    self.child_suite.name = f"APISubSuite.{page_name}.{step['Case ID']}"
+                    tc_id_list = step['Parameter Name'].split(',')
+                    self.api_robot_generator.create_test_suite(tc_id_list, None, self.child_suite)
+
+                else:
+                    self.child_suite.name = f"UISubSuite.{page_name}.{step['Case ID']}"
+                    robot_ui_test.body.create_keyword(name='execute_module', args=[page_name, module_name, parameters])
+                    self.child_suite.teardown.config(name='close_browser', args=[])
+            except Exception as e:
+                logging.error(f"{self.__class__.__name__}: Error Creating web step {page_name}.{module_name}: {str(e)}")
+                raise
+
+    @staticmethod
+    def extract_parameters(data_set: Dict, parameter_names: str) -&gt; Dict:
+        parameters = {}
+        for name in parameter_names.split(','):
+            if name in data_set:
+                value = data_set[name]
+                # Add type conversion here if needed
+                parameters[name] = value
+            else:
+                logging.warning(f"E2ERobotCasesGenerator: Parameter {name} not found in data set")
+        logging.info(f"E2ERobotCasesGenerator: Extracted parameters: {parameters}")
+        return parameters
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\__init__.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre></pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_page_object_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\page_object.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import json
+import logging
+import os
+import re
+from typing import Dict, Tuple, List
+from robot.api.deco import keyword, library
+from libraries.web.web_element_actions import WebElementActions
+from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.common.config_manager import ConfigManager
+from libraries.web.web_test_loader import WebTestLoader
+from libraries.web.webdriver_factory import WebDriverFactory
+from robot.libraries.BuiltIn import BuiltIn
+
+builtin_lib = BuiltIn()
+
+class WebDriverSingleton:
+    _instance = None
+
+    @classmethod
+    def get_instance(cls, driver_config=None):
+        logging.info("WebDriverSingleton: Getting WebDriver instance")
+        if cls._instance is None:
+            if driver_config is None:
+                raise ValueError("WebDriverSingleton: Config path must be provided when creating the first instance")
+            cls._instance = WebDriverFactory.create_driver(driver_config)
+            logging.info("WebDriverSingleton: WebDriver instance created")
+        return cls._instance
+
+    @classmethod
+    def quit(cls):
+        if cls._instance:
+            cls._instance.close()
+            cls._instance = None
+            logging.info("WebDriverSingleton: WebDriver instance closed")
+
+
+@library
+class PageObject:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
+        self.project_root = PROJECT_ROOT
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'web_test_config.yaml')
+        self.test_cases_path = test_cases_path or os.path.join(self.project_root, 'test_cases', 'web_test_cases.xlsx')
+
+        self._load_configuration()
+        self._initialize_components()
+
+    def _load_configuration(self):
+        self.test_config = ConfigManager.load_yaml(self.test_config_path)
+        self.web_test_loader = WebTestLoader(self.test_cases_path)
+        self.env_config = self._load_environment_config()
+
+    def _load_environment_config(self):
+        environments = self.web_test_loader.get_web_environments()
+        active_env = self.test_config['active_environment']
+        env_config = environments[environments['Environment'] == active_env].iloc[0].to_dict()
+        env_config['BrowserOptions'] = json.loads(env_config['BrowserOptions'])
+
+        return {
+            'environments': {
+                active_env: {
+                    'browser': env_config['Browser'],
+                    'is_remote': env_config['IsRemote'],
+                    'remote_url': env_config['RemoteURL'],
+                    'chrome_path': env_config['ChromePath'],
+                    'chrome_driver_path': env_config['ChromeDriverPath'],
+                    'edge_path': env_config['EdgePath'],
+                    'edge_driver_path': env_config['EdgeDriverPath'],
+                    'browser_options': env_config['BrowserOptions']
+                }
+            }
+        }
+
+    def _initialize_components(self):
+        self.locators_df = self.web_test_loader.get_locators()
+        self.page_object_df = self.web_test_loader.get_page_objects()
+        self.driver = self._load_webdriver()
+        self.web_actions = WebElementActions(self.driver)
+        self.page_elements = self._load_page_elements()
+        self.page_modules = self._load_page_modules()
+
+    def _load_webdriver(self):
+        active_env_config = self.env_config['environments'][self.test_config['active_environment']]
+        driver = WebDriverSingleton.get_instance(active_env_config)
+        driver.minimize_window()
+        return driver
+
+    def _load_page_elements(self) -&gt; Dict[str, Dict[str, Tuple[str, str]]]:
+        elements = {}
+        for _, row in self.locators_df.iterrows():
+            elements.setdefault(row['Page Name'], {})[row['Element Name']] = (row['Locator Type'], row['Locator Value'])
+        return elements
+
+    def _load_page_modules(self) -&gt; Dict[str, Dict[str, List[Dict]]]:
+        modules = {}
+        for _, row in self.page_object_df.iterrows():
+            action_info = {
+                'element_name': row['Element Name'],
+                'action': row['Actions'],
+                'parameter_name': row['Parameter Name'].split(',') if row['Parameter Name'] else [],
+                'screen_capture': row['Screenshot']
+            }
+            modules.setdefault(row['Page Name'], {}).setdefault(row['Module Name'], []).append(action_info)
+        return modules
+
+    @keyword
+    def execute_module(self, page_name: str, module_name: str, parameters: Dict = None):
+        logging.info(f"{self.__class__.__name__}: Executing module: {module_name} on page: {page_name}")
+        parameters = parameters or {}
+        module_actions = self.page_modules[page_name][module_name]
+
+        for action_info in module_actions:
+            element_name = action_info['element_name']
+            action = action_info['action']
+            screen_capture = action_info['screen_capture']
+            element = self._find_element(page_name, element_name, action)
+            action_params = [parameters.get(param) for param in action_info['parameter_name']]
+
+            self._execute_action(action, element, *action_params)
+            if screen_capture:
+                self.web_actions.capture_screenshot()
+            logging.info("=" * 80)
+
+    def _find_element(self, page_name: str, element_name: str, action: str):
+        if not element_name:
+            return None
+
+        locator = self.page_elements[page_name][element_name]
+        condition = {
+            'click': 'clickable',
+            'select_by_value': 'clickable',
+            'select_by_visible_text': 'clickable',
+            'select_by_index': 'clickable',
+            'double_click': 'clickable',
+            'right_click': 'clickable',
+            'send_keys': 'visibility',
+            'clear': 'visibility',
+            'hover': 'visibility',
+            'highlight_element': 'visibility',
+            'switch_to_frame': 'presence'
+        }.get(action, 'presence')
+
+        element = self.web_actions.wait_for_element(locator, condition=condition)
+        logging.debug(f"{self.__class__.__name__}: Located element {locator} for action: {action}")
+        return element
+
+    def _execute_action(self, action: str, element, *args, **kwargs):
+        action_map = {
+            'open_url': self.web_actions.open_url,
+            'send_keys': self.web_actions.send_keys,
+            'click': self.web_actions.click,
+            'clear': self.web_actions.clear,
+            'select_by_value': self.web_actions.select_by_value,
+            'select_by_visible_text': self.web_actions.select_by_visible_text,
+            'select_by_index': self.web_actions.select_by_index,
+            'hover': self.web_actions.hover,
+            'double_click': self.web_actions.double_click,
+            'right_click': self.web_actions.right_click,
+            'scroll_into_view': self.web_actions.scroll_into_view,
+            'scroll_to_element': self.web_actions.scroll_to_element,
+            'get_text': self.web_actions.get_text,
+            'get_attribute': self.web_actions.get_attribute,
+            'is_element_present': self.web_actions.is_element_present,
+            'is_element_visible': self.web_actions.is_element_visible,
+            'is_element_clickable': self.web_actions.is_element_clickable,
+            'is_element_selected': self.web_actions.is_element_selected,
+            'is_element_enabled': self.web_actions.is_element_enabled,
+            'element_text_should_be': self.web_actions.element_text_should_be,
+            'element_text_should_contains': self.web_actions.element_text_should_contains,
+            'title_should_be': self.web_actions.title_should_be,
+            'title_should_contains': self.web_actions.title_should_contains,
+            'wait_for_text_to_be_present': self.web_actions.wait_for_text_to_be_present,
+            'wait_for_element_to_disappear': self.web_actions.wait_for_element_to_disappear,
+            'switch_to_frame': self.web_actions.switch_to_frame,
+            'switch_to_default_content': self.web_actions.switch_to_default_content,
+            'execute_script': self.web_actions.execute_script,
+            'accept_alert': self.web_actions.accept_alert,
+            'dismiss_alert': self.web_actions.dismiss_alert,
+            'get_alert_text': self.web_actions.get_alert_text,
+            'highlight_element': self.web_actions.highlight_element,
+            'capture_screenshot': self.web_actions.capture_screenshot,
+            'wait': self.web_actions.wait,
+        }
+
+        if action not in action_map:
+            raise ValueError(f"{self.__class__.__name__}: Unsupported action: {action}")
+
+        # Create a new list to store the modified arguments
+        new_args = []
+        for arg in args:
+            if isinstance(arg, str):
+                # Use regex to find all occurrences of ${...} in the string
+                matches = re.findall(r'\$\{([^}]+)\}', arg)
+                if matches:
+                    for match in matches:
+                        # Retrieve the actual value for the variable using builtin_lib
+                        replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
+                        # Replace the ${...} placeholder with the actual value
+                        arg = arg.replace(f'${{{match}}}', str(replacement_value))
+
+                        logging.info(f"{self.__class__.__name__}: Replaced {match} with value: {replacement_value} for action: {action}")
+
+            # Add the processed (or original) argument to the new list
+            new_args.append(arg)
+
+        return action_map[action](element, *new_args, **kwargs) if element else action_map[action](*new_args, **kwargs)
+
+    @keyword
+    def close_browser(self):
+        WebDriverSingleton.quit()
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_table_verifier_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\table_verifier.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+from selenium.webdriver.common.by import By
+
+import re
+
+
+class TableVerifier:
+    def __init__(self, driver):
+        self.driver = driver
+        self.logger = logging.getLogger(__name__)
+
+    def verify_table(self, table_element, expected_data, match_type='exact'):
+        """
+        Verify the entire table data.
+
+        :param table_element: WebElement of the table
+        :param expected_data: List of dictionaries, each representing a row
+        :param match_type: Type of matching to perform ('exact', 'partial', 'regex')
+        """
+        try:
+            rows = table_element.find_elements(By.TAG_NAME, "tr")
+            headers = [header.text.strip().lower() for header in rows[0].find_elements(By.TAG_NAME, "th")]
+
+            for row_index, expected_row in enumerate(expected_data, start=1):
+                if row_index &gt;= len(rows):
+                    raise ValueError(f"Not enough rows in table. Expected at least {row_index}, but found {len(rows) - 1}")
+
+                row = rows[row_index]
+                cells = row.find_elements(By.TAG_NAME, "td")
+
+                for column, expected_value in expected_row.items():
+                    cell_index = self._get_cell_index(headers, column)
+                    if cell_index &gt;= len(cells):
+                        raise ValueError(f"Column '{column}' is out of range. Row has {len(cells)} cells.")
+
+                    actual_value = cells[cell_index].text.strip()
+                    self._verify_cell_value(column, actual_value, expected_value, match_type)
+
+            self.logger.info("All table data verified successfully.")
+        except Exception as e:
+            self.logger.error(f"Error verifying table data: {str(e)}")
+            raise
+
+    def verify_table_row(self, table_element, row_index, expected_data, match_type='exact'):
+        """
+        Verify the data in a specific row of a table.
+
+        :param table_element: WebElement of the table
+        :param row_index: Index of the row to verify (1-based index)
+        :param expected_data: Dictionary of column name (or index) and expected value
+        :param match_type: Type of matching to perform ('exact', 'partial', 'regex')
+        """
+        try:
+            rows = table_element.find_elements(By.TAG_NAME, "tr")
+            headers = [header.text.strip().lower() for header in rows[0].find_elements(By.TAG_NAME, "th")]
+
+            if row_index &lt; 1 or row_index &gt;= len(rows):
+                raise ValueError(f"Invalid row index: {row_index}. Table has {len(rows) - 1} data rows.")
+
+            row = rows[row_index]
+            cells = row.find_elements(By.TAG_NAME, "td")
+
+            for column, expected_value in expected_data.items():
+                cell_index = self._get_cell_index(headers, column)
+                if cell_index &gt;= len(cells):
+                    raise ValueError(f"Column '{column}' is out of range. Row has {len(cells)} cells.")
+
+                actual_value = cells[cell_index].text.strip()
+                self._verify_cell_value(column, actual_value, expected_value, match_type)
+
+            self.logger.info(f"All expected data in row {row_index} verified successfully.")
+        except Exception as e:
+            self.logger.error(f"Error verifying table row data: {str(e)}")
+            raise
+
+    def verify_specific_cell(self, table_element, row_index, column, expected_value, match_type='exact'):
+        """
+        Verify the data in a specific cell of a table.
+
+        :param table_element: WebElement of the table
+        :param row_index: Index of the row to verify (1-based index)
+        :param column: Column name or index (1-based if index)
+        :param expected_value: Expected value of the cell
+        :param match_type: Type of matching to perform ('exact', 'partial', 'regex')
+        """
+        try:
+            rows = table_element.find_elements(By.TAG_NAME, "tr")
+            headers = [header.text.strip().lower() for header in rows[0].find_elements(By.TAG_NAME, "th")]
+
+            if row_index &lt; 1 or row_index &gt;= len(rows):
+                raise ValueError(f"Invalid row index: {row_index}. Table has {len(rows) - 1} data rows.")
+
+            row = rows[row_index]
+            cells = row.find_elements(By.TAG_NAME, "td")
+
+            cell_index = self._get_cell_index(headers, column)
+            if cell_index &gt;= len(cells):
+                raise ValueError(f"Column '{column}' is out of range. Row has {len(cells)} cells.")
+
+            actual_value = cells[cell_index].text.strip()
+            self._verify_cell_value(column, actual_value, expected_value, match_type)
+
+            self.logger.info(f"Cell at row {row_index}, column '{column}' verified successfully.")
+        except Exception as e:
+            self.logger.error(f"Error verifying specific cell: {str(e)}")
+            raise
+
+    def _get_cell_index(self, headers, column):
+        """
+        Get the index of a cell based on column name or index.
+        """
+        if isinstance(column, int):
+            return column - 1  # Convert to 0-based index
+
+        column_lower = column.lower()
+        for i, header in enumerate(headers):
+            if header == column_lower:
+                return i
+
+        raise ValueError(f"Column '{column}' not found in table headers.")
+
+    def _verify_cell_value(self, column, actual_value, expected_value, match_type):
+        """
+        Verify cell value based on the specified match type.
+        """
+        if match_type == 'exact':
+            assert actual_value == expected_value, f"Mismatch in column '{column}'. Expected: {expected_value}, Actual: {actual_value}"
+        elif match_type == 'partial':
+            assert expected_value in actual_value, f"Value '{expected_value}' not found in column '{column}'. Actual: {actual_value}"
+        elif match_type == 'regex':
+            assert re.search(expected_value, actual_value), f"Regex '{expected_value}' did not match in column '{column}'. Actual: {actual_value}"
+        else:
+            raise ValueError(f"Invalid match_type: {match_type}")
+
+        self.logger.info(f"Verified column '{column}': {actual_value}")
+
+# 使用示例
+# table_verifier = TableVerifier(driver)
+# table_element = driver.find_element(By.ID, 'myTable')
+
+# 验证整个表格
+# table_verifier.verify_table(
+#     table_element,
+#     expected_data=[
+#         {'Name': 'John Doe', 'Age': '30', 'Email': r'^[\w\.-]+@[\w\.-]+\.\w+$'},
+#         {'Name': 'Jane Smith', 'Age': '25', 'Email': r'^[\w\.-]+@[\w\.-]+\.\w+$'}
+#     ],
+#     match_type='regex'
+# )
+
+# 验证特定行
+# table_verifier.verify_table_row(
+#     table_element,
+#     row_index=2,
+#     expected_data={
+#         'Name': 'Jane Smith',
+#         'Age': '25',
+#         'Email': r'^[\w\.-]+@[\w\.-]+\.\w+$'
+#     },
+#     match_type='regex'
+# )
+
+# 验证特定单元格
+# table_verifier.verify_specific_cell(
+#     table_element,
+#     row_index=2,
+#     column='Email',
+#     expected_value=r'^[\w\.-]+@[\w\.-]+\.\w+$',
+#     match_type='regex'
+# )</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_element_actions_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_element_actions.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import base64
+import datetime
+import logging
+import time
+from robot.libraries.BuiltIn import BuiltIn
+from selenium.common import NoSuchElementException, TimeoutException
+from selenium.webdriver import ActionChains
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.remote.webelement import WebElement
+from libraries.web.table_verifier import TableVerifier
+import io
+from PIL import Image
+
+
+class WebElementActions:
+    def __init__(self, driver, default_timeout=60):
+        self.driver = driver
+        self.default_timeout = default_timeout
+        self.table_verifier = TableVerifier(self.driver)
+
+    def wait_for_element(self, locator, condition="presence", timeout=None):
+        if timeout is None:
+            timeout = self.default_timeout
+
+        logging.info(f"{self.__class__.__name__}: Waiting for element with locator {locator}, condition: {condition}, timeout: {timeout}")
+        wait = WebDriverWait(self.driver, timeout)
+
+        try:
+            if condition == "presence":
+                result = wait.until(EC.presence_of_element_located(locator))
+            elif condition == "visibility":
+                result = wait.until(EC.visibility_of_element_located(locator))
+            elif condition == "clickable":
+                result = wait.until(EC.element_to_be_clickable(locator))
+            elif condition == "invisibility":
+                result = wait.until(EC.invisibility_of_element_located(locator))
+            else:
+                raise ValueError(f"{self.__class__.__name__}: Unsupported condition: {condition}")
+
+            logging.info(f"{self.__class__.__name__}: Element found successfully: {locator}")
+            return result
+        except TimeoutException:
+            logging.error(f"{self.__class__.__name__}: Timeout waiting for element: {locator}, condition: {condition}")
+            raise
+
+    def _get_element_description(self, element):
+        if isinstance(element, WebElement):
+            tag_name = element.tag_name
+            element_id = element.get_attribute('id')
+            element_class = element.get_attribute('class')
+            element_name = element.get_attribute('name')
+
+            description = f"&lt;{tag_name}"
+            if element_id:
+                description += f" id='{element_id}'"
+            if element_class:
+                description += f" class='{element_class}'"
+            if element_name:
+                description += f" name='{element_name}'"
+            description += "&gt;"
+
+            return description
+        elif isinstance(element, tuple):
+            return str(element)
+        else:
+            return str(element)
+
+    def open_url(self, url):
+        logging.info(f"{self.__class__.__name__}: Opening URL: {url}")
+        self.driver.maximize_window()
+        self.driver.get(url)
+        logging.info(f"{self.__class__.__name__}: URL opened successfully: {url}")
+
+    def send_keys(self, element, value):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Sending keys to element: {element_desc}, value: {value}")
+        element.send_keys(value)
+        logging.info(f"{self.__class__.__name__}: Keys sent successfully to element: {element_desc}")
+
+    def click(self, element):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Clicking element: {element_desc}")
+        element.click()
+        logging.info(f"{self.__class__.__name__}: Element clicked successfully: {element_desc}")
+
+    def clear(self, element):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Clearing element: {element_desc}")
+        element.clear()
+        logging.info(f"{self.__class__.__name__}: Element cleared successfully: {element_desc}")
+
+    def select_by_value(self, element, value):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Selecting option by value: {value} for element: {element_desc}")
+        Select(element).select_by_value(value)
+        logging.info(f"O{self.__class__.__name__}: Option selected successfully: {value} for element: {element_desc}")
+
+    def select_by_visible_text(self, element, text):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Selecting option by visible text: {text} for element: {element_desc}")
+        Select(element).select_by_visible_text(text)
+        logging.info(f"{self.__class__.__name__}: Option selected successfully: {text} for element: {element_desc}")
+
+    def select_by_index(self, element, index):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Selecting option by index: {index} for element: {element_desc}")
+        Select(element).select_by_index(int(index))
+        logging.info(f"{self.__class__.__name__}: Option selected successfully at index: {index} for element: {element_desc}")
+
+    def hover(self, element):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Hovering over element: {element_desc}")
+        ActionChains(self.driver).move_to_element(element).perform()
+        logging.info(f"{self.__class__.__name__}: Hovered over element successfully: {element_desc}")
+
+    def double_click(self, element):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Double clicking element: {element_desc}")
+        ActionChains(self.driver).double_click(element).perform()
+        logging.info(f"{self.__class__.__name__}: Double clicked element successfully: {element_desc}")
+
+    def right_click(self, element):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Right clicking element: {element_desc}")
+        ActionChains(self.driver).context_click(element).perform()
+        logging.info(f"{self.__class__.__name__}: Right clicked element successfully: {element_desc}")
+
+    def scroll_into_view(self, element):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Scrolling element into view: {element_desc}")
+        self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
+        logging.info(f"{self.__class__.__name__}: Scrolled element into view successfully: {element_desc}")
+
+    def scroll_to_element(self, element):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Scrolling to element: {element_desc}")
+        self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center', inline: 'nearest'});", element)
+        logging.info(f"{self.__class__.__name__}: Scrolled to element successfully: {element_desc}")
+
+    def get_text(self, element):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Getting text from element: {element_desc}")
+        text = element.text
+        logging.info(f"{self.__class__.__name__}: Text retrieved: {text} from element: {element_desc}")
+        return text
+
+    def get_attribute(self, element, attribute_name):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Getting attribute '{attribute_name}' from element: {element_desc}")
+        attribute_value = element.get_attribute(attribute_name)
+        logging.info(f"{self.__class__.__name__}: Attribute '{attribute_name}' value: {attribute_value} for element: {element_desc}")
+        return attribute_value
+
+    def is_element_present(self, locator):
+        logging.info(f"{self.__class__.__name__}: Checking if element is present: {locator}")
+        try:
+            self.driver.find_element(*locator)
+            logging.info(f"{self.__class__.__name__}: Element is present: {locator}")
+            return True
+        except NoSuchElementException:
+            logging.info(f"{self.__class__.__name__}: Element is not present: {locator}")
+            return False
+
+    def is_element_visible(self, locator, timeout=None):
+        logging.info(f"{self.__class__.__name__}: Checking if element is visible: {locator}, timeout: {timeout}")
+        try:
+            self.wait_for_element(locator, condition="visibility", timeout=timeout)
+            logging.info(f"{self.__class__.__name__}: Element is visible: {locator}")
+            return True
+        except TimeoutException:
+            logging.info(f"{self.__class__.__name__}: Element is not visible: {locator}")
+            return False
+
+    def is_element_clickable(self, locator, timeout=None):
+        logging.info(f"{self.__class__.__name__}: Checking if element is clickable: {locator}, timeout: {timeout}")
+        try:
+            self.wait_for_element(locator, condition="clickable", timeout=timeout)
+            logging.info(f"{self.__class__.__name__}: Element is clickable: {locator}")
+            return True
+        except TimeoutException:
+            logging.info(f"{self.__class__.__name__}: Element is not clickable: {locator}")
+            return False
+
+    def is_element_selected(self, element):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element is selected: {element_desc}")
+        is_selected = element.is_selected()
+        logging.info(f"{self.__class__.__name__}: Element selected status: {is_selected} for element: {element_desc}")
+        return is_selected
+
+    def is_element_enabled(self, element):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element is enabled: {element_desc}")
+        is_enabled = element.is_enabled()
+        logging.info(f"{self.__class__.__name__}: Element enabled status: {is_enabled} for element: {element_desc}")
+        return is_enabled
+
+    def element_text_should_be(self, element, expected_text):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element text matches expected: {element_desc}, expected text: {expected_text}")
+        actual_text = self.get_text(element)
+        assert actual_text == expected_text, f"{self.__class__.__name__}: Expected text: {expected_text} is not matching actual text: {actual_text}"
+        logging.info(f"{self.__class__.__name__}: Element expected to match text: {expected_text}, Actual text: {actual_text}")
+
+    def element_text_should_contains(self, element, expected_text):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element text contains expected: {element_desc}, expected text: {expected_text}")
+        actual_text = self.get_text(element)
+        assert expected_text in actual_text, f"{self.__class__.__name__}: Expected text: {expected_text} is not in actual text: {actual_text}"
+        logging.info(f"{self.__class__.__name__}: Element expected to contain text: {expected_text}, Actual text: {actual_text}")
+
+    def title_should_be(self, expected_title):
+        logging.info(f"{self.__class__.__name__}: Checking if page title matches expected: {expected_title}")
+        actual_title = self.driver.title
+        assert actual_title == expected_title, f"{self.__class__.__name__}: Expected title: {expected_title} is not matching actual title: {actual_title}"
+        logging.info(f"{self.__class__.__name__}: Title expected to match: {expected_title}, Actual title: {actual_title}")
+
+    def title_should_contains(self, expected_title):
+        logging.info(f"{self.__class__.__name__}: Checking if page title contains expected: {expected_title}")
+        actual_title = self.driver.title
+        assert expected_title in actual_title, f"{self.__class__.__name__}: Expected title: {expected_title} is not in actual title: {actual_title}"
+        logging.info(f"{self.__class__.__name__}: Title expected to contain: {expected_title}, Actual title: {actual_title}")
+
+    def wait_for_text_to_be_present(self, locator, text, timeout=None):
+        if timeout is None:
+            timeout = self.default_timeout
+        logging.info(f"{self.__class__.__name__}: Waiting for text '{text}' to be present in element: {locator}, timeout: {timeout}")
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.text_to_be_present_in_element(locator, text)
+            )
+            logging.info(f"{self.__class__.__name__}: Text '{text}' is present in element: {locator}")
+            return True
+        except TimeoutException:
+            logging.warning(f"{self.__class__.__name__}: Text '{text}' is not present in element: {locator} after {timeout} seconds")
+            return False
+
+    def wait_for_element_to_disappear(self, locator, timeout=None):
+        if timeout is None:
+            timeout = self.default_timeout
+        logging.info(f"{self.__class__.__name__}: Waiting for element to disappear: {locator}, timeout: {timeout}")
+        try:
+            self.wait_for_element(locator, condition="invisibility", timeout=timeout)
+            logging.info(f"{self.__class__.__name__}: Element disappeared: {locator}")
+            return True
+        except TimeoutException:
+            logging.warning(f"{self.__class__.__name__}: Element did not disappear: {locator} after {timeout} seconds")
+            return False
+
+    def switch_to_frame(self, element):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Switching to frame: {element_desc}")
+        self.driver.switch_to.frame(element)
+        logging.info(f"{self.__class__.__name__}: Switched to frame successfully: {element_desc}")
+
+    def switch_to_default_content(self):
+        logging.info(f"{self.__class__.__name__}: Switching to default content")
+        self.driver.switch_to.default_content()
+        logging.info(f"{self.__class__.__name__}: Switched to default content successfully")
+
+    def execute_script(self, script, *args):
+        logging.info(f"{self.__class__.__name__}: Executing JavaScript: {script}, Arguments: {args}")
+        result = self.driver.execute_script(script, *args)
+        logging.info(f"{self.__class__.__name__}: JavaScript executed successfully, Result: {result}")
+        return result
+
+    def accept_alert(self):
+        logging.info(f"{self.__class__.__name__}: Accepting alert")
+        self.driver.switch_to.alert.accept()
+        logging.info(f"{self.__class__.__name__}: Alert accepted successfully")
+
+    def dismiss_alert(self):
+        logging.info(f"{self.__class__.__name__}: Dismissing alert")
+        self.driver.switch_to.alert.dismiss()
+        logging.info(f"{self.__class__.__name__}: Alert dismissed successfully")
+
+    def get_alert_text(self):
+        logging.info(f"{self.__class__.__name__}: Getting alert text")
+        alert_text = self.driver.switch_to.alert.text
+        logging.info(f"{self.__class__.__name__}: Alert text retrieved: {alert_text}")
+        return alert_text
+
+    def capture_screenshot(self):
+        try:
+            if self.driver:
+                # Capture the screenshot as binary PNG image
+                screenshot_binary = self.driver.get_screenshot_as_png()
+
+                # Open the image using PIL
+                image = Image.open(io.BytesIO(screenshot_binary))
+
+                # Resize the image
+                base_width = 1440
+                w_percent = (base_width / float(image.size[0]))
+                h_size = int((float(image.size[1]) * float(w_percent)))
+                image = image.resize((base_width, h_size), Image.LANCZOS)
+
+                # Convert the image to WebP format and compress
+                buffer = io.BytesIO()
+                image.save(buffer, format="WebP", quality=30)
+
+                # Encode the compressed image as base64
+                encoded_string = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                logging.info(f"{self.__class__.__name__}: Screenshot captured successfully at: " + str(datetime.datetime.now()))
+                BuiltIn().log(f'&lt;img src="data:image/webp;base64,{encoded_string}" width="1440px"&gt;', html=True)
+            else:
+                logging.error(f"{self.__class__.__name__}: WebDriver is not initialized.")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Failed to capture screenshot: {str(e)}")
+            BuiltIn().log(f"{self.__class__.__name__}: Failed to capture screenshot: {str(e)}", level="ERROR")
+
+    def highlight_element(self, element, duration=2, color="lightgreen", border="3px solid red"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Highlighting element: {element_desc}")
+
+        def apply_style(s):
+            self.driver.execute_script("arguments[0].setAttribute('style', arguments[1]);", element, s)
+
+        original_style = element.get_attribute('style')
+
+        for _ in range(int(duration)):
+            apply_style(f"background: {color}; border: {border};")
+            time.sleep(0.25)
+            apply_style(original_style)
+            time.sleep(0.25)
+
+        logging.info(f"{self.__class__.__name__}: Finished highlighting element: {element_desc}")
+
+    def wait(self, seconds):
+        logging.info(f"{self.__class__.__name__}: Waiting for {seconds} seconds")
+        time.sleep(int(seconds))
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_robot_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_robot_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+import os
+from typing import Dict, List
+import pandas as pd
+from robot.api import TestSuite
+from libraries.common.config_manager import ConfigManager
+from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.web.web_test_loader import WebTestLoader
+from libraries.common.log_manager import Logger
+
+
+class WebUIRobotCasesGenerator:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
+        self.project_root: str = PROJECT_ROOT
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs',  'web_test_config.yaml')
+        self._load_configuration()
+        self._initialize_components(test_cases_path)
+
+    def _load_configuration(self):
+        self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
+
+    def _initialize_components(self, test_cases_path: str):
+        default_test_cases_path: str = os.path.join('test_cases', 'web_test_cases.xlsx')
+        self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+        self.web_test_loader = WebTestLoader(self.test_cases_path)
+
+    def create_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None) -&gt; TestSuite:
+        self.robot_suite = TestSuite('Web UI TestSuite')
+        self.robot_suite.resource.imports.library('libraries.web.page_object.PageObject')
+        tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
+        tags = tags or self.test_config.get('tags', [])
+        test_cases = self.web_test_loader.filter_cases(tc_id_list, tags)
+        for _, test_case in test_cases.iterrows():
+            self.create_test_case(test_case)
+        self.robot_suite.teardown.config(name='close_browser', args=[])
+        return self.robot_suite
+
+    def create_test_case(self, test_case: Dict):
+        logging.info(f"{self.__class__.__name__}: Creating E2E test case {test_case['Case ID']}")
+        test_steps = self.web_test_loader.get_test_steps(test_case['Case ID'])
+        test_data_sets = self.web_test_loader.get_test_data(test_case['Case ID'])
+
+        for data_set_index, data_set in enumerate(test_data_sets, 1):
+            test_name = f"UI.{test_case['Case ID']}.{test_case['Name']}.{data_set_index}"
+            robot_test = self.robot_suite.tests.create(name=test_name, doc=test_case['Descriptions'])
+            if 'Tags' in test_case and pd.notna(test_case['Tags']):
+                tags = [tag.strip() for tag in test_case['Tags'].split(',')]
+                for tag in tags:
+                    robot_test.tags.add(tag)
+            try:
+                self.create_test_steps(robot_test, test_steps, data_set)
+                logging.info(f"{self.__class__.__name__}: E2E test case {test_case['Case ID']} with data set {data_set_index} created successfully")
+            except Exception as e:
+                logging.error(f"{self.__class__.__name__}: Error creating test case {test_case['Case ID']} with data set {data_set_index}: {str(e)}")
+                raise
+
+    def create_test_steps(self, robot_test, test_steps: List[Dict], data_set: Dict):
+        for _, step in test_steps.iterrows():
+            page_name = step['Page Name']
+            module_name = step['Module Name']
+            parameters = self.extract_parameters(data_set, step['Parameter Name'])
+
+            try:
+                logging.info(f"{self.__class__.__name__}: Creating web step: {page_name}.{module_name}")
+                robot_test.body.create_keyword(name='execute_module', args=[page_name, module_name, parameters])
+            except Exception as e:
+                logging.error(f"{self.__class__.__name__}: Error Creating web step {page_name}.{module_name}: {str(e)}")
+                raise
+
+    @staticmethod
+    def extract_parameters(data_set: Dict, parameter_names: str) -&gt; Dict:
+        parameters = {}
+        for name in parameter_names.split(','):
+            if name in data_set:
+                value = data_set[name]
+                # Add type conversion here if needed
+                parameters[name] = value
+            else:
+                logging.warning(f"WebUIRobotCasesGenerator: Parameter {name} not found in data set")
+        logging.info(f"WebUIRobotCasesGenerator: Extracted parameters: {parameters}")
+        return parameters
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_loader_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_test_loader.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import pandas as pd
+
+
+class WebTestLoader:
+    def __init__(self, excel_path):
+        self.excel_path = excel_path
+        self.data = self._load_excel_data()
+
+    def _load_excel_data(self):
+        sheets = ['Locators', 'PageModules', 'TestCases', 'TestSteps', 'TestData', 'WebEnvironments']
+        return {sheet: pd.read_excel(self.excel_path, sheet_name=sheet).fillna("") for sheet in sheets}
+
+    def get_data(self, sheet_name):
+        return self.data.get(sheet_name, pd.DataFrame())
+
+    def get_test_cases(self):
+        return self.get_data('TestCases')
+
+    def filter_cases(self, tcid_list=None, tags=None):
+        test_cases = self.get_test_cases()
+
+        if tcid_list:
+            test_cases = test_cases[test_cases['Case ID'].isin(tcid_list)]
+
+        if tags:
+            test_cases = test_cases[test_cases['Tags'].apply(lambda x: any(tag in x for tag in tags))]
+
+        # Filter out the test cases where 'Run' column is not equal to 'Y'
+        test_cases = test_cases[test_cases['Run'] == 'Y']
+
+        return test_cases
+
+    def get_test_steps(self, case_id):
+        test_steps = self.get_data('TestSteps')
+        return test_steps[test_steps['Case ID'] == case_id]
+
+    def get_test_data(self, case_id):
+        test_data = self.get_data('TestData')
+        case_data = test_data[test_data['Case ID'] == case_id]
+
+        # Group data by 'Data Set' column
+        grouped_data = case_data.groupby('Data Set')
+
+        # Create a list of dictionaries, each representing a data set
+        data_sets = []
+        for _, group in grouped_data:
+            data_set = {}
+            for _, row in group.iterrows():
+                data_set[row['Parameter Name']] = row['Value']
+            data_sets.append(data_set)
+
+        return data_sets
+
+    def get_page_objects(self):
+        return self.get_data('PageModules')
+
+    def get_locators(self):
+        return self.get_data('Locators')
+
+    def get_web_environments(self):
+        return self.get_data('WebEnvironments')
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_webdriver_factory_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\webdriver_factory.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.edge.service import Service as EdgeService
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.edge.options import Options as EdgeOptions
+
+
+class WebDriverFactory:
+    @staticmethod
+    def create_driver(driver_config):
+        browser = driver_config['browser']
+        is_remote = driver_config.get('is_remote', False)
+        remote_url = driver_config.get('remote_url')
+        browser_options = driver_config.get('browser_options', {})
+
+        logging.info(f"WebDriverFactory: Configuring for browser: {browser}")
+        logging.info(f"WebDriverFactory: Remote execution: {'Yes' if is_remote else 'No'}")
+        browser_path = None
+        if browser.lower() == 'chrome':
+            options = ChromeOptions()
+            if not is_remote:
+                service = ChromeService(executable_path=driver_config.get('chrome_driver_path'))
+                browser_path = driver_config.get('chrome_path')
+                logging.info(f"WebDriverFactory: Using ChromeDriver path: {driver_config.get('chrome_driver_path')}")
+        elif browser.lower() == 'edge':
+            options = EdgeOptions()
+            if not is_remote:
+                service = EdgeService(executable_path=driver_config.get('edge_driver_path'))
+                browser_path = driver_config.get('edge_path')
+                logging.info(f"WebDriverFactory: Using EdgeDriver path: {driver_config.get('edge_driver_path')}")
+        else:
+            logging.error(f"WebDriverFactory: Unsupported browser: {browser}")
+            raise ValueError(f"WebDriverFactory: Unsupported browser: {browser}")
+
+        # 设置浏览器路径
+        if browser_path and not is_remote:
+            options.binary_location = browser_path
+            logging.info(f"WebDriverFactory: Set browser binary location: {browser_path}")
+
+        # 设置浏览器选项
+        logging.info("WebDriverFactory: Configuring browser options:")
+        for option, value in browser_options.items():
+            if isinstance(value, bool) and value:
+                options.add_argument(f'--{option}')
+                logging.info(f"WebDriverFactory: Added browser option: --{option}")
+            elif isinstance(value, str):
+                options.add_argument(f'--{option}={value}')
+                logging.info(f"WebDriverFactory: Added browser option: --{option}={value}")
+
+        if is_remote:
+            if not remote_url:
+                logging.error(f"WebDriverFactory: Remote URL is required for remote execution")
+                raise ValueError(f"WebDriverFactory: Remote URL is required for remote execution")
+            logging.info(f"WebDriverFactory: Creating remote WebDriver with URL: {remote_url}")
+            driver = webdriver.Remote(command_executor=remote_url, options=options)
+        else:
+            if browser.lower() == 'chrome':
+                logging.info(f"WebDriverFactory: Creating local Chrome WebDriver")
+                driver = webdriver.Chrome(service=service, options=options)
+            elif browser.lower() == 'edge':
+                logging.info(f"WebDriverFactory: Creating local Edge WebDriver")
+                driver = webdriver.Edge(service=service, options=options)
+
+        logging.info(f"WebDriverFactory: WebDriver created successfully")
+        return driver
+
+    @staticmethod
+    def quit_driver(driver):
+        if driver:
+            logging.info(f"WebDriverFactory: Quitting WebDriver")
+            driver.close()
+            logging.info(f"WebDriverFactory: WebDriver quit successfully")
+        else:
+            logging.warning(f"WebDriverFactory: Attempted to quit a non-existent WebDriver")
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_main_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\main.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import os
+import argparse
+from robot.api import TestSuite
+from robot.reporting import ResultWriter
+from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.api.api_robot_generator import APIRobotCasesGenerator
+from libraries.web.web_robot_generator import WebUIRobotCasesGenerator
+from libraries.e2e.e2e_robot_generator import E2ERobotCasesGenerator
+
+def run_test_suite(suite):
+    # Run the test suite and generate report XML
+    output_xml = os.path.join(PROJECT_ROOT, 'report', 'output.xml')
+    report_file = os.path.join(PROJECT_ROOT, 'report', 'report.html')
+    log_file = os.path.join(PROJECT_ROOT, 'report', 'log.html')
+    suite.run(output=output_xml)
+
+    # Generate log and report
+    ResultWriter(output_xml).write_results(
+        report=report_file,
+        log=log_file
+    )
+
+def create_api_suite():
+    rcg = APIRobotCasesGenerator()
+    return rcg.create_test_suite()
+
+def create_web_suite():
+    rcg = WebUIRobotCasesGenerator()
+    return rcg.create_test_suite()
+
+def create_e2e_suite():
+    rcg = E2ERobotCasesGenerator()
+    return rcg.create_test_suite()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Run API, Web UI, or E2E tests.')
+    parser.add_argument('--api', action='store_true', help='Run API tests')
+    parser.add_argument('--web', action='store_true', help='Run Web UI tests')
+    parser.add_argument('--e2e', action='store_true', help='Run E2E tests')
+    args = parser.parse_args()
+
+    main_suite = TestSuite('Main Test Suite')
+
+    if args.api:
+        main_suite.suites.append(create_api_suite())
+    if args.web:
+        main_suite.suites.append(create_web_suite())
+    if args.e2e:
+        main_suite.suites.append(create_e2e_suite())
+
+    # If no specific test type is specified, run all tests
+    if not (args.api or args.web or args.e2e):
+        main_suite.suites.append(create_e2e_suite())
+
+    run_test_suite(main_suite)</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_test_cases_test_json">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\test_cases\test.json</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>{
+  "no-sandbox": true,
+  "disable-dev-shm-usage": true,
+  "disable-gpu": true,
+  "remote-debugging-port": 9222
+}</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_positions_json">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\testing_server\positions.json</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>{
+    "balances": {
+        "USD": 13500.0,
+        "EUR": 8000.0,
+        "HKD": 50000.0,
+        "CNY": 57700.0
+    },
+    "transactions": {
+        "USD": {
+            "2024-05-29": {
+                "inbound": {
+                    "count": 2,
+                    "total_amount": 4000.0
+                },
+                "outbound": {
+                    "count": 0,
+                    "total_amount": 0.0
+                }
+            }
+        },
+        "EUR": {
+            "2024-05-28": {
+                "inbound": {
+                    "count": 1,
+                    "total_amount": 200.0
+                },
+                "outbound": {
+                    "count": 2,
+                    "total_amount": 150.0
+                }
+            }
+        },
+        "HKD": {
+            "2024-05-28": {
+                "inbound": {
+                    "count": 0,
+                    "total_amount": 0.0
+                },
+                "outbound": {
+                    "count": 1,
+                    "total_amount": 1000.0
+                }
+            }
+        },
+        "CNY": {
+            "2024-08-18": {
+                "inbound": {
+                    "count": 23,
+                    "total_amount": 2300.0
+                },
+                "outbound": {
+                    "count": 22,
+                    "total_amount": 2200.0
+                }
+            }
+        }
+    }
+}</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_server_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\testing_server\server.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import json
+from flask import Flask, request, jsonify, Response
+import xml.etree.ElementTree as ET
+from datetime import datetime
+
+app = Flask(__name__)
+
+def round_to_two_decimals(value):
+    return round(float(value), 2)
+
+def load_positions():
+    try:
+        with open('positions.json', 'r') as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        data = {
+            "balances": {},
+            "transactions": {}
+        }
+
+    if 'balances' not in data:
+        data['balances'] = {}
+    if 'transactions' not in data:
+        data['transactions'] = {}
+
+    return data
+
+def save_positions(data):
+    with open('positions.json', 'w') as file:
+        json.dump(data, file, indent=4)
+
+def clear_old_positions():
+    data = load_positions()
+    today = datetime.today().strftime('%Y-%m-%d')
+
+    for currency, transactions in data['transactions'].items():
+        if today in transactions:
+            data['transactions'][currency] = {today: transactions[today]}
+
+    save_positions(data)
+
+def parse_iso20022_pacs008(xml_data):
+    try:
+        root = ET.fromstring(xml_data)
+        transaction_id = root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}InstrId').text
+        amount = round_to_two_decimals(float(root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}IntrBkSttlmAmt').text))
+        currency = root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}IntrBkSttlmAmt').attrib['Ccy']
+
+        debtor = {
+            "name": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Nm').text,
+            "phones": [phone.text for phone in root.findall('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Phne')],
+            "email": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}CtctDtls/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}EmailAdr').text,
+            "address": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Dbtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}StrtNm').text
+        }
+
+        creditor = {
+            "name": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Nm').text,
+            "phones": [phone.text for phone in root.findall('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Phne')],
+            "email": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}CtctDtls/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}EmailAdr').text,
+            "address": root.find('.//{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}Cdtr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}PstlAdr/{urn:iso:std:iso:20022:tech:xsd:pacs.008.001.02}StrtNm').text
+        }
+        return {
+            "transaction_id": transaction_id,
+            "amount": amount,
+            "currency": currency,
+            "debtor": debtor,
+            "creditor": creditor
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+def dict_to_xml(tag, d):
+    elem = ET.Element(tag)
+    for key, val in d.items():
+        child = ET.Element(key)
+        if isinstance(val, dict):
+            child.extend(dict_to_xml(key, val))
+        else:
+            child.text = str(val)
+        elem.append(child)
+    return elem
+
+@app.route('/api/outbound_payment.xml', methods=['POST'])
+def outbound_payment_xml():
+    xml_data = request.data
+    parsed_data = parse_iso20022_pacs008(xml_data)
+    if "error" in parsed_data:
+        return jsonify(parsed_data), 400
+
+    data = load_positions()
+    currency = parsed_data['currency']
+    amount = parsed_data['amount']
+
+    if currency in data['balances']:
+        data['balances'][currency] = round_to_two_decimals(data['balances'][currency] - amount)
+    else:
+        return jsonify({"error": f"Currency {currency} not found"}), 400
+
+    today = datetime.today().strftime('%Y-%m-%d')
+    if currency not in data['transactions']:
+        data['transactions'][currency] = {}
+
+    if today not in data['transactions'][currency]:
+        data['transactions'][currency][today] = {"inbound": {"count": 0, "total_amount": 0.0},
+                                                 "outbound": {"count": 0, "total_amount": 0.0}}
+
+    data['transactions'][currency][today]["outbound"]["count"] += 1
+    data['transactions'][currency][today]["outbound"]["total_amount"] = round_to_two_decimals(
+        data['transactions'][currency][today]["outbound"]["total_amount"] + amount
+    )
+
+    save_positions(data)
+
+    response = {
+        **parsed_data,
+        "status": "Outbound Processed",
+        "new_position": round_to_two_decimals(data['balances'][currency]),
+        "cdata_content": f"&lt;![CDATA[This is a CDATA section for currency {currency}]]&gt;"
+    }
+
+    response_xml = dict_to_xml('result', response)
+    xml_str = ET.tostring(response_xml, encoding='unicode', method='xml')
+    xml_str = xml_str.replace('&amp;lt;![CDATA[', '&lt;![CDATA[').replace(']]&amp;gt;', ']]&gt;')
+    xml_response = f'&lt;?xml version="1.0" encoding="UTF-8"?&gt;\n{xml_str}'
+    return Response(xml_response, content_type='application/xml')
+
+@app.route('/api/inbound_payment.xml', methods=['POST'])
+def inbound_payment_xml():
+    xml_data = request.data
+    parsed_data = parse_iso20022_pacs008(xml_data)
+    if "error" in parsed_data:
+        return jsonify(parsed_data), 400
+
+    data = load_positions()
+    currency = parsed_data['currency']
+    amount = parsed_data['amount']
+
+    if currency in data['balances']:
+        data['balances'][currency] = round_to_two_decimals(data['balances'][currency] + amount)
+    else:
+        data['balances'][currency] = round_to_two_decimals(amount)
+
+    today = datetime.today().strftime('%Y-%m-%d')
+    if currency not in data['transactions']:
+        data['transactions'][currency] = {}
+
+    if today not in data['transactions'][currency]:
+        data['transactions'][currency][today] = {"inbound": {"count": 0, "total_amount": 0.0},
+                                                 "outbound": {"count": 0, "total_amount": 0.0}}
+
+    data['transactions'][currency][today]["inbound"]["count"] += 1
+    data['transactions'][currency][today]["inbound"]["total_amount"] = round_to_two_decimals(
+        data['transactions'][currency][today]["inbound"]["total_amount"] + amount
+    )
+
+    save_positions(data)
+
+    response = {
+        **parsed_data,
+        "status": "Inbound Processed",
+        "new_position": round_to_two_decimals(data['balances'][currency]),
+        "cdata_content": f"&lt;![CDATA[This is a CDATA section for currency {currency}]]&gt;"
+    }
+
+    response_xml = dict_to_xml('result', response)
+    xml_str = ET.tostring(response_xml, encoding='unicode', method='xml')
+    xml_str = xml_str.replace('&amp;lt;![CDATA[', '&lt;![CDATA[').replace(']]&amp;gt;', ']]&gt;')
+    xml_response = f'&lt;?xml version="1.0" encoding="UTF-8"?&gt;\n{xml_str}'
+    return Response(xml_response, content_type='application/xml')
+
+@app.route('/api/outbound_payment.json', methods=['POST'])
+def outbound_payment_json():
+    request_data = request.json
+
+    try:
+        transaction_id = request_data['transaction_id']
+        amount = round_to_two_decimals(request_data['amount'])
+        currency = request_data['currency']
+        debtor = request_data['debtor']
+        creditor = request_data['creditor']
+    except KeyError as e:
+        return jsonify({"error": f"Missing key: {str(e)}"}), 400
+
+    data = load_positions()
+
+    if currency in data['balances']:
+        data['balances'][currency] = round_to_two_decimals(data['balances'][currency] - amount)
+    else:
+        return jsonify({"error": f"Currency {currency} not found"}), 400
+
+    today = datetime.today().strftime('%Y-%m-%d')
+    if currency not in data['transactions']:
+        data['transactions'][currency] = {}
+
+    if today not in data['transactions'][currency]:
+        data['transactions'][currency][today] = {"inbound": {"count": 0, "total_amount": 0.0},
+                                                 "outbound": {"count": 0, "total_amount": 0.0}}
+
+    data['transactions'][currency][today]["outbound"]["count"] += 1
+    data['transactions'][currency][today]["outbound"]["total_amount"] = round_to_two_decimals(
+        data['transactions'][currency][today]["outbound"]["total_amount"] + amount
+    )
+
+    save_positions(data)
+
+    response = {
+        "transaction_id": transaction_id,
+        "amount": amount,
+        "currency": currency,
+        "debtor": debtor,
+        "creditor": creditor,
+        "status": "Outbound Processed",
+        "new_position": round_to_two_decimals(data['balances'][currency])
+    }
+    return jsonify(response), 200
+
+@app.route('/api/inbound_payment.json', methods=['POST'])
+def inbound_payment_json():
+    request_data = request.json
+
+    try:
+        transaction_id = request_data['transaction_id']
+        amount = round_to_two_decimals(request_data['amount'])
+        currency = request_data['currency']
+        debtor = request_data['debtor']
+        creditor = request_data['creditor']
+    except KeyError as e:
+        return jsonify({"error": f"Missing key: {str(e)}"}), 400
+
+    data = load_positions()
+
+    if currency in data['balances']:
+        data['balances'][currency] = round_to_two_decimals(data['balances'][currency] + amount)
+    else:
+        data['balances'][currency] = round_to_two_decimals(amount)
+
+    today = datetime.today().strftime('%Y-%m-%d')
+    if currency not in data['transactions']:
+        data['transactions'][currency] = {}
+
+    if today not in data['transactions'][currency]:
+        data['transactions'][currency][today] = {"inbound": {"count": 0, "total_amount": 0.0},
+                                                 "outbound": {"count": 0, "total_amount": 0.0}}
+
+    data['transactions'][currency][today]["inbound"]["count"] += 1
+    data['transactions'][currency][today]["inbound"]["total_amount"] = round_to_two_decimals(
+        data['transactions'][currency][today]["inbound"]["total_amount"] + amount
+    )
+
+    save_positions(data)
+
+    response = {
+        "transaction_id": transaction_id,
+        "amount": amount,
+        "currency": currency,
+        "debtor": debtor,
+        "creditor": creditor,
+        "status": "Inbound Processed",
+        "new_position": round_to_two_decimals(data['balances'][currency])
+    }
+    return jsonify(response), 200
+
+@app.route('/api/positions', methods=['POST'])
+def get_positions():
+    clear_old_positions()
+    request_data = request.json
+    data = load_positions()
+    today = datetime.today().strftime('%Y-%m-%d')
+
+    if not isinstance(request_data, list):
+        return jsonify({"error": "Request body must be a list of currencies"}), 400
+
+    results = []
+    for currency in request_data:
+        if currency in data['balances']:
+            transactions = data['transactions'].get(currency, {}).get(today,
+                                                                      {"inbound": {"count": 0, "total_amount": 0.0},
+                                                                       "outbound": {"count": 0, "total_amount": 0.0}})
+            results.append({
+                "currency": currency,
+                "balance": round_to_two_decimals(data['balances'][currency]),
+                "value_date": today,
+                "inbound": {
+                    "count": transactions["inbound"]["count"],
+                    "total_amount": round_to_two_decimals(transactions["inbound"]["total_amount"])
+                },
+                "outbound": {
+                    "count": transactions["outbound"]["count"],
+                    "total_amount": round_to_two_decimals(transactions["outbound"]["total_amount"])
+                }
+            })
+        else:
+            results.append({
+                "currency": currency,
+                "balance": 0.00,
+                "value_date": today,
+                "inbound": {"count": 0, "total_amount": 0.00},
+                "outbound": {"count": 0, "total_amount": 0.00}
+            })
+
+    return jsonify(results), 200
+
+@app.route('/api/positions2', methods=['GET'])
+def get_all_positions():
+    clear_old_positions()
+    data = load_positions()
+    today = datetime.today().strftime('%Y-%m-%d')
+
+    results = []
+    for currency in data['balances']:
+        transactions = data['transactions'].get(currency, {}).get(today,
+                                                                  {"inbound": {"count": 0, "total_amount": 0.0},
+                                                                   "outbound": {"count": 0, "total_amount": 0.0}})
+        results.append({
+            "currency": currency,
+            "balance": round_to_two_decimals(data['balances'][currency]),
+            "value_date": today,
+            "inbound": {
+                "count": transactions["inbound"]["count"],
+                "total_amount": round_to_two_decimals(transactions["inbound"]["total_amount"])
+            },
+            "outbound": {
+                "count": transactions["outbound"]["count"],
+                "total_amount": round_to_two_decimals(transactions["outbound"]["total_amount"])
+            }
+        })
+
+    return jsonify(results), 200
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_yaml_config_cli_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\yaml_config_cli.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import argparse
+from ruamel.yaml import YAML
+import os
+from typing import Any, Dict
+from libraries.common.utility_helpers import PROJECT_ROOT
+
+
+class YamlConfigManager:
+    """A class for managing YAML configuration files.
+    python yaml_config_cli.py configs/api_test_config.yaml --update active_environment PROD --update test_cases_path "test_cases/new_test_cases.xlsx" --update clear_saved_fields_after_test False
+    python yaml_config_cli.py configs/api_test_config.yaml --add-to-list tc_id_list TC001 --add-to-list tags api
+    python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags deprecated
+    python yaml_config_cli.py configs/api_test_config.yaml --update active_environment PROD --add-to-list tc_id_list TC001 --remove-from-list tags deprecated
+    """
+    def __init__(self, file_path: str):
+        self.file_path = os.path.join(PROJECT_ROOT, file_path)
+        self.yaml = YAML()
+        self.yaml.preserve_quotes = True
+        self.yaml.indent(mapping=2, sequence=4, offset=2)
+        self.config = self.load_yaml()
+
+    def load_yaml(self) -&gt; Dict[str, Any]:
+        """Load YAML configuration from the file."""
+        if os.path.exists(self.file_path):
+            with open(self.file_path, 'r') as file:
+                return self.yaml.load(file) or {}
+        return {}
+
+    def save_yaml(self):
+        """Save YAML configuration to the file."""
+        with open(self.file_path, 'w') as file:
+            self.yaml.dump(self.config, file)
+
+    def update_config(self, key: str, value: Any):
+        """Update the configuration for a given key with the provided value."""
+        keys = key.split('.')
+        current = self.config
+        for k in keys[:-1]:
+            if k not in current:
+                current[k] = {}
+            current = current[k]
+        current[keys[-1]] = value
+        self.save_yaml()
+
+    def get_config(self, key: str) -&gt; Any:
+        """Retrieve the configuration value for a given key."""
+        keys = key.split('.')
+        current = self.config
+        for k in keys:
+            if k not in current:
+                return None
+            current = current[k]
+        return current
+
+    def add_to_list(self, key: str, value: Any):
+        """Add a value to the list at the given key."""
+        current_list = self.get_config(key)
+        if current_list is None:
+            self.update_config(key, [value])
+        elif isinstance(current_list, list):
+            if value not in current_list:
+                current_list.append(value)
+                self.save_yaml()
+        else:
+            raise ValueError(f"The key '{key}' does not point to a list.")
+
+    def remove_from_list(self, key: str, value: Any):
+        """Remove a value from the list at the given key."""
+        current_list = self.get_config(key)
+        if isinstance(current_list, list):
+            if value in current_list:
+                current_list.remove(value)
+                self.save_yaml()
+        else:
+            raise ValueError(f"The key '{key}' does not point to a list.")
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Manage YAML configuration file.')
+    parser.add_argument('file_path', help='Path to the YAML configuration file')
+    parser.add_argument('--update', nargs=2, action='append', metavar=('KEY', 'VALUE'),
+                        help='Update a configuration value. Can be used multiple times.')
+    parser.add_argument('--add-to-list', nargs=2, action='append', metavar=('KEY', 'VALUE'),
+                        help='Add a value to a list. Can be used multiple times.')
+    parser.add_argument('--remove-from-list', nargs=2, action='append', metavar=('KEY', 'VALUE'),
+                        help='Remove a value from a list. Can be used multiple times.')
+
+    args = parser.parse_args()
+
+    yaml_manager = YamlConfigManager(args.file_path)
+
+    if args.update:
+        for key, value in args.update:
+            # Try to convert the value to the appropriate type
+            try:
+                value = eval(value)
+            except:
+                pass  # If conversion fails, keep it as a string
+            yaml_manager.update_config(key, value)
+            print(f"Updated {key} to {value}")
+
+    if args.add_to_list:
+        for key, value in args.add_to_list:
+            yaml_manager.add_to_list(key, value)
+            print(f"Added {value} to list {key}")
+
+    if args.remove_from_list:
+        for key, value in args.remove_from_list:
+            yaml_manager.remove_from_list(key, value)
+            print(f"Removed {value} from list {key}")
+
+    # Print the updated configuration
+    print("\nUpdated configuration:")
+    with open(args.file_path, 'r') as file:
+        print(file.read())
+</pre>
+</div>
+
+
     <script>
-        function copyToClipboard(button) {{
+        function copyToClipboard(button) {
             const codeContainer = button.parentElement;
             const code = codeContainer.querySelector('pre').innerText;
-            navigator.clipboard.writeText(code).then(() => {{
+            navigator.clipboard.writeText(code).then(() => {
                 button.innerText = 'Copied!';
-                setTimeout(() => {{ button.innerText = 'Copy'; }}, 2000);
-            }});
-        }}
-        function returnToDirectory() {{
-            window.scrollTo({{ top: 0, behavior: 'smooth' }});
-        }}
+                setTimeout(() => { button.innerText = 'Copy'; }, 2000);
+            });
+        }
+        function returnToDirectory() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     </script>
 </body>
 </html>
-'''
-
-code_block_template = '''<div class="code-container" id="{file_id}">
-    <div class="class-header">{file_name}</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>{code_content}</pre>
-</div>
-'''
-
-def read_files(directory='.', exclude_files=None, exclude_directories=None):
-    if exclude_files is None:
-        exclude_files = []
-    if exclude_directories is None:
-        exclude_directories = set()
-
-    # Convert exclude_files to absolute paths
-    exclude_files = [os.path.abspath(file) for file in exclude_files]
-
-    supported_extensions = ('.py', '.json', '.yaml', '.html', '.xml', '.md')
-    files_list = []
-    for root, dirs, files in os.walk(directory):
-        # Modify dirs in place to exclude specified directories
-        dirs[:] = [d for d in dirs if d not in exclude_directories]
-        for file in files:
-            file_path = os.path.abspath(os.path.join(root, file))
-            if file.endswith(supported_extensions) and file_path not in exclude_files:
-                files_list.append(file_path)
-    files_list.sort()  # Sort the list of files
-    return files_list
-
-def escape_html(text):
-    return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-
-def generate_code_blocks_and_links(files_list):
-    code_blocks = ''
-    for file_path in files_list:
-        file_id = file_path.replace('\\', '_').replace('/', '_').replace('.', '_')
-        with open(file_path, 'r', encoding='utf-8') as file:
-            code_content = escape_html(file.read())
-            code_block = code_block_template.format(file_id=file_id, file_name=file_path, code_content=code_content)
-            code_blocks += code_block + '\n'
-    return code_blocks
-
-def generate_file_structure(files_list, directory='.', prefix=''):
-    file_structure = ''
-    files_set = set(files_list)
-    for root, dirs, files in os.walk(directory):
-        level = root.replace(directory, '').count(os.sep)
-        indent = '│   ' * level + '├── ' if level > 0 else ''
-        subindent = '│   ' * (level + 1) + '├── '
-        folder_name = os.path.basename(root)
-        if any(os.path.abspath(os.path.join(root, f)) in files_set for f in files):  # Check if directory has any included files
-            file_structure += f'{indent}{folder_name}/\n'
-            for f in files:
-                file_path = os.path.abspath(os.path.join(root, f))
-                if file_path in files_set:
-                    file_id = file_path.replace('\\', '_').replace('/', '_').replace('.', '_')
-                    file_structure += f'{subindent}<a href="#{file_id}">{f}</a>\n'
-    return file_structure
-
-def generate_html_file(html_content, output_file='report/e2e_test_framework.html'):
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    with open(output_file, 'w', encoding='utf-8') as file:
-        file.write(html_content)
-
-if __name__ == "__main__":
-    # Define files and directories to exclude
-    exclude_files = [
-        'export_html.py',
-        'export_code.py'
-        # Add more file paths as needed
-    ]
-    exclude_directories = {'venv', '.idea', '__pycache__', '.git', 'report'}
-
-    files_list = read_files(exclude_files=exclude_files, exclude_directories=exclude_directories)
-    code_blocks = generate_code_blocks_and_links(files_list)
-    file_structure = generate_file_structure(files_list, directory='.')
-    html_content = html_template.format(file_structure=file_structure, code_blocks=code_blocks)
-    generate_html_file(html_content)
-    print(f"HTML file 'report/e2e_test_framework.html' generated successfully.")
