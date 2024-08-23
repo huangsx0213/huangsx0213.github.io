@@ -96,6 +96,8 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_robot_generator_py">web_robot_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_loader_py">web_test_loader.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">__init__.py</a>
+│   ├── templates/
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_templates_rf_report_template_html">rf_report_template.html</a>
 │   ├── testing_server/
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_positions_json">positions.json</a>
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_server_py">server.py</a>
@@ -739,29 +741,42 @@ class APITestKeywords:
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
 import logging
-
 import pandas as pd
 import yaml
+from typing import List, Dict
 
 
 class APITestLoader:
     def __init__(self, excel_path: str):
         self.excel_path = excel_path
-        self.data = {}
+        self.data: Dict[str, pd.DataFrame] = {}
+        self._load_all_excel_data()
         self.validate_excel_structure()
 
-    def _load_excel_data(self, sheet_name: str) -&gt; pd.DataFrame:
-        if sheet_name not in self.data:
-            try:
-                self.data[sheet_name] = pd.read_excel(self.excel_path, sheet_name=sheet_name).fillna('')
-                self.validate_sheet_data(sheet_name, self.data[sheet_name])
-            except ValueError as e:
-                logging.error(f"{self.__class__.__name__}: Error loading sheet '{sheet_name}': {e}")
-                raise ValueError(f"Error loading sheet '{sheet_name}': {e}")
-        return self.data[sheet_name]
+    def _load_all_excel_data(self):
+        try:
+            excel_file = pd.ExcelFile(self.excel_path)
+            for sheet_name in excel_file.sheet_names:
+                self.data[sheet_name] = excel_file.parse(sheet_name).fillna('')
+            excel_file.close()
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error loading Excel file: {e}")
+            raise ValueError(f"Error loading Excel file: {e}")
+
+    def validate_excel_structure(self):
+        required_sheets = ['API', 'BodyTemplates', 'BodyDefaults', 'Headers', 'Endpoints']
+        missing_sheets = set(required_sheets) - set(self.data.keys())
+        if missing_sheets:
+            logging.error(f"{self.__class__.__name__}: Missing required sheets: {', '.join(missing_sheets)}")
+            raise ValueError(f"Missing required sheets: {', '.join(missing_sheets)}")
+
+        for sheet_name, df in self.data.items():
+            self.validate_sheet_data(sheet_name, df)
 
     def get_data(self, sheet_name: str) -&gt; pd.DataFrame:
-        return self._load_excel_data(sheet_name)
+        if sheet_name not in self.data:
+            raise ValueError(f"Sheet '{sheet_name}' not found in the Excel file")
+        return self.data[sheet_name]
 
     def get_api_test_cases(self) -&gt; pd.DataFrame:
         return self.get_data('API')
@@ -778,25 +793,16 @@ class APITestLoader:
     def get_endpoints(self) -&gt; pd.DataFrame:
         return self.get_data('Endpoints')
 
-    def filter_cases(self, tcid_list: list = None, tags: list = None) -&gt; pd.DataFrame:
+    def filter_cases(self, tcid_list: List[str] = None, tags: List[str] = None) -&gt; pd.DataFrame:
         test_cases = self.get_api_test_cases()
 
         if tcid_list:
             test_cases = test_cases[test_cases['TCID'].isin(tcid_list)]
 
         if tags:
-            test_cases = test_cases[test_cases['Tags'].apply(lambda x: any(tag in x for tag in tags))]
+            test_cases = test_cases[test_cases['Tags'].apply(lambda x: any(tag in str(x).split(',') for tag in tags))]
 
-        # Filter out the test cases where 'Run' column is not equal to 'Y'
         return test_cases[test_cases['Run'] == 'Y']
-
-    def validate_excel_structure(self):
-        required_sheets = ['API', 'BodyTemplates', 'BodyDefaults', 'Headers', 'Endpoints']
-        existing_sheets = pd.ExcelFile(self.excel_path).sheet_names
-        missing_sheets = set(required_sheets) - set(existing_sheets)
-        if missing_sheets:
-            logging.error(f"{self.__class__.__name__}: Missing required sheets: {', '.join(missing_sheets)}")
-            raise ValueError(f"Missing required sheets: {', '.join(missing_sheets)}")
 
     def validate_sheet_data(self, sheet_name: str, df: pd.DataFrame):
         validation_methods = {
@@ -810,141 +816,94 @@ class APITestLoader:
             validation_methods[sheet_name](df)
 
     def _validate_api_sheet(self, df: pd.DataFrame):
-        required_columns = ['TCID', 'Name', 'Run', 'Endpoint', 'Body Template', 'Body Default', 'Body User-defined Fields', 'Headers']
-        missing_columns = set(required_columns) - set(df.columns)
-        if missing_columns:
-            logging.error(f"{self.__class__.__name__}: Missing required columns in API sheet: {', '.join(missing_columns)}")
-            raise ValueError(f"Missing required columns in API sheet: {', '.join(missing_columns)}")
+        required_columns = ['TCID', 'Name', 'Run', 'Endpoint', 'Body Template', 'Body Default', 'Body User-defined Fields', 'Headers', 'Exp Result']
+        self._check_required_columns(df, required_columns, 'API')
 
-        # Check for duplicate TCID
         if df['TCID'].duplicated().any():
-            logging.error(f"{self.__class__.__name__}: Duplicate TCID found in API sheet")
             raise ValueError("Duplicate TCID found in API sheet")
 
-        # Ensure 'Run' column has only 'Y' or 'N'
         if not df['Run'].isin(['Y', 'N']).all():
-            logging.error(f"{self.__class__.__name__}: Invalid values in 'Run' column. Only 'Y' or 'N' are allowed.")
             raise ValueError("Invalid values in 'Run' column. Only 'Y' or 'N' are allowed.")
 
-        # Validate mandatory fields, considering GET and DELETE requests
-        for index, row in df.iterrows():
-            method = self.get_endpoints().loc[self.get_endpoints()['Endpoint'] == row['Endpoint'], 'Method'].iloc[0]
-            if method in ['GET', 'DELETE']:
-                # Allow '' for 'Body Template' and 'Body Default'
-                fields_to_check = ['TCID', 'Name', 'Endpoint', 'Headers']
-            else:
-                # Do not allow '' for any mandatory field
-                fields_to_check = required_columns
+        for _, row in df.iterrows():
+            self._validate_api_row(row)
 
-            for field in fields_to_check:
-                if row[field] == '':
-                    logging.error(f"{self.__class__.__name__}: Empty value found in mandatory column '{field}' for TCID '{row['TCID']}' in API sheet")
-                    raise ValueError(f"Empty value found in mandatory column '{field}' for TCID '{row['TCID']}' in API sheet")
-            # Validate references to other sheets
-            self._validate_sheet_reference(row['Body Template'], 'BodyTemplates', 'TemplateName', row['TCID'])
-            self._validate_sheet_reference(row['Body Default'], 'BodyDefaults', 'Name', row['TCID'])
-            self._validate_sheet_reference(row['Headers'], 'Headers', 'HeaderName', row['TCID'])
-            self._validate_sheet_reference(row['Endpoint'], 'Endpoints', 'Endpoint', row['TCID'])
+    def _validate_api_row(self, row: pd.Series):
+        method = self.get_endpoints().loc[self.get_endpoints()['Endpoint'] == row['Endpoint'], 'Method'].iloc[0]
+
+        # Validate references to other sheets
+        self._validate_sheet_reference(row['Body Template'], 'BodyTemplates', 'TemplateName', row['TCID'])
+        self._validate_sheet_reference(row['Body Default'], 'BodyDefaults', 'Name', row['TCID'])
+        self._validate_sheet_reference(row['Headers'], 'Headers', 'HeaderName', row['TCID'])
+        self._validate_sheet_reference(row['Endpoint'], 'Endpoints', 'Endpoint', row['TCID'])
+
+        # Validate mandatory fields based on HTTP method
+        if method in ['GET', 'DELETE']:
+            mandatory_fields = ['TCID', 'Name', 'Endpoint', 'Headers', 'Exp Status']
+        else:
+            mandatory_fields = ['TCID', 'Name', 'Endpoint', 'Body Template', 'Body Default', 'Headers', 'Exp Status']
+
+        for field in mandatory_fields:
+            if pd.isna(row[field]) or row[field] == '':
+                raise ValueError(f"Empty value found in mandatory column '{field}' for TCID '{row['TCID']}' in API sheet")
+
+    def _validate_body_templates_sheet(self, df: pd.DataFrame):
+        required_columns = ['TemplateName', 'Content', 'Format']
+        self._check_required_columns(df, required_columns, 'BodyTemplates')
+
+        if df['TemplateName'].duplicated().any():
+            raise ValueError("Duplicate TemplateName found in BodyTemplates sheet")
+
+        if not df['Format'].isin(['json', 'xml']).all():
+            raise ValueError("Invalid values in 'Format' column. Only 'json' or 'xml' are allowed.")
+
+    def _validate_body_defaults_sheet(self, df: pd.DataFrame):
+        required_columns = ['Name', 'Content']
+        self._check_required_columns(df, required_columns, 'BodyDefaults')
+
+        if df['Name'].duplicated().any():
+            raise ValueError("Duplicate Name found in BodyDefaults sheet")
+
+        for _, row in df.iterrows():
+            try:
+                json.loads(row['Content'])
+            except json.JSONDecodeError:
+                raise ValueError(f"Invalid JSON in BodyDefaults sheet for Name: {row['Name']}")
+
+    def _validate_headers_sheet(self, df: pd.DataFrame):
+        required_columns = ['HeaderName', 'Content']
+        self._check_required_columns(df, required_columns, 'Headers')
+
+        if df['HeaderName'].duplicated().any():
+            raise ValueError("Duplicate HeaderName found in Headers sheet")
+
+        for _, row in df.iterrows():
+            try:
+                yaml.safe_load(row['Content'])
+            except yaml.YAMLError:
+                raise ValueError(f"Invalid YAML in Headers sheet for HeaderName: {row['HeaderName']}")
+
+    def _validate_endpoints_sheet(self, df: pd.DataFrame):
+        required_columns = ['Environment', 'Endpoint', 'Method', 'Path']
+        self._check_required_columns(df, required_columns, 'Endpoints')
+
+        if df.duplicated(subset=['Environment', 'Endpoint']).any():
+            raise ValueError("Duplicate Environment-Endpoint combination found in Endpoints sheet")
+
+        valid_methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+        if not df['Method'].isin(valid_methods).all():
+            raise ValueError(f"Invalid values in 'Method' column. Allowed values are: {', '.join(valid_methods)}")
+
+    def _check_required_columns(self, df: pd.DataFrame, required_columns: List[str], sheet_name: str):
+        missing_columns = set(required_columns) - set(df.columns)
+        if missing_columns:
+            raise ValueError(f"Missing required columns in {sheet_name} sheet: {', '.join(missing_columns)}")
 
     def _validate_sheet_reference(self, value: str, sheet_name: str, column_name: str, tcid: str):
         if value:
             referenced_sheet = self.get_data(sheet_name)
             if value not in referenced_sheet[column_name].values:
-                logging.error(f"{self.__class__.__name__}: Referenced value '{value}' in '{sheet_name}' sheet not found for TCID '{tcid}'")
-                raise ValueError(f"Referenced value '{value}' in '{sheet_name}' sheet not found for TCID '{tcid}'")
-    def _validate_body_templates_sheet(self, df: pd.DataFrame):
-        required_columns = ['TemplateName', 'Content', 'Format']
-        missing_columns = set(required_columns) - set(df.columns)
-        if missing_columns:
-            logging.error(f"{self.__class__.__name__}: Missing required columns in BodyTemplates sheet: {', '.join(missing_columns)}")
-            raise ValueError(f"Missing required columns in BodyTemplates sheet: {', '.join(missing_columns)}")
-
-        if df['TemplateName'].duplicated().any():
-            logging.error(f"{self.__class__.__name__}: Duplicate TemplateName found in BodyTemplates sheet")
-            raise ValueError("Duplicate TemplateName found in BodyTemplates sheet")
-
-        if not df['Format'].isin(['json', 'xml']).all():
-            logging.error(f"{self.__class__.__name__}: Invalid values in 'Format' column. Only 'json' or 'xml' are allowed.")
-            raise ValueError("Invalid values in 'Format' column. Only 'json' or 'xml' are allowed.")
-
-        # Check for empty values in mandatory fields
-        for field in required_columns:
-            if df[field].eq('').any():
-                logging.error(f"{self.__class__.__name__}: Empty value found in mandatory column '{field}' in BodyTemplates sheet")
-                raise ValueError(f"Empty value found in mandatory column '{field}' in BodyTemplates sheet")
-
-    def _validate_body_defaults_sheet(self, df: pd.DataFrame):
-        required_columns = ['Name', 'Content']
-        missing_columns = set(required_columns) - set(df.columns)
-        if missing_columns:
-            logging.error(f"{self.__class__.__name__}: Missing required columns in BodyDefaults sheet: {', '.join(missing_columns)}")
-            raise ValueError(f"Missing required columns in BodyDefaults sheet: {', '.join(missing_columns)}")
-
-        if df['Name'].duplicated().any():
-            logging.error(f"{self.__class__.__name__}: Duplicate Name found in BodyDefaults sheet")
-            raise ValueError("Duplicate Name found in BodyDefaults sheet")
-
-        # Check for empty values in mandatory fields
-        for field in required_columns:
-            if df[field].eq('').any():
-                logging.error(f"{self.__class__.__name__}: Empty value found in mandatory column '{field}' in BodyDefaults sheet")
-                raise ValueError(f"Empty value found in mandatory column '{field}' in BodyDefaults sheet")
-
-        # Validate that Content is valid JSON
-        for _, row in df.iterrows():
-            try:
-                json.loads(row['Content'])
-            except json.JSONDecodeError:
-                logging.error(f"{self.__class__.__name__}: Invalid JSON in BodyDefaults sheet for Name: {row['Name']}")
-                raise ValueError(f"Invalid JSON in BodyDefaults sheet for Name: {row['Name']}")
-
-    def _validate_headers_sheet(self, df: pd.DataFrame):
-        required_columns = ['HeaderName', 'Content']
-        missing_columns = set(required_columns) - set(df.columns)
-        if missing_columns:
-            logging.error(f"{self.__class__.__name__}: Missing required columns in Headers sheet: {', '.join(missing_columns)}")
-            raise ValueError(f"Missing required columns in Headers sheet: {', '.join(missing_columns)}")
-
-        if df['HeaderName'].duplicated().any():
-            logging.error(f"{self.__class__.__name__}: Duplicate HeaderName found in Headers sheet")
-            raise ValueError("Duplicate HeaderName found in Headers sheet")
-
-        # Check for empty values in mandatory fields
-        for field in required_columns:
-            if df[field].eq('').any():
-                logging.error(f"{self.__class__.__name__}: Empty value found in mandatory column '{field}' in Headers sheet")
-                raise ValueError(f"Empty value found in mandatory column '{field}' in Headers sheet")
-
-        # Validate that Content is valid YAML
-        for _, row in df.iterrows():
-            try:
-                yaml.safe_load(row['Content'])
-            except yaml.YAMLError:
-                logging.error(f"{self.__class__.__name__}: Invalid YAML in Headers sheet for HeaderName: {row['HeaderName']}")
-                raise ValueError(f"Invalid YAML in Headers sheet for HeaderName: {row['HeaderName']}")
-
-    def _validate_endpoints_sheet(self, df: pd.DataFrame):
-        required_columns = ['Environment', 'Endpoint', 'Method', 'Path']
-        missing_columns = set(required_columns) - set(df.columns)
-        if missing_columns:
-            logging.error(f"{self.__class__.__name__}: Missing required columns in Endpoints sheet: {', '.join(missing_columns)}")
-            raise ValueError(f"Missing required columns in Endpoints sheet: {', '.join(missing_columns)}")
-
-        if df.duplicated(subset=['Environment', 'Endpoint']).any():
-            logging.error(f"{self.__class__.__name__}: Duplicate Environment-Endpoint combination found in Endpoints sheet")
-            raise ValueError("Duplicate Environment-Endpoint combination found in Endpoints sheet")
-
-        valid_methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
-        if not df['Method'].isin(valid_methods).all():
-            logging.error(f"{self.__class__.__name__}: Invalid values in 'Method' column. Allowed values are: {', '.join(valid_methods)}")
-            raise ValueError(f"Invalid values in 'Method' column. Allowed values are: {', '.join(valid_methods)}")
-
-        # Check for empty values in mandatory fields
-        for field in required_columns:
-            if df[field].eq('').any():
-                logging.error(f"{self.__class__.__name__}: Empty value found in mandatory column '{field}' in Endpoints sheet")
-                raise ValueError(f"Empty value found in mandatory column '{field}' in Endpoints sheet")
-</pre>
+                raise ValueError(f"Referenced value '{value}' in '{sheet_name}' sheet not found for TCID '{tcid}'")</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_body_generator_py">
@@ -1935,7 +1894,8 @@ class E2ERobotCasesGenerator:
         for _, step in test_steps.iterrows():
             page_name = step['Page Name']
             module_name = step['Module Name']
-            parameters = self.extract_parameters(data_set, step['Parameter Name'])
+            if step['Module Name'] != 'API':
+                parameters = self.extract_parameters(data_set, step['Parameter Name'])
 
             try:
                 logging.info(f"{self.__class__.__name__}: Creating e2e step: {page_name}.{module_name}")
@@ -1993,6 +1953,7 @@ from libraries.web.webdriver_factory import WebDriverFactory
 from robot.libraries.BuiltIn import BuiltIn
 
 builtin_lib = BuiltIn()
+
 
 class WebDriverSingleton:
     _instance = None
@@ -2078,7 +2039,8 @@ class PageObject:
                 'element_name': row['Element Name'],
                 'action': row['Actions'],
                 'parameter_name': row['Parameter Name'].split(',') if row['Parameter Name'] else [],
-                'screen_capture': row['Screenshot']
+                'screen_capture': row['Screenshot'],
+                'wait': row['Wait']
             }
             modules.setdefault(row['Page Name'], {}).setdefault(row['Module Name'], []).append(action_info)
         return modules
@@ -2093,12 +2055,23 @@ class PageObject:
             element_name = action_info['element_name']
             action = action_info['action']
             screen_capture = action_info['screen_capture']
+            wait = action_info['wait']
             element = self._find_element(page_name, element_name, action)
             action_params = [parameters.get(param) for param in action_info['parameter_name']]
 
             self._execute_action(action, element, *action_params)
+
+            if wait:
+                try:
+                    wait_time = float(wait)
+                    if wait_time &gt; 0:
+                        self.web_actions.wait(wait_time)
+                except ValueError:
+                    logging.warning(f"Invalid wait value: {wait}. Skipping wait.")
+
             if screen_capture:
                 self.web_actions.capture_screenshot()
+
             logging.info("=" * 80)
 
     def _find_element(self, page_name: str, element_name: str, action: str):
@@ -2158,7 +2131,15 @@ class PageObject:
             'dismiss_alert': self.web_actions.dismiss_alert,
             'get_alert_text': self.web_actions.get_alert_text,
             'highlight_element': self.web_actions.highlight_element,
-            'capture_screenshot': self.web_actions.capture_screenshot,
+            'verify_table_exact': self.web_actions.verify_table_exact,
+            'verify_table_row_exact': self.web_actions.verify_table_row_exact,
+            'verify_specific_cell_exact': self.web_actions.verify_specific_cell_exact,
+            'verify_table_partial': self.web_actions.verify_table_partial,
+            'verify_table_row_partial': self.web_actions.verify_table_row_partial,
+            'verify_specific_cell_partial': self.web_actions.verify_specific_cell_partial,
+            'verify_table_regex': self.web_actions.verify_table_regex,
+            'verify_table_row_regex': self.web_actions.verify_table_row_regex,
+            'verify_specific_cell_regex': self.web_actions.verify_specific_cell_regex,
             'wait': self.web_actions.wait,
         }
 
@@ -2322,10 +2303,13 @@ class TableVerifier:
         """
         if match_type == 'exact':
             assert actual_value == expected_value, f"Mismatch in column '{column}'. Expected: {expected_value}, Actual: {actual_value}"
+            logging.info(f"Verified column '{column}': expected: {expected_value}, actual: {actual_value}")
         elif match_type == 'partial':
             assert expected_value in actual_value, f"Value '{expected_value}' not found in column '{column}'. Actual: {actual_value}"
+            logging.info(f"Verified column '{column}': partial match: {expected_value} in {actual_value}")
         elif match_type == 'regex':
             assert re.search(expected_value, actual_value), f"Regex '{expected_value}' did not match in column '{column}'. Actual: {actual_value}"
+            logging.info(f"Verified column '{column}': regex match: {expected_value} in {actual_value}")
         else:
             raise ValueError(f"Invalid match_type: {match_type}")
 
@@ -2375,6 +2359,8 @@ class TableVerifier:
 import datetime
 import logging
 import time
+from typing import List, Dict, Union
+
 from robot.libraries.BuiltIn import BuiltIn
 from selenium.common import NoSuchElementException, TimeoutException
 from selenium.webdriver import ActionChains
@@ -2701,6 +2687,149 @@ class WebElementActions:
 
         logging.info(f"{self.__class__.__name__}: Finished highlighting element: {element_desc}")
 
+    def verify_table_exact(self, table_element: WebElement, expected_data: List[Dict[str, str]]):
+        """
+        Verify the entire table data using exact matching.
+        Args:
+            table_element (WebElement): The WebElement representing the table to be verified.
+            expected_data (List[Dict[str, str]]): A list of dictionaries, where each dictionary
+                represents a row in the table. The keys are column names and values are the
+                expected cell contents.
+        Raises:
+            AssertionError: If the table data does not exactly match the expected data.
+        """
+        logging.info(f"{self.__class__.__name__}: Verifying entire table with exact match")
+        self.table_verifier.verify_table(table_element, expected_data, match_type='exact')
+        logging.info(f"{self.__class__.__name__}: Table verification (exact match) completed")
+
+    def verify_table_row_exact(self, table_element: WebElement, row_index: int, expected_data: Dict[str, str]):
+        """
+        Verify a specific row in the table using exact matching.
+        Args:
+            table_element (WebElement): The WebElement representing the table to be verified.
+            row_index (int): The index of the row to verify (1-based index).
+            expected_data (Dict[str, str]): A dictionary where keys are column names and values
+                are the expected cell contents for the specified row.
+        Raises:
+            AssertionError: If the row data does not exactly match the expected data.
+            ValueError: If the row_index is out of range.
+        """
+        logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with exact match")
+        self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='exact')
+        logging.info(f"{self.__class__.__name__}: Table row verification (exact match) completed")
+
+    def verify_specific_cell_exact(self, table_element: WebElement, row_index: int, column: Union[str, int], expected_value: str):
+        """
+        Verify a specific cell in the table using exact matching.
+        Args:
+            table_element (WebElement): The WebElement representing the table to be verified.
+            row_index (int): The index of the row containing the cell to verify (1-based index).
+            column (Union[str, int]): The column name (str) or index (int, 1-based) of the cell to verify.
+            expected_value (str): The expected content of the cell.
+        Raises:
+            AssertionError: If the cell content does not exactly match the expected value.
+            ValueError: If the row_index or column is out of range.
+        """
+        logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with exact match")
+        self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='exact')
+        logging.info(f"{self.__class__.__name__}: Specific cell verification (exact match) completed")
+
+    # Partial match methods
+    def verify_table_partial(self, table_element: WebElement, expected_data: List[Dict[str, str]]):
+        """
+        Verify the entire table data using partial matching.
+        Args:
+            table_element (WebElement): The WebElement representing the table to be verified.
+            expected_data (List[Dict[str, str]]): A list of dictionaries, where each dictionary
+                represents a row in the table. The keys are column names and values are the
+                expected partial cell contents.
+        Raises:
+            AssertionError: If any cell in the table does not contain the expected partial content.
+        """
+        logging.info(f"{self.__class__.__name__}: Verifying entire table with partial match")
+        self.table_verifier.verify_table(table_element, expected_data, match_type='partial')
+        logging.info(f"{self.__class__.__name__}: Table verification (partial match) completed")
+
+    def verify_table_row_partial(self, table_element: WebElement, row_index: int, expected_data: Dict[str, str]):
+        """
+        Verify a specific row in the table using partial matching.
+        Args:
+            table_element (WebElement): The WebElement representing the table to be verified.
+            row_index (int): The index of the row to verify (1-based index).
+            expected_data (Dict[str, str]): A dictionary where keys are column names and values
+                are the expected partial cell contents for the specified row.
+        Raises:
+            AssertionError: If any cell in the row does not contain the expected partial content.
+            ValueError: If the row_index is out of range.
+        """
+        logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with partial match")
+        self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='partial')
+        logging.info(f"{self.__class__.__name__}: Table row verification (partial match) completed")
+
+    def verify_specific_cell_partial(self, table_element: WebElement, row_index: int, column: Union[str, int], expected_value: str):
+        """
+        Verify a specific cell in the table using partial matching.
+        Args:
+            table_element (WebElement): The WebElement representing the table to be verified.
+            row_index (int): The index of the row containing the cell to verify (1-based index).
+            column (Union[str, int]): The column name (str) or index (int, 1-based) of the cell to verify.
+            expected_value (str): The expected partial content of the cell.
+        Raises:
+            AssertionError: If the cell content does not contain the expected partial value.
+            ValueError: If the row_index or column is out of range.
+        """
+        logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with partial match")
+        self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='partial')
+        logging.info(f"{self.__class__.__name__}: Specific cell verification (partial match) completed")
+
+    # Regex match methods
+    def verify_table_regex(self, table_element: WebElement, expected_data: List[Dict[str, str]]):
+        """
+        Verify the entire table data using regex matching.
+        Args:
+            table_element (WebElement): The WebElement representing the table to be verified.
+            expected_data (List[Dict[str, str]]): A list of dictionaries, where each dictionary
+                represents a row in the table. The keys are column names and values are the
+                regex patterns to match against cell contents.
+        Raises:
+            AssertionError: If any cell in the table does not match the corresponding regex pattern.
+        """
+        logging.info(f"{self.__class__.__name__}: Verifying entire table with regex match")
+        self.table_verifier.verify_table(table_element, expected_data, match_type='regex')
+        logging.info(f"{self.__class__.__name__}: Table verification (regex match) completed")
+
+    def verify_table_row_regex(self, table_element: WebElement, row_index: int, expected_data: Dict[str, str]):
+        """
+        Verify a specific row in the table using regex matching.
+        Args:
+            table_element (WebElement): The WebElement representing the table to be verified.
+            row_index (int): The index of the row to verify (1-based index).
+            expected_data (Dict[str, str]): A dictionary where keys are column names and values
+                are the regex patterns to match against cell contents for the specified row.
+        Raises:
+            AssertionError: If any cell in the row does not match the corresponding regex pattern.
+            ValueError: If the row_index is out of range.
+        """
+        logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with regex match")
+        self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='regex')
+        logging.info(f"{self.__class__.__name__}: Table row verification (regex match) completed")
+
+    def verify_specific_cell_regex(self, table_element: WebElement, row_index: int, column: Union[str, int], expected_value: str):
+        """
+        Verify a specific cell in the table using regex matching.
+        Args:
+            table_element (WebElement): The WebElement representing the table to be verified.
+            row_index (int): The index of the row containing the cell to verify (1-based index).
+            column (Union[str, int]): The column name (str) or index (int, 1-based) of the cell to verify.
+            expected_value (str): The regex pattern to match against the cell content.
+        Raises:
+            AssertionError: If the cell content does not match the regex pattern.
+            ValueError: If the row_index or column is out of range.
+        """
+        logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with regex match")
+        self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='regex')
+        logging.info(f"{self.__class__.__name__}: Specific cell verification (regex match) completed")
+
     def wait(self, seconds):
         logging.info(f"{self.__class__.__name__}: Waiting for {seconds} seconds")
         time.sleep(int(seconds))
@@ -2805,8 +2934,10 @@ class WebUIRobotCasesGenerator:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_test_loader.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import logging
+    <pre>import json
+import logging
 import pandas as pd
+
 
 class WebTestLoader:
     def __init__(self, excel_path):
@@ -2858,7 +2989,7 @@ class WebTestLoader:
 
         page_module_combinations = set(zip(page_modules['Page Name'], page_modules['Module Name']))
         for _, row in test_steps.iterrows():
-            if (row['Page Name'], row['Module Name']) not in page_module_combinations:
+            if (row['Page Name'], row['Module Name']) not in page_module_combinations and row['Module Name'] != 'API':
                 logging.error(
                     f"WebTestLoader: Invalid Page Name '{row['Page Name']}' and Module Name '{row['Module Name']}' combination in TestSteps for Case ID '{row['Case ID']}'.")
             self._validate_parameters(row)
@@ -2874,6 +3005,7 @@ class WebTestLoader:
         module_params = page_modules[(page_modules['Page Name'] == step_row['Page Name']) &amp;
                                      (page_modules['Module Name'] == step_row['Module Name'])]['Parameter Name'].tolist()
         module_params = [param for param in module_params if param]
+
         if module_params:
             expected_params = set()
             for param in module_params:
@@ -2960,10 +3092,6 @@ class WebTestLoader:
         return result
 
     def get_test_data(self, case_id):
-        """
-        Retrieve test data for a specific case ID.
-        Returns a list of dictionaries, each representing a data set.
-        """
         test_data = self.get_data_by_sheet_name('TestData')
         case_data = test_data[test_data['Case ID'] == case_id]
 
@@ -2979,10 +3107,35 @@ class WebTestLoader:
         for _, group in grouped_data:
             data_set = {}
             for _, row in group.iterrows():
-                data_set[row['Parameter Name']] = row['Value']
+                value = self._parse_value(row['Value'], row['Data Type'])
+                data_set[row['Parameter Name']] = value
             data_sets.append(data_set)
 
         return data_sets
+
+    def _parse_value(self, value, data_type):
+        if data_type.lower() == 'json':
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                logging.error(f"Invalid JSON string: {value}")
+                return value  # 返回原始字符串，以防解析失败
+        elif data_type.lower() == 'integer':
+            try:
+                return int(value)
+            except ValueError:
+                logging.error(f"Invalid integer value: {value}")
+                return value
+        elif data_type.lower() == 'float':
+            try:
+                return float(value)
+            except ValueError:
+                logging.error(f"Invalid float value: {value}")
+                return value
+        elif data_type.lower() == 'boolean':
+            return value.lower() in ('true', 'yes', '1', 'on')
+        else:
+            return value  # 默认作为字符串处理
 
     def get_page_objects(self):
         """
@@ -3000,7 +3153,8 @@ class WebTestLoader:
         """
         Retrieve all web environments from the WebEnvironments sheet.
         """
-        return self.get_data_by_sheet_name('WebEnvironments')</pre>
+        return self.get_data_by_sheet_name('WebEnvironments')
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_webdriver_factory_py">
@@ -3091,10 +3245,10 @@ class WebDriverFactory:
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
 import argparse
-from robot.api import TestSuite
 from robot.reporting import ResultWriter
 from libraries.common.utility_helpers import PROJECT_ROOT
 from libraries.api.api_robot_generator import APIRobotCasesGenerator
+from libraries.report.dashboard_generator import DashboardGenerator
 from libraries.web.web_robot_generator import WebUIRobotCasesGenerator
 from libraries.e2e.e2e_robot_generator import E2ERobotCasesGenerator
 
@@ -3110,6 +3264,10 @@ def run_test_suite(suite):
         report=report_file,
         log=log_file
     )
+    # Generate dashboard
+    robot_output_path = os.path.join(PROJECT_ROOT, 'report', 'output.xml')
+    dashboard_generator = DashboardGenerator()
+    dashboard_generator.generate_dashboard(robot_output_path)
 
 def create_api_suite():
     rcg = APIRobotCasesGenerator()
@@ -3130,20 +3288,456 @@ if __name__ == "__main__":
     parser.add_argument('--e2e', action='store_true', help='Run E2E tests')
     args = parser.parse_args()
 
-    main_suite = TestSuite('Main Test Suite')
-
     if args.api:
-        main_suite.suites.append(create_api_suite())
+        suite_to_run = create_api_suite()
     if args.web:
-        main_suite.suites.append(create_web_suite())
+        suite_to_run = create_web_suite()
     if args.e2e:
-        main_suite.suites.append(create_e2e_suite())
+        suite_to_run = create_e2e_suite()
 
-    # If no specific test type is specified, run all tests
+    # If no specific test type is specified, run default E2E tests
     if not (args.api or args.web or args.e2e):
-        main_suite.suites.append(create_web_suite())
+        suite_to_run = create_e2e_suite()
 
-    run_test_suite(main_suite)</pre>
+    run_test_suite(suite_to_run)</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_templates_rf_report_template_html">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\templates\rf_report_template.html</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"&gt;
+    &lt;link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet"&gt;
+    &lt;link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css"&gt;
+    &lt;title&gt;RF Metrics Report&lt;/title&gt;
+    &lt;style&gt;
+        .sidebar {
+            width: 140px;
+            background: #343a40;
+            padding: 1rem 0;
+            position: fixed;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .sidebar .nav-link {
+            color: #ffffff;
+            text-align: center;
+            padding: 1rem 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar .nav-link i {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar .nav-link span {
+            font-size: 0.8rem;
+            display: block;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: #495057;
+            border-left: 4px solid #007bff;
+        }
+
+        .content {
+            margin-left: 160px;
+            padding: 1rem;
+        }
+
+        .table {
+            font-size: 0.875rem;
+            border-radius: 10px;
+            overflow: hidden;
+            border-collapse: separate;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .table thead th {
+            background-color: #343a40;
+            color: #ffffff;
+            border-bottom: 1px solid #495057;
+            border-top: 1px solid #495057;
+        }
+
+        .table tbody td {
+            border-top: 1px solid #dee2e6;
+        }
+
+        .table thead th:first-child {
+            border-top-left-radius: 10px;
+            border-left: 1px solid #dee2e6;
+        }
+
+        .table thead th:last-child {
+            border-top-right-radius: 10px;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .table tbody tr:last-child td:first-child {
+            border-bottom-left-radius: 10px;
+            border-left: 1px solid #dee2e6;
+        }
+
+        .table tbody tr:last-child td:last-child {
+            border-bottom-right-radius: 10px;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .pie-chart {
+            width: 100%;
+            height: 400px;
+            margin-bottom: 2rem;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .loader {
+            border: 0.5rem solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 0.5rem solid #3498db;
+            width: 5rem;
+            height: 5rem;
+            animation: spin 1s linear infinite;
+            margin: auto;
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .tooltip-inner {
+            max-width: none;
+        }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class="loader" id="loadingDiv"&gt;&lt;/div&gt;
+
+&lt;nav class="sidebar d-none d-md-block"&gt;
+    &lt;div class="nav flex-column"&gt;
+        &lt;a class="nav-link active" href="#" id="defaultOpen" onclick="openPage('dashboard', this)"&gt;
+            &lt;i class="fa fa-dashboard"&gt;&lt;/i&gt;
+            &lt;span&gt;Dashboard&lt;/span&gt;
+        &lt;/a&gt;
+        &lt;a class="nav-link" href="#" onclick="openPage('suiteMetrics', this); executeDataTable('#sm', 6);"&gt;
+            &lt;i class="fa fa-th-large"&gt;&lt;/i&gt;
+            &lt;span&gt;Suite Metrics&lt;/span&gt;
+        &lt;/a&gt;
+        &lt;a class="nav-link" href="#" onclick="openPage('testMetrics', this); executeDataTable('#tm', 3);"&gt;
+            &lt;i class="fa fa-list-alt"&gt;&lt;/i&gt;
+            &lt;span&gt;Test Metrics&lt;/span&gt;
+        &lt;/a&gt;
+        &lt;a class="nav-link" href="#" onclick="openPage('log', this);"&gt;
+            &lt;i class="fa fa-file-text"&gt;&lt;/i&gt;
+            &lt;span&gt;Robot Logs&lt;/span&gt;
+        &lt;/a&gt;
+    &lt;/div&gt;
+&lt;/nav&gt;
+
+&lt;div class="content" id="main"&gt;
+    &lt;div class="tabcontent" id="suiteMetrics"&gt;
+        &lt;h4&gt;&lt;b&gt;&lt;i class="fa fa-table"&gt;&lt;/i&gt; Suite Metrics&lt;/b&gt;&lt;/h4&gt;
+        &lt;hr&gt;
+        &lt;h6 class="text-end"&gt;**Click Suite name to view logs&lt;/h6&gt;
+        &lt;table class="table table-hover table-bordered" id="sm"&gt;
+            &lt;thead&gt;
+            &lt;tr&gt;
+                &lt;th&gt;Suite Name&lt;/th&gt;
+                &lt;th&gt;Status&lt;/th&gt;
+                &lt;th&gt;Total TC&lt;/th&gt;
+                &lt;th&gt;Pass TC&lt;/th&gt;
+                &lt;th&gt;Fail TC&lt;/th&gt;
+                &lt;th&gt;Skip TC&lt;/th&gt;
+                &lt;th&gt;Start Time&lt;/th&gt;
+                &lt;th&gt;End Time&lt;/th&gt;
+                &lt;th&gt;Elapsed Time (s)&lt;/th&gt;
+            &lt;/tr&gt;
+            &lt;/thead&gt;
+            &lt;tbody&gt;
+            {% for suite in suites %}
+            &lt;tr&gt;
+                &lt;td data-bs-toggle="tooltip" onclick="openInNewTab('log.html#{{ suite['Id'] }}','#{{ suite['Id'] }}')" title="Click to view '{{ suite['Name'] }}' logs"&gt;
+                    {{ suite['Name'] }}
+                &lt;/td&gt;
+                &lt;td class="{% if suite['Status'] == 'PASS' %}text-success{% elif suite['Status'] == 'FAIL' %}text-danger{% else %}text-warning{% endif %}"&gt;{{ suite['Status'] }}
+                &lt;/td&gt;
+                &lt;td&gt;{{ suite['Total'] }}&lt;/td&gt;
+                &lt;td class="text-success"&gt;{{ suite['Pass'] }}&lt;/td&gt;
+                &lt;td class="text-danger"&gt;{{ suite['Fail'] }}&lt;/td&gt;
+                &lt;td class="text-warning"&gt;{{ suite['Skip'] }}&lt;/td&gt;
+                &lt;td&gt;{{ suite['startTime'] }}&lt;/td&gt;
+                &lt;td&gt;{{ suite['endTime'] }}&lt;/td&gt;
+                &lt;td&gt;{{ (suite['Time']/1000)|round(2) }}&lt;/td&gt;
+            &lt;/tr&gt;
+            {% endfor %}
+            &lt;/tbody&gt;
+        &lt;/table&gt;
+    &lt;/div&gt;
+
+    &lt;div class="tabcontent" id="testMetrics"&gt;
+        &lt;h4&gt;&lt;b&gt;&lt;i class="fa fa-table"&gt;&lt;/i&gt; Test Metrics&lt;/b&gt;&lt;/h4&gt;
+        &lt;hr&gt;
+        &lt;h6 class="text-end"&gt;**Click Test Case name to view logs&lt;/h6&gt;
+        &lt;table class="table table-hover table-bordered" id="tm"&gt;
+            &lt;thead&gt;
+            &lt;tr&gt;
+                &lt;th&gt;Suite Name&lt;/th&gt;
+                &lt;th&gt;Test Case&lt;/th&gt;
+                &lt;th&gt;Status&lt;/th&gt;
+                &lt;th&gt;Start Time&lt;/th&gt;
+                &lt;th&gt;End Time&lt;/th&gt;
+                &lt;th&gt;Elapsed Time (s)&lt;/th&gt;
+                &lt;th&gt;Message&lt;/th&gt;
+            &lt;/tr&gt;
+            &lt;/thead&gt;
+            &lt;tbody&gt;
+            {% for test in tests %}
+            &lt;tr&gt;
+                &lt;td&gt;{{ test['Suite Name'] }}&lt;/td&gt;
+                &lt;td data-bs-toggle="tooltip" onclick="openInNewTab('log.html#{{ test['Test Id'] }}','#{{ test['Test Id'] }}')" title="Click to view '{{ test['Test Name'] }}' logs"&gt;
+                    {{ test['Test Name'] }}
+                &lt;/td&gt;
+                &lt;td class="{% if test['Status'] == 'PASS' %}text-success{% elif test['Status'] == 'FAIL' %}text-danger{% else %}text-warning{% endif %}"&gt;{{ test['Status'] }}&lt;/td&gt;
+                &lt;td&gt;{{ test['startTime'] }}&lt;/td&gt;
+                &lt;td&gt;{{ test['endTime'] }}&lt;/td&gt;
+                &lt;td&gt;{{ (test['Time']/1000)|round(2) }}&lt;/td&gt;
+                &lt;td&gt;{{ test['Message'] }}&lt;/td&gt;
+            &lt;/tr&gt;
+            {% endfor %}
+            &lt;/tbody&gt;
+        &lt;/table&gt;
+    &lt;/div&gt;
+
+    &lt;div class="tabcontent" id="log"&gt;
+        &lt;p class="text-end"&gt;
+            ** &lt;b&gt;Report.html&lt;/b&gt; and &lt;b&gt;Log.html&lt;/b&gt; need to be in the current folder to display here
+        &lt;/p&gt;
+        &lt;div class="ratio ratio-16x9"&gt;
+            &lt;iframe src="log.html"&gt;&lt;/iframe&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="tabcontent" id="dashboard"&gt;
+        &lt;h4&gt;&lt;b&gt;&lt;i class="fa fa-dashboard"&gt;&lt;/i&gt; Dashboard&lt;/b&gt;&lt;/h4&gt;
+        &lt;hr&gt;
+        &lt;div class="row mb-4"&gt;
+            &lt;div class="col-md-3"&gt;
+                &lt;div class="card bg-dark text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;Suite&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Statistics&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-md-3"&gt;
+                &lt;div class="card bg-primary text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{suite_stats['Total']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Total&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-md-3"&gt;
+                &lt;div class="card bg-success text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{suite_stats['Pass']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Passed&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-md-3"&gt;
+                &lt;div class="card bg-danger text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{suite_stats['Fail']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Failed&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class="row mb-4"&gt;
+            &lt;div class="col-md-3"&gt;
+                &lt;div class="card bg-dark text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;Test Case&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Statistics&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-md-3"&gt;
+                &lt;div class="card bg-primary text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{test_stats['Total']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Total&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-md-3"&gt;
+                &lt;div class="card bg-success text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{test_stats['Pass']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Passed&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-md-3"&gt;
+                &lt;div class="card bg-danger text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{test_stats['Fail']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Failed&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class="row"&gt;
+            &lt;div class="col-md-6"&gt;
+                &lt;div class="pie-chart"&gt;
+                    &lt;canvas id="suiteChart"&gt;&lt;/canvas&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-md-6"&gt;
+                &lt;div class="pie-chart"&gt;
+                    &lt;canvas id="testChart"&gt;&lt;/canvas&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script src="https://code.jquery.com/jquery-3.6.0.min.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/chart.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"&gt;&lt;/script&gt;
+&lt;script&gt;
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("loadingDiv").style.display = "none";
+            document.getElementById("defaultOpen").click();
+
+            createPieChart('suiteChart', 'Suite Results', ['Pass', 'Fail'],
+                           [{{ suite_stats['Pass'] }}, {{ suite_stats['Fail'] }}],
+                           {{ suite_stats['Total'] }});
+
+            createPieChart('testChart', 'Test Case Results', ['Pass', 'Fail', 'Skip'],
+                           [{{ test_stats['Pass'] }}, {{ test_stats['Fail'] }}, {{ test_stats['Skip'] }}],
+                           {{ test_stats['Total'] }});
+        });
+
+        function createPieChart(canvasId, title, labels, data, total) {
+            var ctx = document.getElementById(canvasId).getContext('2d');
+            Chart.register(ChartDataLabels);
+            var chart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: title,
+                        data: data,
+                        backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: title
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    var value = tooltipItem.raw;
+                                    var percentage = ((value / total) * 100).toFixed(2);
+                                    return tooltipItem.label + ': ' + value + ' (' + percentage + '%)';
+                                }
+                            }
+                        },
+                        datalabels: {
+                            color: '#fff',
+                            font: {
+                                weight: 'bold'
+                            },
+                            formatter: function(value, context) {
+                                var percentage = ((value / total) * 100).toFixed(2);
+                                return percentage + '%';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+    function openPage(pageName, elmnt) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i &lt; tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("nav-link");
+        for (i = 0; i &lt; tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(pageName).style.display = "block";
+        elmnt.className += " active";
+    }
+
+    function executeDataTable(tableID, minRows) {
+        if ($.fn.DataTable.isDataTable(tableID)) {
+            $(tableID).DataTable().destroy();
+        }
+        $(tableID).DataTable({
+            "pageLength": 10,
+            "ordering": true,
+            "searching": true,
+            "paging": true,
+            "info": true,
+            "lengthChange": true, // 启用“Show entries”下拉菜单
+            "language": {
+                "paginate": {
+                    "previous": "&lt;",
+                    "next": "&gt;"
+                }
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        $('[data-bs-toggle="tooltip"]').tooltip();
+        executeDataTable('#sm', 6);
+        executeDataTable('#tm', 3);
+        document.getElementById("defaultOpen").click();
+    });
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_test_cases_test_json">
@@ -3167,7 +3761,7 @@ if __name__ == "__main__":
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 57500.0
+        "CNY": 54100.0
     },
     "transactions": {
         "USD": {
@@ -3207,14 +3801,14 @@ if __name__ == "__main__":
             }
         },
         "CNY": {
-            "2024-08-21": {
+            "2024-08-23": {
                 "inbound": {
-                    "count": 2,
-                    "total_amount": 200.0
+                    "count": 0,
+                    "total_amount": 0.0
                 },
                 "outbound": {
-                    "count": 4,
-                    "total_amount": 400.0
+                    "count": 19,
+                    "total_amount": 1900.0
                 }
             }
         }
