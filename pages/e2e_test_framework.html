@@ -81,8 +81,11 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api___init___py">__init__.py</a>
 │   │   ├── common/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_config_manager_py">config_manager.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_dashboard_generator_py">dashboard_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_gen_temp_default_py">gen_temp_default.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_log_manager_py">log_manager.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_robot_report_data_py">robot_report_data.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_robot_result_visitor_py">robot_result_visitor.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_utility_helpers_py">utility_helpers.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common___init___py">__init__.py</a>
 │   │   ├── e2e/
@@ -1555,6 +1558,63 @@ class ConfigManager:
 </pre>
 </div>
 
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_dashboard_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\dashboard_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import os
+import codecs
+from robot.api import ExecutionResult
+from jinja2 import Environment, FileSystemLoader
+
+from libraries.common.robot_result_visitor import CustomResultVisitor
+from libraries.common.robot_report_data import ReportData
+from libraries.common.utility_helpers import PROJECT_ROOT
+
+
+class DashboardGenerator:
+    def __init__(self):
+        self.result = None
+        self.visitor = CustomResultVisitor()
+        self.suite_list = []
+        self.test_list = []
+        self.suite_stats = {}
+        self.test_stats = {}
+
+    def _load_data(self, robot_output_path):
+        self.result = ExecutionResult(robot_output_path)
+        self.result.visit(self.visitor)
+        self.suite_list = self.visitor.suite_list
+        self.test_list = self.visitor.test_list
+        report_data = ReportData()
+        self.suite_stats = report_data.get_suite_statistics(self.suite_list)
+        self.test_stats = report_data.get_test_statistics(self.test_list)
+
+    def generate_dashboard(self, robot_output_path):
+        self._load_data(robot_output_path)
+        result_file_name = 'dashboard.html'
+        result_file_directory = os.path.join(PROJECT_ROOT, 'report')
+        os.makedirs(result_file_directory, exist_ok=True)
+        result_file_path = os.path.join(result_file_directory, result_file_name)
+        templates_dir = os.path.join(PROJECT_ROOT, 'templates')
+        file_loader = FileSystemLoader(templates_dir)
+        env = Environment(loader=file_loader)
+        template = env.get_template('rf_report_template.html')
+        with codecs.open(result_file_path, 'w', 'utf-8') as fh:
+            fh.write(template.render(
+                suite_stats=self.suite_stats,
+                test_stats=self.test_stats,
+                suites=self.suite_list,
+                tests=self.test_list,
+            ))
+
+
+# Example usage:
+# generator = DashboardGenerator()
+# generator.generate_dashboard(os.path.join(PROJECT_ROOT, 'report', 'output.xml'))
+</pre>
+</div>
+
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_gen_temp_default_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\gen_temp_default.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -1678,6 +1738,106 @@ logger_instance = Logger()
 logger = logger_instance.get_logger()
 
 __all__ = ['logger', 'logger_instance']
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_robot_report_data_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\robot_report_data.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import pandas as pd
+
+
+class ReportData:
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def get_suite_statistics(self, suite_list):
+        suite_data_frame = pd.DataFrame.from_records(suite_list)
+        suite_stats = {
+            "Total": suite_data_frame.Name.count(),
+            "Pass": (suite_data_frame.Status == 'PASS').sum(),
+            "Fail": (suite_data_frame.Status == 'FAIL').sum(),
+            "Skip": (suite_data_frame.Status == 'SKIP').sum(),
+            "Time": suite_data_frame.Time.sum(),
+            "Min": suite_data_frame.Time.min(),
+            "Max": suite_data_frame.Time.max(),
+            "Avg": suite_data_frame.Time.mean()
+        }
+        return suite_stats
+
+    @classmethod
+    def get_test_statistics(self, test_list):
+        test_data_frame = pd.DataFrame.from_records(test_list)
+        test_stats = {
+            "Total": test_data_frame.Status.count(),
+            "Pass": (test_data_frame.Status == 'PASS').sum(),
+            "Fail": (test_data_frame.Status == 'FAIL').sum(),
+            "Skip": (test_data_frame.Status == 'SKIP').sum(),
+            "Time": test_data_frame.Time.sum(),
+            "Min": test_data_frame.Time.min(),
+            "Max": test_data_frame.Time.max(),
+            "Avg": test_data_frame.Time.mean()
+        }
+        return test_stats
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_robot_result_visitor_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\robot_result_visitor.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from robot.api import ResultVisitor
+
+
+class CustomResultVisitor(ResultVisitor):
+
+    def __init__(self):
+        self.suite_list = []
+        self.test_list = []
+
+    def start_suite(self, suite):
+        if suite.tests:
+            try:
+                stats = suite.statistics.all
+            except:
+                stats = suite.statistics
+
+            try:
+                skipped = stats.skipped
+            except:
+                skipped = 0
+
+            suite_json = {
+                "Name": suite.longname,
+                "Id": suite.id,
+                "Status": suite.status,
+                "Total": stats.total,
+                "Pass": stats.passed,
+                "Fail": stats.failed,
+                "Skip": skipped,
+                "startTime": suite.starttime,
+                "endTime": suite.endtime,
+                "Time": suite.elapsedtime
+            }
+            self.suite_list.append(suite_json)
+
+    def visit_test(self, test):
+        test_json = {
+            "Suite Name": test.parent.longname,
+            "Suite Id": test.parent.id,
+            "Test Name": test.name,
+            "Test Id": test.id,
+            "Status": test.status,
+            "startTime": test.starttime,
+            "endTime": test.endtime,
+            "Time": test.elapsedtime,
+            "Message": test.message,
+            "Tags": test.tags
+        }
+        self.test_list.append(test_json)
 </pre>
 </div>
 
@@ -3248,7 +3408,7 @@ import argparse
 from robot.reporting import ResultWriter
 from libraries.common.utility_helpers import PROJECT_ROOT
 from libraries.api.api_robot_generator import APIRobotCasesGenerator
-from libraries.report.dashboard_generator import DashboardGenerator
+from libraries.common.dashboard_generator import DashboardGenerator
 from libraries.web.web_robot_generator import WebUIRobotCasesGenerator
 from libraries.e2e.e2e_robot_generator import E2ERobotCasesGenerator
 
