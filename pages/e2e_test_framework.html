@@ -3599,11 +3599,11 @@ if __name__ == "__main__":
             &lt;i class="fa fa-dashboard"&gt;&lt;/i&gt;
             &lt;span&gt;Dashboard&lt;/span&gt;
         &lt;/a&gt;
-        &lt;a class="nav-link" href="#" onclick="openPage('suiteMetrics', this); executeDataTable('#sm', 6);"&gt;
+        &lt;a class="nav-link" href="#" onclick="openPage('suiteMetrics', this); executeDataTable('#sm', 10, 6);"&gt;
             &lt;i class="fa fa-th-large"&gt;&lt;/i&gt;
             &lt;span&gt;Suite Metrics&lt;/span&gt;
         &lt;/a&gt;
-        &lt;a class="nav-link" href="#" onclick="openPage('testMetrics', this); executeDataTable('#tm', 3);"&gt;
+        &lt;a class="nav-link" href="#" onclick="openPage('testMetrics', this); executeDataTable('#tm', 10, 3);"&gt;
             &lt;i class="fa fa-list-alt"&gt;&lt;/i&gt;
             &lt;span&gt;Test Metrics&lt;/span&gt;
         &lt;/a&gt;
@@ -3868,17 +3868,18 @@ if __name__ == "__main__":
         elmnt.className += " active";
     }
 
-    function executeDataTable(tableID, minRows) {
+    function executeDataTable(tableID, minRows, sortIndex) {
         if ($.fn.DataTable.isDataTable(tableID)) {
             $(tableID).DataTable().destroy();
         }
         $(tableID).DataTable({
-            "pageLength": 10,
+            "pageLength": minRows,
             "ordering": true,
             "searching": true,
             "paging": true,
             "info": true,
-            "lengthChange": true, // 启用“Show entries”下拉菜单
+            "lengthChange": true,
+            "order": [[sortIndex, "asc"]],
             "language": {
                 "paginate": {
                     "previous": "&lt;",
@@ -3890,8 +3891,8 @@ if __name__ == "__main__":
 
     $(document).ready(function () {
         $('[data-bs-toggle="tooltip"]').tooltip();
-        executeDataTable('#sm', 6);
-        executeDataTable('#tm', 3);
+        executeDataTable('#sm', 10, 6);
+        executeDataTable('#tm', 10, 3);
         document.getElementById("defaultOpen").click();
     });
 &lt;/script&gt;
@@ -3921,7 +3922,7 @@ if __name__ == "__main__":
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 54100.0
+        "CNY": 53800.0
     },
     "transactions": {
         "USD": {
@@ -3967,8 +3968,8 @@ if __name__ == "__main__":
                     "total_amount": 0.0
                 },
                 "outbound": {
-                    "count": 19,
-                    "total_amount": 1900.0
+                    "count": 22,
+                    "total_amount": 2200.0
                 }
             }
         }
