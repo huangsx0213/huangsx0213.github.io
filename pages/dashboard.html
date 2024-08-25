@@ -15,6 +15,22 @@
             position: fixed;
             height: 100%;
             overflow-y: auto;
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+        }
+
+        @media (max-width: 767.98px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .content {
+                margin-left: 0 !important;
+            }
         }
 
         .sidebar .nav-link {
@@ -126,12 +142,33 @@
             color: #343a40 !important;
             text-decoration: none;
         }
+
+        #menu-toggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1001;
+            display: none;
+            background-color: transparent;
+            color: #343a40;
+            border: none;
+        }
+
+        @media (max-width: 767.98px) {
+            #menu-toggle {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
 <div class="loader" id="loadingDiv"></div>
 
-<nav class="sidebar d-none d-md-block">
+<button id="menu-toggle" class="btn btn-primary">
+    <i class="fas fa-bars"></i>
+</button>
+
+<nav class="sidebar" id="sidebar">
     <div class="nav flex-column">
         <a class="nav-link active" href="#" id="defaultOpen" onclick="openPage('dashboard', this)">
             <i class="fa fa-dashboard"></i>
@@ -183,9 +220,9 @@
                 <td class="text-success">1</td>
                 <td class="text-danger">0</td>
                 <td class="text-warning">0</td>
-                <td>20240825 04:43:35.595</td>
-                <td>20240825 04:43:39.614</td>
-                <td>4.02</td>
+                <td>20240825 09:30:46.249</td>
+                <td>20240825 09:30:50.340</td>
+                <td>4.09</td>
             </tr>
             
             <tr>
@@ -198,9 +235,9 @@
                 <td class="text-success">2</td>
                 <td class="text-danger">0</td>
                 <td class="text-warning">0</td>
-                <td>20240825 04:43:39.614</td>
-                <td>20240825 04:43:49.463</td>
-                <td>9.85</td>
+                <td>20240825 09:30:50.341</td>
+                <td>20240825 09:30:59.899</td>
+                <td>9.56</td>
             </tr>
             
             <tr>
@@ -213,9 +250,9 @@
                 <td class="text-success">1</td>
                 <td class="text-danger">0</td>
                 <td class="text-warning">0</td>
-                <td>20240825 04:43:49.463</td>
-                <td>20240825 04:43:55.228</td>
-                <td>5.76</td>
+                <td>20240825 09:30:59.900</td>
+                <td>20240825 09:31:05.690</td>
+                <td>5.79</td>
             </tr>
             
             </tbody>
@@ -246,8 +283,8 @@
                     API.TC002.pacs008 out cny 100
                 </td>
                 <td class="text-success">PASS</td>
-                <td>20240825 04:43:36.389</td>
-                <td>20240825 04:43:39.613</td>
+                <td>20240825 09:30:47.110</td>
+                <td>20240825 09:30:50.340</td>
                 <td>3.23</td>
                 <td></td>
             </tr>
@@ -258,9 +295,9 @@
                     UI.TC001.Search for software testing.1
                 </td>
                 <td class="text-success">PASS</td>
-                <td>20240825 04:43:39.616</td>
-                <td>20240825 04:43:45.027</td>
-                <td>5.41</td>
+                <td>20240825 09:30:50.342</td>
+                <td>20240825 09:30:55.476</td>
+                <td>5.13</td>
                 <td></td>
             </tr>
             
@@ -270,9 +307,9 @@
                     UI.TC001.Search for software testing.2
                 </td>
                 <td class="text-success">PASS</td>
-                <td>20240825 04:43:45.027</td>
-                <td>20240825 04:43:49.280</td>
-                <td>4.25</td>
+                <td>20240825 09:30:55.476</td>
+                <td>20240825 09:30:59.713</td>
+                <td>4.24</td>
                 <td></td>
             </tr>
             
@@ -282,9 +319,9 @@
                     UI.TC002.Search for frontend development.1
                 </td>
                 <td class="text-success">PASS</td>
-                <td>20240825 04:43:49.465</td>
-                <td>20240825 04:43:55.033</td>
-                <td>5.57</td>
+                <td>20240825 09:30:59.901</td>
+                <td>20240825 09:31:05.506</td>
+                <td>5.61</td>
                 <td></td>
             </tr>
             
@@ -404,10 +441,15 @@
                            [3, 0],
                            3);
 
-            createPieChart('testChart', 'Test Case Results', ['Pass', 'Fail', 'Skip'],
-                           [4, 0, 0],
-                           4);
+        createPieChart('testChart', 'Test Case Results', ['Pass', 'Fail', 'Skip'],
+                       [4, 0, 0],
+                       4);
+
+        // Toggle sidebar on menu button click
+        document.getElementById('menu-toggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('show');
         });
+    });
 
         function createPieChart(canvasId, title, labels, data, total) {
             var ctx = document.getElementById(canvasId).getContext('2d');
@@ -470,6 +512,11 @@
         }
         document.getElementById(pageName).style.display = "block";
         elmnt.className += " active";
+
+        // Hide sidebar on page change for mobile devices
+        if (window.innerWidth <= 767.98) {
+            document.getElementById('sidebar').classList.remove('show');
+        }
     }
 
     function executeDataTable(tableID, minRows, sortIndex) {
