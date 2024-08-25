@@ -81,16 +81,18 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api___init___py">__init__.py</a>
 │   │   ├── common/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_config_manager_py">config_manager.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_dashboard_generator_py">dashboard_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_gen_temp_default_py">gen_temp_default.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_log_manager_py">log_manager.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_robot_report_data_py">robot_report_data.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_robot_result_visitor_py">robot_result_visitor.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_utility_helpers_py">utility_helpers.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common___init___py">__init__.py</a>
 │   │   ├── e2e/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_robot_generator_py">e2e_robot_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e___init___py">__init__.py</a>
+│   │   ├── robot/
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_dashboard_generator_py">robot_dashboard_generator.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_report_data_py">robot_report_data.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_result_visitor_py">robot_result_visitor.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot___init___py">__init__.py</a>
 │   │   ├── web/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_page_object_py">page_object.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_table_verifier_py">table_verifier.py</a>
@@ -104,8 +106,6 @@
 │   ├── testing_server/
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_positions_json">positions.json</a>
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_server_py">server.py</a>
-│   ├── test_cases/
-│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_test_cases_test_json">test.json</a>
 </pre>
     </div>
     <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_README_md">
@@ -412,7 +412,7 @@ tags:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\e2e_test_config.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>active_environment: DEV
+    <pre>active_environment: SIT
 test_case_path : test_cases/e2e_test_cases.xlsx
 # List of Test Case IDs to run.
 # Specify one or more Test Case IDs here.
@@ -467,7 +467,7 @@ root:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\web_test_config.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>active_environment: DEV
+    <pre>active_environment: SIT
 test_case_path : test_cases/web_test_cases.xlsx
 # List of Test Case IDs to run.
 # Specify one or more Test Case IDs here.
@@ -588,7 +588,7 @@ from libraries.api.request_sender import RequestSender
 from libraries.api.body_generator import BodyGenerator
 from libraries.api.headers_generator import HeadersGenerator
 from libraries.api.saved_fields_manager import SavedFieldsManager
-from libraries.api.response_handler import APIResponseAsserter, APIResponseExtractor
+from libraries.api.response_handler import ResponseValidator, ResponseFieldSaver
 from libraries.api.api_test_loader import APITestLoader
 from robot.libraries.BuiltIn import BuiltIn
 from robot.api.deco import keyword, library
@@ -633,8 +633,8 @@ class APITestKeywords:
         self._load_endpoints()
         self.body_generator: BodyGenerator = BodyGenerator(self.api_test_loader)
         self.headers_generator: HeadersGenerator = HeadersGenerator(self.api_test_loader)
-        self.api_response_asserter: APIResponseAsserter = APIResponseAsserter()
-        self.api_response_extractor: APIResponseExtractor = APIResponseExtractor()
+        self.api_response_asserter: ResponseValidator = ResponseValidator()
+        self.response_field_saver: ResponseFieldSaver = ResponseFieldSaver()
 
     @keyword
     def clear_saved_fields(self):
@@ -691,7 +691,7 @@ class APITestKeywords:
         response, execution_time = self.send_request(test_case)
         logging.info(f"{self.__class__.__name__}: Time taken to execute test case {test_case['TCID']}: {execution_time:.2f} seconds")
         self.api_response_asserter.validate_response(test_case['Exp Result'], response)
-        self.api_response_extractor.extract_value(response, test_case)
+        self.response_field_saver.save_fields_to_robot_variables(response, test_case)
         logging.info("============================================")
         return response, execution_time
 
@@ -715,7 +715,7 @@ class APITestKeywords:
 
     def _validate_dynamic_checks(self, test_case, pre_check_responses, post_check_responses):
         logging.info(f"{self.__class__.__name__}: Validating dynamic checks for test case {test_case['TCID']}:")
-        self.api_response_asserter.validate_dynamic_checks(test_case, pre_check_responses, post_check_responses)
+        self.api_response_asserter.validate_response_dynamic(test_case, pre_check_responses, post_check_responses)
 
     def send_request(self, test_case):
         ex_endpoint = test_case['Endpoint']
@@ -1032,7 +1032,7 @@ import yaml
 from typing import Dict, Any
 import pandas as pd
 from libraries.common.utility_helpers import UtilityHelpers
-from .variable_generator import VariableGenerator
+from libraries.api.variable_generator import VariableGenerator
 from robot.libraries.BuiltIn import BuiltIn
 
 builtin_lib = BuiltIn()
@@ -1189,92 +1189,74 @@ class RequestSender:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\response_handler.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import json
+    <pre>import logging
+import json
 import re
 from typing import Any, Union, Tuple
-import pandas as pd
+
 from jsonpath_ng import parse
 import xmltodict
 from requests import Response
-import logging
 from robot.libraries.BuiltIn import BuiltIn
+
 from libraries.common.utility_helpers import UtilityHelpers
 
 builtin_lib = BuiltIn()
 
 
-class APIResponseProcessor:
-    def process_response(self, response: Union[str, Response]) -&gt; Tuple[str, str]:
-        if isinstance(response, str):
-            content = response.strip()
-        elif isinstance(response, Response):
-            content = response.text.strip()
-        else:
-            raise ValueError(f"{self.__class__.__name__}: Unsupported response type. Expected string or Response object.")
+class ResponseHandler:
+    def get_content_and_format(self, response: Union[str, Response]) -&gt; Tuple[str, str]:
+        try:
+            content = response.text.strip() if isinstance(response, Response) else response.strip()
 
-        if self._is_json(content):
-            return content, 'json'
-        elif self._is_xml(content):
-            content = UtilityHelpers.format_xml(content)
-            return content, 'xml'
-        else:
+            if self._is_json(content):
+                return content, 'json'
+            if self._is_xml(content):
+                return UtilityHelpers.format_xml(content), 'xml'
+
             raise ValueError(f"{self.__class__.__name__}: Response content is neither valid JSON nor XML.")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error processing response: {str(e)}")
+            raise
 
-    @staticmethod
-    def _is_json(content: str) -&gt; bool:
+    def _extract_value_from_response(self, response: Union[str, Response], json_path: str) -&gt; Any:
+        response_content, response_format = self.get_content_and_format(response)
+
+        if response_format == 'json':
+            return self._get_value_by_json_path(response_content, json_path)
+        elif response_format == 'xml':
+            json_content = json.dumps(xmltodict.parse(response_content))
+            return self._get_value_by_json_path(json_content, json_path)
+        else:
+            raise ValueError(f"{self.__class__.__name__}: Unsupported response format. Use 'xml' or 'json'.")
+
+    def _is_json(self, content: str) -&gt; bool:
         try:
             json.loads(content)
-            logging.info("APIResponseProcessor: Response content is valid JSON string.")
             return True
         except json.JSONDecodeError:
             return False
 
-    @staticmethod
-    def _is_xml(content: str) -&gt; bool:
+    def _is_xml(self, content: str) -&gt; bool:
         try:
             xmltodict.parse(content)
-            logging.info("APIResponseProcessor: Response content is valid XML string.")
             return True
         except Exception:
             return False
 
-    @staticmethod
-    def _get_json_value(json_string: str, json_path: str) -&gt; Any:
+    def _get_value_by_json_path(self, json_string: str, json_path: str) -&gt; Any:
         parsed_json = json.loads(json_string)
         jsonpath_expr = parse(f'$.{json_path}')
         matches = [match.value for match in jsonpath_expr.find(parsed_json)]
         if matches:
             return matches[0]
         else:
-            raise ValueError(f"APIResponseProcessor: No match found for JSONPath: {json_path}")
-
-    def _extract_value_from_response(self, response: Union[str, Response], json_path: str) -&gt; Any:
-        response_content, response_format = self.process_response(response)
-
-        if response_format == 'json':
-            return self._get_json_value(response_content, json_path)
-        elif response_format == 'xml':
-            json_content = json.dumps(xmltodict.parse(response_content))
-            return self._get_json_value(json_content, json_path)
-        else:
-            raise ValueError(f"{self.__class__.__name__}: Unsupported response format. Use 'xml' or 'json'.")
-
-    @staticmethod
-    def _compare_diff(actual_diff: float, expected_diff: str) -&gt; bool:
-        expected_operator = expected_diff[0]
-        expected_value = float(expected_diff[1:])
-
-        if expected_operator == '+':
-            return actual_diff == expected_value
-        elif expected_operator == '-':
-            return actual_diff == -expected_value
-        else:
-            raise ValueError(f"APIResponseProcessor: Unsupported operator in expected diff: {expected_operator}")
+            raise ValueError(f"{self.__class__.__name__}: No match found for JSONPath: {json_path}")
 
 
-class APIResponseAsserter(APIResponseProcessor):
+class ResponseValidator(ResponseHandler):
     def validate_response(self, expected_results: str, actual_response: Union[str, Response]) -&gt; None:
-        response_content, response_format = self.process_response(actual_response)
+        response_content, response_format = self.get_content_and_format(actual_response)
         logging.info(f"{self.__class__.__name__}: Actual response:\n{response_content}")
 
         expected_lines = expected_results.splitlines()
@@ -1291,6 +1273,27 @@ class APIResponseAsserter(APIResponseProcessor):
         if assertion_errors:
             raise AssertionError(f"{self.__class__.__name__}: Assertions failed:\n" + "\n".join(assertion_errors))
 
+    def validate_response_dynamic(self, test_case: dict, pre_check_responses: dict, post_check_responses: dict) -&gt; None:
+        exp_results = test_case['Exp Result'].splitlines()
+        for exp_result in exp_results:
+            dynamic_checks = re.findall(r'(\w+)\.(\$[.\[\]\w]+)=([+-]\d+)', exp_result)
+            if dynamic_checks:
+                logging.info(f"{self.__class__.__name__}: Expected result: {exp_result}")
+
+            for check in dynamic_checks:
+                tcid, json_path, expected_value = check
+                pre_value = self._extract_value_from_response(pre_check_responses[tcid], json_path)
+                post_value = self._extract_value_from_response(post_check_responses[tcid], json_path)
+
+                actual_value = round(float(post_value) - float(pre_value), 2)
+
+                logging.info(f"{self.__class__.__name__}: Actual diff: {actual_value}, Expected diff: {expected_value}")
+
+                if not self._compare_diff(actual_value, expected_value):
+                    raise AssertionError(f"{self.__class__.__name__}: Dynamic check failed for {tcid}.{json_path}. Expected: {expected_value}, Actual: {actual_value}")
+
+                logging.info(f"{self.__class__.__name__}: Dynamic check passed for {tcid}.{json_path}")
+
     def _assert_line(self, line: str, response_content: str, response_format: str) -&gt; None:
         key, expected_value = map(str.strip, line.split('=', 1))
 
@@ -1305,30 +1308,21 @@ class APIResponseAsserter(APIResponseProcessor):
         logging.info(f"{self.__class__.__name__}: Asserting: {key}, Expected: {expected_value}, Actual: {actual_value}")
         assert actual_value == expected_value, f"{self.__class__.__name__}: Assertion failed for key '{key}'. Expected: {expected_value}, Actual: {actual_value}"
 
-    def validate_dynamic_checks(self, test_case: dict, pre_check_responses: dict, post_check_responses: dict) -&gt; None:
-        exp_results = test_case['Exp Result'].splitlines()
-        for exp_result in exp_results:
-            dynamic_checks = re.findall(r'(\w+)\.(\$[.\[\]\w]+)=([+-]\d+)', exp_result)
-            if dynamic_checks:
-                logging.info(f"{self.__class__.__name__}: Expected result: {exp_result}")
+    def _compare_diff(self, actual_diff: float, expected_diff: str) -&gt; bool:
+        expected_operator = expected_diff[0]
+        expected_value = float(expected_diff[1:])
 
-            for check in dynamic_checks:
-                tcid, json_path, expected_value = check
-                pre_value = self._extract_value_from_response(pre_check_responses[tcid], json_path)
-                post_value = self._extract_value_from_response(post_check_responses[tcid], json_path)
-                actual_value = round(float(post_value) - float(pre_value), 2)
-
-                logging.info(f"{self.__class__.__name__}: Actual diff: {actual_value}, Expected diff: {expected_value}")
-
-                if not self._compare_diff(actual_value, expected_value):
-                    raise AssertionError(f"{self.__class__.__name__}: Dynamic check failed for {tcid}.{json_path}. Expected: {expected_value}, Actual: {actual_value}")
-
-                logging.info(f"{self.__class__.__name__}: Dynamic check passed for {tcid}.{json_path}")
+        if expected_operator == '+':
+            return actual_diff == expected_value
+        elif expected_operator == '-':
+            return actual_diff == -expected_value
+        else:
+            raise ValueError(f"{self.__class__.__name__}: Unsupported operator in expected diff: {expected_operator}")
 
 
-class APIResponseExtractor(APIResponseProcessor):
-    def extract_value(self, response: Union[str, Response], test_case: dict) -&gt; None:
-        response_content, response_format = self.process_response(response)
+class ResponseFieldSaver(ResponseHandler):
+    def save_fields_to_robot_variables(self, response: Union[str, Response], test_case: dict) -&gt; None:
+        response_content, response_format = self.get_content_and_format(response)
         save_fields = test_case.get('Save Fields', '').splitlines()
 
         for field in save_fields:
@@ -1558,63 +1552,6 @@ class ConfigManager:
 </pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_dashboard_generator_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\dashboard_generator.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import os
-import codecs
-from robot.api import ExecutionResult
-from jinja2 import Environment, FileSystemLoader
-
-from libraries.common.robot_result_visitor import CustomResultVisitor
-from libraries.common.robot_report_data import ReportData
-from libraries.common.utility_helpers import PROJECT_ROOT
-
-
-class DashboardGenerator:
-    def __init__(self):
-        self.result = None
-        self.visitor = CustomResultVisitor()
-        self.suite_list = []
-        self.test_list = []
-        self.suite_stats = {}
-        self.test_stats = {}
-
-    def _load_data(self, robot_output_path):
-        self.result = ExecutionResult(robot_output_path)
-        self.result.visit(self.visitor)
-        self.suite_list = self.visitor.suite_list
-        self.test_list = self.visitor.test_list
-        report_data = ReportData()
-        self.suite_stats = report_data.get_suite_statistics(self.suite_list)
-        self.test_stats = report_data.get_test_statistics(self.test_list)
-
-    def generate_dashboard(self, robot_output_path):
-        self._load_data(robot_output_path)
-        result_file_name = 'dashboard.html'
-        result_file_directory = os.path.join(PROJECT_ROOT, 'report')
-        os.makedirs(result_file_directory, exist_ok=True)
-        result_file_path = os.path.join(result_file_directory, result_file_name)
-        templates_dir = os.path.join(PROJECT_ROOT, 'templates')
-        file_loader = FileSystemLoader(templates_dir)
-        env = Environment(loader=file_loader)
-        template = env.get_template('rf_report_template.html')
-        with codecs.open(result_file_path, 'w', 'utf-8') as fh:
-            fh.write(template.render(
-                suite_stats=self.suite_stats,
-                test_stats=self.test_stats,
-                suites=self.suite_list,
-                tests=self.test_list,
-            ))
-
-
-# Example usage:
-# generator = DashboardGenerator()
-# generator.generate_dashboard(os.path.join(PROJECT_ROOT, 'report', 'output.xml'))
-</pre>
-</div>
-
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_gen_temp_default_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\gen_temp_default.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -1738,106 +1675,6 @@ logger_instance = Logger()
 logger = logger_instance.get_logger()
 
 __all__ = ['logger', 'logger_instance']
-</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_robot_report_data_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\robot_report_data.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import pandas as pd
-
-
-class ReportData:
-
-    def __init__(self):
-        pass
-
-    @classmethod
-    def get_suite_statistics(self, suite_list):
-        suite_data_frame = pd.DataFrame.from_records(suite_list)
-        suite_stats = {
-            "Total": suite_data_frame.Name.count(),
-            "Pass": (suite_data_frame.Status == 'PASS').sum(),
-            "Fail": (suite_data_frame.Status == 'FAIL').sum(),
-            "Skip": (suite_data_frame.Status == 'SKIP').sum(),
-            "Time": suite_data_frame.Time.sum(),
-            "Min": suite_data_frame.Time.min(),
-            "Max": suite_data_frame.Time.max(),
-            "Avg": suite_data_frame.Time.mean()
-        }
-        return suite_stats
-
-    @classmethod
-    def get_test_statistics(self, test_list):
-        test_data_frame = pd.DataFrame.from_records(test_list)
-        test_stats = {
-            "Total": test_data_frame.Status.count(),
-            "Pass": (test_data_frame.Status == 'PASS').sum(),
-            "Fail": (test_data_frame.Status == 'FAIL').sum(),
-            "Skip": (test_data_frame.Status == 'SKIP').sum(),
-            "Time": test_data_frame.Time.sum(),
-            "Min": test_data_frame.Time.min(),
-            "Max": test_data_frame.Time.max(),
-            "Avg": test_data_frame.Time.mean()
-        }
-        return test_stats
-</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_robot_result_visitor_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\robot_result_visitor.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from robot.api import ResultVisitor
-
-
-class CustomResultVisitor(ResultVisitor):
-
-    def __init__(self):
-        self.suite_list = []
-        self.test_list = []
-
-    def start_suite(self, suite):
-        if suite.tests:
-            try:
-                stats = suite.statistics.all
-            except:
-                stats = suite.statistics
-
-            try:
-                skipped = stats.skipped
-            except:
-                skipped = 0
-
-            suite_json = {
-                "Name": suite.longname,
-                "Id": suite.id,
-                "Status": suite.status,
-                "Total": stats.total,
-                "Pass": stats.passed,
-                "Fail": stats.failed,
-                "Skip": skipped,
-                "startTime": suite.starttime,
-                "endTime": suite.endtime,
-                "Time": suite.elapsedtime
-            }
-            self.suite_list.append(suite_json)
-
-    def visit_test(self, test):
-        test_json = {
-            "Suite Name": test.parent.longname,
-            "Suite Id": test.parent.id,
-            "Test Name": test.name,
-            "Test Id": test.id,
-            "Status": test.status,
-            "startTime": test.starttime,
-            "endTime": test.endtime,
-            "Time": test.elapsedtime,
-            "Message": test.message,
-            "Tags": test.tags
-        }
-        self.test_list.append(test_json)
 </pre>
 </div>
 
@@ -2088,6 +1925,171 @@ class E2ERobotCasesGenerator:
 </pre>
 </div>
 
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot___init___py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\robot\__init__.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre></pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_dashboard_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\robot\robot_dashboard_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import os
+import codecs
+from robot.api import ExecutionResult
+from jinja2 import Environment, FileSystemLoader
+
+from libraries.robot.robot_result_visitor import CustomResultVisitor
+from libraries.robot.robot_report_data import ReportData
+from libraries.common.utility_helpers import PROJECT_ROOT
+
+
+class DashboardGenerator:
+    def __init__(self):
+        self.result = None
+        self.visitor = CustomResultVisitor()
+        self.suite_list = []
+        self.test_list = []
+        self.suite_stats = {}
+        self.test_stats = {}
+
+    def _load_data(self, robot_output_path):
+        self.result = ExecutionResult(robot_output_path)
+        self.result.visit(self.visitor)
+        self.suite_list = self.visitor.suite_list
+        self.test_list = self.visitor.test_list
+        report_data = ReportData()
+        self.suite_stats = report_data.get_suite_statistics(self.suite_list)
+        self.test_stats = report_data.get_test_statistics(self.test_list)
+
+    def generate_dashboard(self, robot_output_path):
+        self._load_data(robot_output_path)
+        result_file_name = 'dashboard.html'
+        result_file_directory = os.path.join(PROJECT_ROOT, 'report')
+        os.makedirs(result_file_directory, exist_ok=True)
+        result_file_path = os.path.join(result_file_directory, result_file_name)
+        templates_dir = os.path.join(PROJECT_ROOT, 'templates')
+        file_loader = FileSystemLoader(templates_dir)
+        env = Environment(loader=file_loader)
+        template = env.get_template('rf_report_template.html')
+        with codecs.open(result_file_path, 'w', 'utf-8') as fh:
+            fh.write(template.render(
+                suite_stats=self.suite_stats,
+                test_stats=self.test_stats,
+                suites=self.suite_list,
+                tests=self.test_list,
+            ))
+
+
+if __name__ == '__main__':
+    # Example usage:
+    generator = DashboardGenerator()
+    generator.generate_dashboard(os.path.join(PROJECT_ROOT, 'report', 'output.xml'))
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_report_data_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\robot\robot_report_data.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import pandas as pd
+
+
+class ReportData:
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def get_suite_statistics(self, suite_list):
+        suite_data_frame = pd.DataFrame.from_records(suite_list)
+        suite_stats = {
+            "Total": suite_data_frame.Name.count(),
+            "Pass": (suite_data_frame.Status == 'PASS').sum(),
+            "Fail": (suite_data_frame.Status == 'FAIL').sum(),
+            "Skip": (suite_data_frame.Status == 'SKIP').sum(),
+            "Time": suite_data_frame.Time.sum(),
+            "Min": suite_data_frame.Time.min(),
+            "Max": suite_data_frame.Time.max(),
+            "Avg": suite_data_frame.Time.mean()
+        }
+        return suite_stats
+
+    @classmethod
+    def get_test_statistics(self, test_list):
+        test_data_frame = pd.DataFrame.from_records(test_list)
+        test_stats = {
+            "Total": test_data_frame.Status.count(),
+            "Pass": (test_data_frame.Status == 'PASS').sum(),
+            "Fail": (test_data_frame.Status == 'FAIL').sum(),
+            "Skip": (test_data_frame.Status == 'SKIP').sum(),
+            "Time": test_data_frame.Time.sum(),
+            "Min": test_data_frame.Time.min(),
+            "Max": test_data_frame.Time.max(),
+            "Avg": test_data_frame.Time.mean()
+        }
+        return test_stats
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_result_visitor_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\robot\robot_result_visitor.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from robot.api import ResultVisitor
+
+
+class CustomResultVisitor(ResultVisitor):
+
+    def __init__(self):
+        self.suite_list = []
+        self.test_list = []
+
+    def start_suite(self, suite):
+        if suite.tests:
+            try:
+                stats = suite.statistics.all
+            except:
+                stats = suite.statistics
+
+            try:
+                skipped = stats.skipped
+            except:
+                skipped = 0
+
+            suite_json = {
+                "Name": suite.longname,
+                "Id": suite.id,
+                "Status": suite.status,
+                "Total": stats.total,
+                "Pass": stats.passed,
+                "Fail": stats.failed,
+                "Skip": skipped,
+                "startTime": suite.starttime,
+                "endTime": suite.endtime,
+                "Time": suite.elapsedtime
+            }
+            self.suite_list.append(suite_json)
+
+    def visit_test(self, test):
+        test_json = {
+            "Suite Name": test.parent.longname,
+            "Suite Id": test.parent.id,
+            "Test Name": test.name,
+            "Test Id": test.id,
+            "Status": test.status,
+            "startTime": test.starttime,
+            "endTime": test.endtime,
+            "Time": test.elapsedtime,
+            "Message": test.message,
+            "Tags": test.tags
+        }
+        self.test_list.append(test_json)
+</pre>
+</div>
+
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\__init__.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -2199,6 +2201,7 @@ class PageObject:
                 'element_name': row['Element Name'],
                 'action': row['Actions'],
                 'parameter_name': row['Parameter Name'].split(',') if row['Parameter Name'] else [],
+                'highlight': row['Highlight'],
                 'screen_capture': row['Screenshot'],
                 'wait': row['Wait']
             }
@@ -2214,10 +2217,14 @@ class PageObject:
         for action_info in module_actions:
             element_name = action_info['element_name']
             action = action_info['action']
+            highlight = action_info['highlight']
             screen_capture = action_info['screen_capture']
             wait = action_info['wait']
             element = self._find_element(page_name, element_name, action)
             action_params = [parameters.get(param) for param in action_info['parameter_name']]
+
+            if highlight:
+                self.web_actions.highlight_element(element)
 
             self._execute_action(action, element, *action_params)
 
@@ -3408,7 +3415,7 @@ import argparse
 from robot.reporting import ResultWriter
 from libraries.common.utility_helpers import PROJECT_ROOT
 from libraries.api.api_robot_generator import APIRobotCasesGenerator
-from libraries.common.dashboard_generator import DashboardGenerator
+from libraries.robot.robot_dashboard_generator import DashboardGenerator
 from libraries.web.web_robot_generator import WebUIRobotCasesGenerator
 from libraries.e2e.e2e_robot_generator import E2ERobotCasesGenerator
 
@@ -3474,7 +3481,7 @@ if __name__ == "__main__":
     &lt;link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"&gt;
     &lt;link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet"&gt;
     &lt;link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css"&gt;
-    &lt;title&gt;RF Metrics Report&lt;/title&gt;
+    &lt;title&gt;Metrics Report&lt;/title&gt;
     &lt;style&gt;
         .sidebar {
             width: 140px;
@@ -3483,6 +3490,22 @@ if __name__ == "__main__":
             position: fixed;
             height: 100%;
             overflow-y: auto;
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+        }
+
+        @media (max-width: 767.98px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .content {
+                margin-left: 0 !important;
+            }
         }
 
         .sidebar .nav-link {
@@ -3585,15 +3608,42 @@ if __name__ == "__main__":
             100% { transform: rotate(360deg); }
         }
 
-        .tooltip-inner {
-            max-width: none;
+        .clickable-link {
+            color: #007bff !important;
+            cursor: pointer;
+        }
+
+        .clickable-link:hover {
+            color: #343a40 !important;
+            text-decoration: none;
+        }
+
+        #menu-toggle {
+            position: fixed;
+            top: 33px;
+            left: 5px;
+            z-index: 1001;
+            display: none;
+            background-color: transparent;
+            color: #343a40;
+            border: none;
+        }
+
+        @media (max-width: 767.98px) {
+            #menu-toggle {
+                display: block;
+            }
         }
     &lt;/style&gt;
 &lt;/head&gt;
 &lt;body&gt;
 &lt;div class="loader" id="loadingDiv"&gt;&lt;/div&gt;
 
-&lt;nav class="sidebar d-none d-md-block"&gt;
+&lt;button id="menu-toggle" class="btn btn-primary"&gt;
+    &lt;i class="fas fa-bars"&gt;&lt;/i&gt;
+&lt;/button&gt;
+
+&lt;nav class="sidebar" id="sidebar"&gt;
     &lt;div class="nav flex-column"&gt;
         &lt;a class="nav-link active" href="#" id="defaultOpen" onclick="openPage('dashboard', this)"&gt;
             &lt;i class="fa fa-dashboard"&gt;&lt;/i&gt;
@@ -3636,7 +3686,7 @@ if __name__ == "__main__":
             &lt;tbody&gt;
             {% for suite in suites %}
             &lt;tr&gt;
-                &lt;td data-bs-toggle="tooltip" onclick="openInNewTab('log.html#{{ suite['Id'] }}','#{{ suite['Id'] }}')" title="Click to view '{{ suite['Name'] }}' logs"&gt;
+                &lt;td class="clickable-link" onclick="openInNewTab('log.html#{{ suite['Id'] }}','#{{ suite['Id'] }}')"&gt;
                     {{ suite['Name'] }}
                 &lt;/td&gt;
                 &lt;td class="{% if suite['Status'] == 'PASS' %}text-success{% elif suite['Status'] == 'FAIL' %}text-danger{% else %}text-warning{% endif %}"&gt;{{ suite['Status'] }}
@@ -3674,7 +3724,7 @@ if __name__ == "__main__":
             {% for test in tests %}
             &lt;tr&gt;
                 &lt;td&gt;{{ test['Suite Name'] }}&lt;/td&gt;
-                &lt;td data-bs-toggle="tooltip" onclick="openInNewTab('log.html#{{ test['Test Id'] }}','#{{ test['Test Id'] }}')" title="Click to view '{{ test['Test Name'] }}' logs"&gt;
+                &lt;td class="clickable-link" onclick="openInNewTab('log.html#{{ test['Test Id'] }}','#{{ test['Test Id'] }}')"&gt;
                     {{ test['Test Name'] }}
                 &lt;/td&gt;
                 &lt;td class="{% if test['Status'] == 'PASS' %}text-success{% elif test['Status'] == 'FAIL' %}text-danger{% else %}text-warning{% endif %}"&gt;{{ test['Status'] }}&lt;/td&gt;
@@ -3698,91 +3748,91 @@ if __name__ == "__main__":
     &lt;/div&gt;
 
     &lt;div class="tabcontent" id="dashboard"&gt;
-        &lt;h4&gt;&lt;b&gt;&lt;i class="fa fa-dashboard"&gt;&lt;/i&gt; Dashboard&lt;/b&gt;&lt;/h4&gt;
-        &lt;hr&gt;
-        &lt;div class="row mb-4"&gt;
-            &lt;div class="col-md-3"&gt;
-                &lt;div class="card bg-dark text-white text-center"&gt;
-                    &lt;div class="card-body"&gt;
-                        &lt;h5 class="card-title"&gt;Suite&lt;/h5&gt;
-                        &lt;p class="card-text"&gt;Statistics&lt;/p&gt;
-                    &lt;/div&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-            &lt;div class="col-md-3"&gt;
-                &lt;div class="card bg-primary text-white text-center"&gt;
-                    &lt;div class="card-body"&gt;
-                        &lt;h5 class="card-title"&gt;{{suite_stats['Total']}}&lt;/h5&gt;
-                        &lt;p class="card-text"&gt;Total&lt;/p&gt;
-                    &lt;/div&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-            &lt;div class="col-md-3"&gt;
-                &lt;div class="card bg-success text-white text-center"&gt;
-                    &lt;div class="card-body"&gt;
-                        &lt;h5 class="card-title"&gt;{{suite_stats['Pass']}}&lt;/h5&gt;
-                        &lt;p class="card-text"&gt;Passed&lt;/p&gt;
-                    &lt;/div&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-            &lt;div class="col-md-3"&gt;
-                &lt;div class="card bg-danger text-white text-center"&gt;
-                    &lt;div class="card-body"&gt;
-                        &lt;h5 class="card-title"&gt;{{suite_stats['Fail']}}&lt;/h5&gt;
-                        &lt;p class="card-text"&gt;Failed&lt;/p&gt;
-                    &lt;/div&gt;
+    &lt;h4&gt;&lt;b&gt;&lt;i class="fa fa-dashboard"&gt;&lt;/i&gt; Dashboard&lt;/b&gt;&lt;/h4&gt;
+    &lt;hr&gt;
+    &lt;div class="row mb-4"&gt;
+        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+            &lt;div class="card bg-dark text-white text-center"&gt;
+                &lt;div class="card-body"&gt;
+                    &lt;h5 class="card-title"&gt;Suite&lt;/h5&gt;
+                    &lt;p class="card-text"&gt;Statistics&lt;/p&gt;
                 &lt;/div&gt;
             &lt;/div&gt;
         &lt;/div&gt;
-
-        &lt;div class="row mb-4"&gt;
-            &lt;div class="col-md-3"&gt;
-                &lt;div class="card bg-dark text-white text-center"&gt;
-                    &lt;div class="card-body"&gt;
-                        &lt;h5 class="card-title"&gt;Test Case&lt;/h5&gt;
-                        &lt;p class="card-text"&gt;Statistics&lt;/p&gt;
-                    &lt;/div&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-            &lt;div class="col-md-3"&gt;
-                &lt;div class="card bg-primary text-white text-center"&gt;
-                    &lt;div class="card-body"&gt;
-                        &lt;h5 class="card-title"&gt;{{test_stats['Total']}}&lt;/h5&gt;
-                        &lt;p class="card-text"&gt;Total&lt;/p&gt;
-                    &lt;/div&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-            &lt;div class="col-md-3"&gt;
-                &lt;div class="card bg-success text-white text-center"&gt;
-                    &lt;div class="card-body"&gt;
-                        &lt;h5 class="card-title"&gt;{{test_stats['Pass']}}&lt;/h5&gt;
-                        &lt;p class="card-text"&gt;Passed&lt;/p&gt;
-                    &lt;/div&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-            &lt;div class="col-md-3"&gt;
-                &lt;div class="card bg-danger text-white text-center"&gt;
-                    &lt;div class="card-body"&gt;
-                        &lt;h5 class="card-title"&gt;{{test_stats['Fail']}}&lt;/h5&gt;
-                        &lt;p class="card-text"&gt;Failed&lt;/p&gt;
-                    &lt;/div&gt;
+        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+            &lt;div class="card bg-primary text-white text-center"&gt;
+                &lt;div class="card-body"&gt;
+                    &lt;h5 class="card-title"&gt;{{suite_stats['Total']}}&lt;/h5&gt;
+                    &lt;p class="card-text"&gt;Total&lt;/p&gt;
                 &lt;/div&gt;
             &lt;/div&gt;
         &lt;/div&gt;
-
-        &lt;div class="row"&gt;
-            &lt;div class="col-md-6"&gt;
-                &lt;div class="pie-chart"&gt;
-                    &lt;canvas id="suiteChart"&gt;&lt;/canvas&gt;
+        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+            &lt;div class="card bg-success text-white text-center"&gt;
+                &lt;div class="card-body"&gt;
+                    &lt;h5 class="card-title"&gt;{{suite_stats['Pass']}}&lt;/h5&gt;
+                    &lt;p class="card-text"&gt;Passed&lt;/p&gt;
                 &lt;/div&gt;
             &lt;/div&gt;
-            &lt;div class="col-md-6"&gt;
-                &lt;div class="pie-chart"&gt;
-                    &lt;canvas id="testChart"&gt;&lt;/canvas&gt;
+        &lt;/div&gt;
+        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+            &lt;div class="card bg-danger text-white text-center"&gt;
+                &lt;div class="card-body"&gt;
+                    &lt;h5 class="card-title"&gt;{{suite_stats['Fail']}}&lt;/h5&gt;
+                    &lt;p class="card-text"&gt;Failed&lt;/p&gt;
                 &lt;/div&gt;
             &lt;/div&gt;
         &lt;/div&gt;
     &lt;/div&gt;
+
+    &lt;div class="row mb-4"&gt;
+        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+            &lt;div class="card bg-dark text-white text-center"&gt;
+                &lt;div class="card-body"&gt;
+                    &lt;h5 class="card-title"&gt;Test Case&lt;/h5&gt;
+                    &lt;p class="card-text"&gt;Statistics&lt;/p&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+            &lt;div class="card bg-primary text-white text-center"&gt;
+                &lt;div class="card-body"&gt;
+                    &lt;h5 class="card-title"&gt;{{test_stats['Total']}}&lt;/h5&gt;
+                    &lt;p class="card-text"&gt;Total&lt;/p&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+            &lt;div class="card bg-success text-white text-center"&gt;
+                &lt;div class="card-body"&gt;
+                    &lt;h5 class="card-title"&gt;{{test_stats['Pass']}}&lt;/h5&gt;
+                    &lt;p class="card-text"&gt;Passed&lt;/p&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+            &lt;div class="card bg-danger text-white text-center"&gt;
+                &lt;div class="card-body"&gt;
+                    &lt;h5 class="card-title"&gt;{{test_stats['Fail']}}&lt;/h5&gt;
+                    &lt;p class="card-text"&gt;Failed&lt;/p&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;
+        &lt;div class="col-sm-6 col-md-6 mb-4"&gt;
+            &lt;div class="pie-chart"&gt;
+                &lt;canvas id="suiteChart"&gt;&lt;/canvas&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class="col-sm-6 col-md-6 mb-4"&gt;
+            &lt;div class="pie-chart"&gt;
+                &lt;canvas id="testChart"&gt;&lt;/canvas&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
 &lt;/div&gt;
 
 &lt;script src="https://code.jquery.com/jquery-3.6.0.min.js"&gt;&lt;/script&gt;
@@ -3800,10 +3850,15 @@ if __name__ == "__main__":
                            [{{ suite_stats['Pass'] }}, {{ suite_stats['Fail'] }}],
                            {{ suite_stats['Total'] }});
 
-            createPieChart('testChart', 'Test Case Results', ['Pass', 'Fail', 'Skip'],
-                           [{{ test_stats['Pass'] }}, {{ test_stats['Fail'] }}, {{ test_stats['Skip'] }}],
-                           {{ test_stats['Total'] }});
+        createPieChart('testChart', 'Test Case Results', ['Pass', 'Fail', 'Skip'],
+                       [{{ test_stats['Pass'] }}, {{ test_stats['Fail'] }}, {{ test_stats['Skip'] }}],
+                       {{ test_stats['Total'] }});
+
+        // Toggle sidebar on menu button click
+        document.getElementById('menu-toggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('show');
         });
+    });
 
         function createPieChart(canvasId, title, labels, data, total) {
             var ctx = document.getElementById(canvasId).getContext('2d');
@@ -3866,6 +3921,11 @@ if __name__ == "__main__":
         }
         document.getElementById(pageName).style.display = "block";
         elmnt.className += " active";
+
+        // Hide sidebar on page change for mobile devices
+        if (window.innerWidth &lt;= 767.98) {
+            document.getElementById('sidebar').classList.remove('show');
+        }
     }
 
     function executeDataTable(tableID, minRows, sortIndex) {
@@ -3895,22 +3955,13 @@ if __name__ == "__main__":
         executeDataTable('#tm', 10, 3);
         document.getElementById("defaultOpen").click();
     });
+    function openInNewTab(url) {
+        window.open(url, '_blank').focus();
+    }
 &lt;/script&gt;
 &lt;/body&gt;
 &lt;/html&gt;
 </pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_test_cases_test_json">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\test_cases\test.json</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>{
-  "no-sandbox": true,
-  "disable-dev-shm-usage": true,
-  "disable-gpu": true,
-  "remote-debugging-port": 9222
-}</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_positions_json">
@@ -3922,7 +3973,7 @@ if __name__ == "__main__":
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 53800.0
+        "CNY": 55700.0
     },
     "transactions": {
         "USD": {
@@ -3962,14 +4013,14 @@ if __name__ == "__main__":
             }
         },
         "CNY": {
-            "2024-08-23": {
+            "2024-08-25": {
                 "inbound": {
                     "count": 0,
                     "total_amount": 0.0
                 },
                 "outbound": {
-                    "count": 22,
-                    "total_amount": 2200.0
+                    "count": 3,
+                    "total_amount": 300.0
                 }
             }
         }
