@@ -1,0 +1,141 @@
+---
+layout:     post
+title:      "动态注入python"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-08-27 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+# 动态注入python
+
+为了实现用户自定义action并动态注入到已有程序中，我们可以采取以下方案：
+
+1. 在Excel中添加一个新的sheet，命名为"CustomActions"。
+2. 在CustomActions sheet中，定义列如：Action Name, Python Code, Description。
+3. 修改WebTestLoader类以加载CustomActions。
+4. 创建一个新的CustomActionExecutor类，用于动态执行自定义action。
+5. 修改PageObject类，集成CustomActionExecutor并在execute_action方法中支持自定义action。
+
+以下是具体的实现步骤和代码：
+
+1. 在Excel中添加CustomActions sheet，包含以下列：
+   - Action Name: 自定义action的名称
+   - Python Code: 实现action的Python代码
+   - Description: action的描述（可选）
+
+2. 修改WebTestLoader类，添加加载CustomActions的方法：
+
+```python
+class WebTestLoader:
+    def __init__(self, excel_path):
+        # ... (existing code) ...
+        self.custom_actions = self._load_custom_actions()
+
+    def _load_excel_data(self) -> Dict[str, pd.DataFrame]:
+        sheets = ['Locators', 'PageModules', 'TestCases', 'TestSteps', 'TestData', 'WebEnvironments', 'CustomActions']
+        return {sheet: pd.read_excel(self.excel_path, sheet_name=sheet).fillna("") for sheet in sheets}
+
+    def _load_custom_actions(self) -> Dict[str, str]:
+        custom_actions_df = self.get_data_by_sheet_name('CustomActions')
+        return dict(zip(custom_actions_df['Action Name'], custom_actions_df['Python Code']))
+
+    def get_custom_actions(self) -> Dict[str, str]:
+        return self.custom_actions
+```
+
+3. 创建CustomActionExecutor类：
+
+```python
+import ast
+from typing import Any, Dict
+
+class CustomActionExecutor:
+    def __init__(self, custom_actions: Dict[str, str]):
+        self.custom_actions = custom_actions
+
+    def execute_custom_action(self, action_name: str, **kwargs) -> Any:
+        if action_name not in self.custom_actions:
+            raise ValueError(f"Custom action '{action_name}' not found")
+
+        code = self.custom_actions[action_name]
+        tree = ast.parse(code)
+        
+        # 为了安全，我们只允许某些AST节点类型
+        allowed_nodes = (ast.Module, ast.Expr, ast.Call, ast.Name, ast.Attribute,
+                         ast.arguments, ast.arg, ast.Load, ast.Str, ast.Num,
+                         ast.List, ast.Dict, ast.Return)
+        
+        for node in ast.walk(tree):
+            if not isinstance(node, allowed_nodes):
+                raise ValueError(f"Unsupported Python construct in custom action '{action_name}'")
+
+        # 创建一个新的命名空间来执行代码
+        namespace = kwargs.copy()
+        exec(code, namespace)
+
+        # 假设自定义action定义了一个名为'execute'的函数
+        if 'execute' not in namespace:
+            raise ValueError(f"Custom action '{action_name}' must define an 'execute' function")
+
+        return namespace['execute'](**kwargs)
+```
+
+4. 修改PageObject类，集成CustomActionExecutor：
+
+```python
+from libraries.web.custom_action_executor import CustomActionExecutor
+
+class PageObject:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
+        # ... (existing code) ...
+        self.custom_action_executor = CustomActionExecutor(self.web_test_loader.get_custom_actions())
+
+    def _execute_action(self, action: str, element, *args, **kwargs):
+        action_map = {
+            # ... (existing actions) ...
+        }
+
+        if action in action_map:
+            return action_map[action](element, *args, **kwargs) if element else action_map[action](*args, **kwargs)
+        elif action in self.custom_action_executor.custom_actions:
+            return self.custom_action_executor.execute_custom_action(action, element=element, web_actions=self.web_actions, **kwargs)
+        else:
+            raise ValueError(f"{self.__class__.__name__}: Unsupported action: {action}")
+
+    # ... (rest of the class remains the same) ...
+```
+
+5. 在Excel的CustomActions sheet中添加自定义action示例：
+
+```
+Action Name: click_and_verify
+Python Code:
+def execute(element, web_actions, expected_text, **kwargs):
+    web_actions.click(element)
+    result_element = web_actions.wait_for_element((By.ID, 'result'))
+    actual_text = web_actions.get_text(result_element)
+    assert actual_text == expected_text, f"Expected text '{expected_text}' but got '{actual_text}'"
+    return True
+
+Description: Click an element and verify the result text
+```
+
+现在，用户可以在Excel的PageModules sheet中使用这个自定义action：
+
+```
+Page Name: HomePage
+Module Name: ClickAndVerifyButton
+Element Name: submit_button
+Actions: click_and_verify
+Parameter Name: expected_text
+```
+
+在TestData sheet中，用户可以提供expected_text参数的值。
+
+这个实现方案允许用户在Excel中定义自定义的复杂action，并且可以在测试中使用它们。但是请注意，允许执行任意Python代码可能会带来安全风险，所以在生产环境中使用时要格外小心，可能需要更严格的代码验证和沙盒执行环境。
