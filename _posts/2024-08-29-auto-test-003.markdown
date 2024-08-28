@@ -12,7 +12,6 @@ tags:
 ---
 
 
-Certainly! I'll create a Markdown-formatted explanation for the Jenkins pipeline you've provided, along with the complete code. Here's the document:
 
 # Jenkins Pipeline for Automated Testing Framework
 
