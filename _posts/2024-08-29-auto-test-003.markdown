@@ -1,0 +1,228 @@
+---
+layout:     post
+title:      "Jenkins Pipeline for Automated Testing Framework"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-08-29 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+Certainly! I'll create a Markdown-formatted explanation for the Jenkins pipeline you've provided, along with the complete code. Here's the document:
+
+# Jenkins Pipeline for Automated Testing Framework
+
+This document explains the Jenkins pipeline used for running automated tests using a custom testing framework. The pipeline is designed to be flexible, allowing different types of tests to be run with various configuration options.
+
+## Pipeline Overview
+
+The pipeline consists of several stages:
+
+1. Setup Environment
+2. Update Configuration
+3. Start Flask Server
+4. Run Tests
+5. Upload to GitHub Pages
+
+Additionally, it includes post-execution steps for archiving artifacts and publishing results.
+
+## Pipeline Parameters
+
+The pipeline uses the following parameters:
+
+- `TEST_TYPE`: Choice of test type (e2e, api, or web)
+- `ACTIVE_ENVIRONMENT`: Active environment for testing (default: SIT)
+- `TEST_CASES_PATH`: Path to the test cases file
+- `CLEAR_SAVED_FIELDS`: Whether to clear saved fields after the test
+- `TC_ID_LIST`: Comma-separated list of Test Case IDs to run
+- `TAGS`: Comma-separated list of tags to filter test cases
+
+## Stage Details
+
+### 1. Setup Environment
+
+This stage sets up a Python virtual environment and installs the required dependencies.
+
+### 2. Update Configuration
+
+Updates the configuration file based on the parameters provided.
+
+### 3. Start Flask Server
+
+Starts a Flask server for testing purposes.
+
+### 4. Run Tests
+
+Executes the tests based on the specified test type.
+
+### 5. Upload to GitHub Pages
+
+Uploads the test results to GitHub Pages for easy access and sharing.
+
+## Post-Execution Steps
+
+After the tests are run, the pipeline:
+
+- Archives the test artifacts
+- Publishes the Robot Framework results
+- Stops the Flask server
+- Publishes an HTML report of the test results
+
+## Complete Pipeline Code
+
+Here's the complete Jenkins pipeline code:
+
+```groovy
+pipeline {
+    agent any
+
+    parameters {
+        choice(name: 'TEST_TYPE', choices: ['e2e', 'api', 'web'], description: 'Type of test to run')
+        string(name: 'ACTIVE_ENVIRONMENT', defaultValue: 'SIT', description: 'Active environment for testing')
+        string(name: 'TEST_CASES_PATH', defaultValue: 'test_cases/e2e_test_cases.xlsx', description: 'Path to test cases file')
+        booleanParam(name: 'CLEAR_SAVED_FIELDS', defaultValue: true, description: 'Clear saved fields after test')
+        string(name: 'TC_ID_LIST', defaultValue: '', description: 'Comma-separated list of Test Case IDs to run')
+        string(name: 'TAGS', defaultValue: '', description: 'Comma-separated list of tags to filter test cases')
+    }
+
+    stages {
+        stage('Setup Environment') {
+            steps {
+                script {
+                    sh '''
+                        python3 -m venv venv
+                        . venv/bin/activate
+                        python3 --version
+                        pip3 --version
+                        pip3 install -r requirements.txt
+                    '''
+                }
+            }
+        }
+
+        stage('Update Configuration') {
+            steps {
+                script {
+                    def configFile = "configs/${params.TEST_TYPE}_test_config.yaml"
+                    sh """
+                        . venv/bin/activate
+                        python3 yaml_config_cli.py ${configFile} --update active_environment ${params.ACTIVE_ENVIRONMENT}
+                        python3 yaml_config_cli.py ${configFile} --update test_cases_path ${params.TEST_CASES_PATH}
+                        python3 yaml_config_cli.py ${configFile} --update clear_saved_fields_after_test ${params.CLEAR_SAVED_FIELDS}
+                    """
+                    if (params.TC_ID_LIST) {
+                        def tcIdList = params.TC_ID_LIST.split(',')
+                        tcIdList.each { tcId ->
+                            sh ". venv/bin/activate && python3 yaml_config_cli.py ${configFile} --add-to-list tc_id_list ${tcId.trim()}"
+                        }
+                    }
+                    if (params.TAGS) {
+                        def tagsList = params.TAGS.split(',')
+                        tagsList.each { tag ->
+                            sh ". venv/bin/activate && python3 yaml_config_cli.py ${configFile} --add-to-list tags ${tag.trim()}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Start Flask Server') {
+            steps {
+                script {
+                    sh '''
+                        . venv/bin/activate
+                        cd testing_server
+                        nohup python3 server.py > flask.log 2>&1 &
+                        echo $! > flask.pid
+                        sleep 1 # wait for server to start
+                    '''
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    def testCommand = "python main.py --${params.TEST_TYPE}"
+                    sh ". venv/bin/activate && ${testCommand}"
+                }
+            }
+        }
+
+        stage('Upload to GitHub Pages') {
+            steps {
+                // Use Jenkins credentials to authenticate Git operations
+                withCredentials([sshUserPrivateKey(credentialsId: '806992a3-f7c4-4c83-990f-978e939144f4', keyFileVariable: 'SSH_KEY')]) {
+                    script {
+                        sh '''
+                            # Start the SSH agent and add the key
+                            eval $(ssh-agent -s)
+                            ssh-add ${SSH_KEY}
+
+                            # Check if directory exists
+                            if [ -d "huangsx0213.github.io" ]; then
+                                echo "Directory 'huangsx0213.github.io' exists. Pulling latest changes."
+                                cd huangsx0213.github.io
+                                git pull
+                            else
+                                echo "Cloning repository."
+                                git clone git@github.com:huangsx0213/huangsx0213.github.io.git
+                                cd huangsx0213.github.io
+                            fi
+
+                            # Copy the report files to the 'pages' directory
+                            cp -r ../report/* pages/
+
+                            # Configure Git user details
+                            git config user.name "huangsx0213"
+                            git config user.email "huangsx0213@jenkins.com"
+
+                            # Add, commit, and push the changes
+                            git add .
+                            git commit -m "Update Robot Framework report"
+                            git push
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'report/**/*', allowEmptyArchive: true
+            robot outputPath: 'report', logFileName: 'log.html', outputFileName: 'output.xml', reportFileName: 'report.html', passThreshold: 100, unstableThreshold: 75
+            script {
+                sh '''
+                    if [ -f flask.pid ]; then
+                        PID=$(cat flask.pid)
+                        if ps -p $PID > /dev/null 2>&1; then
+                            echo "Stopping Flask server (PID: $PID)"
+                            kill $PID || true
+                        else
+                            echo "Flask server (PID: $PID) is not running"
+                        fi
+                        rm flask.pid
+                    else
+                        echo "flask.pid file not found"
+                    fi
+                '''
+            }
+            publishHTML(target: [
+                allowMissing: false,
+                alwaysLinkToLastBuild: false,
+                keepAll: true,
+                reportDir: 'report',
+                reportFiles: 'dashboard.html',
+                reportName: 'Robot Framework Dashboard'
+            ])
+        }
+    }
+}
+```
+
+This pipeline provides a comprehensive automated testing solution, covering different test types, environment configurations, and result publishing. It's designed to be flexible and can be easily adapted to different project requirements.
