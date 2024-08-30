@@ -176,6 +176,7 @@ python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags d
 5. Endpoints: Environment-specific endpoint configurations
 
 ### 4.2 API Sheet Columns:
+```
 | Column Name | Description | Possible Values | Logic |
 |-------------|-------------|-----------------|-------|
 | TCID | Unique test case identifier | String, e.g., "TC001" | Must be unique |
@@ -192,34 +193,38 @@ python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags d
 | Save Fields | Save response fields | JSONPath expressions | Used to save specific fields from the response |
 | Conditions | Special conditions | Specific format string | E.g., [Checkwith], [TestSetup], [TestTeardown] |
 | Wait | Wait time after test execution | Number (seconds) | Pause execution for specified time |
-
+```
 ### 4.3 BodyTemplates Sheet:
+```
 | Column Name | Description | Possible Values | Logic |
 |-------------|-------------|-----------------|-------|
 | TemplateName | Template name | String | Unique identifier |
 | Content | Template content | JSON or XML format string | Can include Jinja2 template syntax |
 | Format | Template format | "json" or "xml" | Specifies the format of the template |
-
+```
 ### 4.4 BodyDefaults Sheet:
+```
 | Column Name | Description | Possible Values | Logic |
 |-------------|-------------|-----------------|-------|
 | Name | Default value name | String | Unique identifier |
 | Content | Default value content | JSON format string | Provides default request body content |
-
+```
 ### 4.5 Headers Sheet:
+```
 | Column Name | Description | Possible Values | Logic |
 |-------------|-------------|-----------------|-------|
 | HeaderName | Header template name | String | Unique identifier |
 | Content | Header content | YAML format string | Defines request headers |
-
+```
 ### 4.6 Endpoints Sheet:
+```
 | Column Name | Description | Possible Values | Logic |
 |-------------|-------------|-----------------|-------|
 | Environment | Environment name | DEV, SIT, UAT, PROD, etc. | Corresponds to active_environment in config file |
 | Endpoint | Endpoint name | String | Unique identifier |
 | Method | HTTP method | GET, POST, PUT, DELETE, PATCH | Specifies request method |
 | Path | Request path | URL path string | Can include path parameters |
-
+```
 ## 5. Web UI Test Cases Excel Structure
 
 ### 5.1 Sheets:
@@ -232,6 +237,7 @@ python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags d
 7. CustomActions: Custom Python actions
 
 ### 5.2 TestCases Sheet:
+```
 | Column Name | Description | Possible Values | Logic |
 |-------------|-------------|-----------------|-------|
 | Case ID | Unique test case identifier | String, e.g., "UITC001" | Must be unique |
@@ -239,8 +245,9 @@ python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags d
 | Descriptions | Test case description | String | Detailed explanation of test purpose |
 | Run | Whether to execute this case | "Y" or "N" | Y means execute, N means skip |
 | Tags | Case tags | Comma-separated string | For categorizing and filtering cases |
-
+```
 ### 5.3 TestSteps Sheet:
+```
 | Column Name | Description | Possible Values | Logic |
 |-------------|-------------|-----------------|-------|
 | Case ID | Corresponding test case ID | String | Must match Case ID in TestCases |
@@ -249,8 +256,9 @@ python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags d
 | Module Name | Module name | String | Specific module within the page object |
 | Parameter Name | Parameter names | Comma-separated string | Corresponds to parameters in TestData |
 | Run | Whether to execute this step | "Y" or "N" | Y means execute, N means skip |
-
+```
 ### 5.4 TestData Sheet:
+```
 | Column Name | Description | Possible Values | Logic |
 |-------------|-------------|-----------------|-------|
 | Case ID | Corresponding test case ID | String | Must match Case ID in TestCases |
@@ -258,16 +266,18 @@ python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags d
 | Parameter Name | Parameter name | String | Corresponds to parameters in TestSteps |
 | Value | Parameter value | Any type | Actual test data |
 | Data Type | Data type | string, integer, json, etc. | Specifies the data type of the parameter |
-
+```
 ### 5.5 Locators Sheet:
+```
 | Column Name | Description | Possible Values | Logic |
 |-------------|-------------|-----------------|-------|
 | Page | Page name | String | Corresponds to pages in PageModules |
 | Element Name | Element name | String | Unique identifier |
 | Locator Type | Location method | id, name, xpath, css, etc. | Selenium-supported location methods |
 | Locator Value | Location value | String | Specific location expression |
-
+```
 ### 5.6 PageModules Sheet:
+```
 | Column Name | Description | Possible Values | Logic |
 |-------------|-------------|-----------------|-------|
 | Page Name | Page name | String | Unique identifier |
@@ -279,16 +289,17 @@ python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags d
 | Screenshot | Whether to take a screenshot | "Y" or "N" | Y means take screenshot, N means don't |
 | Wait | Wait time after action (in seconds) | Number | Pause execution for specified time |
 | Run | Whether to execute this action | "Y" or "N" | Y means execute, N means skip |
-
+```
 ### 5.7 WebEnvironments Sheet:
+```
 | Column Name | Description | Possible Values | Logic |
 |-------------|-------------|-----------------|-------|
 | Environment | Environment name | DEV, SIT, UAT, PROD, etc. | Corresponds to active_environment in config file |
 | URL | Environment URL | Complete URL string | Base URL of the test environment |
 | Browser | Browser type | chrome, firefox, edge, etc. | Specifies the browser to use |
-
+```
 ### 5.8 CustomActions Sheet:
-```xlsx
+```
 | Column Name   | Description              | Possible Values | Logic |
 |---------------|--------------------------|-----------------|-------|
 | Action Name   | Custom action name       | String | Unique identifier |
