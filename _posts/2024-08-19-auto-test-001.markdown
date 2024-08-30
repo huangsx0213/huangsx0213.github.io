@@ -288,11 +288,12 @@ python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags d
 | Browser | Browser type | chrome, firefox, edge, etc. | Specifies the browser to use |
 
 ### 5.8 CustomActions Sheet:
+```xlsx
 | Column Name   | Description              | Possible Values | Logic |
 |---------------|--------------------------|-----------------|-------|
 | Action Name   | Custom action name       | String | Unique identifier |
 | CustomAction1 | CustomAction python code | String | Custom python to be executed |
-
+```
 ## 6. Writing Test Cases
 
 ### 6.1 API Test Cases
