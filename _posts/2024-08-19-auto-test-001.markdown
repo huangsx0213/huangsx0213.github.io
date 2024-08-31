@@ -12,6 +12,8 @@ tags:
 ---
 
 
+好的,我将为您提供更新后完整的Automated Testing Framework User Manual,并将表格转换为纯文本格式。以下是完整的用户手册:
+
 # Automated Testing Framework User Manual
 
 ## Table of Contents
@@ -38,7 +40,7 @@ This automated testing framework offers the following features and advantages:
 4. Dynamic Value Support: Supports dynamically generated values in API tests, such as UUID, timestamps, etc.
 5. Variable Management: Supports sharing and reusing variables between test cases.
 6. Page Object Model: Uses page object pattern in Web UI testing, improving code reusability and maintainability.
-7. Custom Operations: Supports defining and using custom Python operations in Web UI tests.
+7. Custom Operations: Supports defining and using custom JavaScript operations in Web UI tests.
 8. Detailed Logs and Reports: Generates detailed HTML reports and logs, including failure screenshots.
 9. Flexible Test Case Selection: Supports filtering specific tests by tags or test case IDs.
 10. Environment Management: Supports multi-environment configuration, making it easy to switch between different environments.
@@ -142,28 +144,12 @@ tags: []
 - `tc_id_list`: List of specific test case IDs to execute
 - `tags`: List of tags to filter test cases
 
-### 3.3 End to end Test Configuration (e2e_test_config.yaml)
-
-```yaml
-active_environment: SIT
-test_case_path: 'test_cases/e2e_test_cases.xlsx'
-tc_id_list: []
-tags: []
-```
-
-- `active_environment`: Currently active test environment
-- `test_case_path`: Path to the End-to-End test cases Excel file
-- `tc_id_list`: List of specific test case IDs to execute
-- `tags`: List of tags to filter test cases
-- 
-### 3.4 Using yaml_config_cli.py
+### 3.3 Using yaml_config_cli.py
 
 You can use the `yaml_config_cli.py` script to modify configuration files from the command line. For example:
 
 ```bash
 python yaml_config_cli.py configs/api_test_config.yaml --update active_environment PROD
-python yaml_config_cli.py configs/api_test_config.yaml --add-to-list tc_id_list TC001
-python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags deprecated
 ```
 
 ## 4. API Test Cases Excel Structure
@@ -176,49 +162,144 @@ python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags d
 5. Endpoints: Environment-specific endpoint configurations
 
 ### 4.2 API Sheet Columns:
-| Column Name | Description | Possible Values | Logic |
-|-------------|-------------|-----------------|-------|
-| TCID | Unique test case identifier | String, e.g., "TC001" | Must be unique |
-| Name | Test case name | String | Descriptive name |
-| Descriptions | Test case description | String | Detailed explanation of test purpose |
-| Run | Whether to execute this case | "Y" or "N" | Y means execute, N means skip |
-| Tags | Case tags | Comma-separated string | For categorizing and filtering cases |
-| Endpoint | API endpoint name | String | Must match definitions in Endpoints sheet |
-| Headers | Request header template name | String | Must match definitions in Headers sheet |
-| Body Template | Request body template name | String | Must match definitions in BodyTemplates sheet |
-| Body Default | Default request body name | String | Must match definitions in BodyDefaults sheet |
-| Body User-defined Fields | Custom request body fields | JSON format string | Overrides or adds to default request body |
-| Exp Result | Expected results | JSONPath expressions | Used to validate response content |
-| Save Fields | Save response fields | JSONPath expressions | Used to save specific fields from the response |
-| Conditions | Special conditions | Specific format string | E.g., [Checkwith], [TestSetup], [TestTeardown] |
-| Wait | Wait time after test execution | Number (seconds) | Pause execution for specified time |
+```plaintext
+Column Name: TCID
+Description: Unique test case identifier
+Possible Values: String, e.g., "TC001"
+Logic: Must be unique
+
+Column Name: Name
+Description: Test case name
+Possible Values: String
+Logic: Descriptive name
+
+Column Name: Descriptions
+Description: Test case description
+Possible Values: String
+Logic: Detailed explanation of test purpose
+
+Column Name: Run
+Description: Whether to execute this case
+Possible Values: "Y" or "N"
+Logic: Y means execute, N means skip
+
+Column Name: Tags
+Description: Case tags
+Possible Values: Comma-separated string
+Logic: For categorizing and filtering cases
+
+Column Name: Endpoint
+Description: API endpoint name
+Possible Values: String
+Logic: Must match definitions in Endpoints sheet
+
+Column Name: Headers
+Description: Request header template name
+Possible Values: String
+Logic: Must match definitions in Headers sheet
+
+Column Name: Body Template
+Description: Request body template name
+Possible Values: String
+Logic: Must match definitions in BodyTemplates sheet
+
+Column Name: Body Default
+Description: Default request body name
+Possible Values: String
+Logic: Must match definitions in BodyDefaults sheet
+
+Column Name: Body User-defined Fields
+Description: Custom request body fields
+Possible Values: JSON format string
+Logic: Overrides or adds to default request body
+
+Column Name: Exp Result
+Description: Expected results
+Possible Values: JSONPath expressions
+Logic: Used to validate response content
+
+Column Name: Save Fields
+Description: Save response fields
+Possible Values: JSONPath expressions
+Logic: Used to save specific fields from the response
+
+Column Name: Conditions
+Description: Special conditions
+Possible Values: Specific format string
+Logic: E.g., [Checkwith], [TestSetup], [TestTeardown]
+
+Column Name: Wait
+Description: Wait time after test execution
+Possible Values: Number (seconds)
+Logic: Pause execution for specified time
+```
 
 ### 4.3 BodyTemplates Sheet:
-| Column Name | Description | Possible Values | Logic |
-|-------------|-------------|-----------------|-------|
-| TemplateName | Template name | String | Unique identifier |
-| Content | Template content | JSON or XML format string | Can include Jinja2 template syntax |
-| Format | Template format | "json" or "xml" | Specifies the format of the template |
+```plaintext
+Column Name: TemplateName
+Description: Template name
+Possible Values: String
+Logic: Unique identifier
+
+Column Name: Content
+Description: Template content
+Possible Values: JSON or XML format string
+Logic: Can include Jinja2 template syntax
+
+Column Name: Format
+Description: Template format
+Possible Values: "json" or "xml"
+Logic: Specifies the format of the template
+```
 
 ### 4.4 BodyDefaults Sheet:
-| Column Name | Description | Possible Values | Logic |
-|-------------|-------------|-----------------|-------|
-| Name | Default value name | String | Unique identifier |
-| Content | Default value content | JSON format string | Provides default request body content |
+```plaintext
+Column Name: Name
+Description: Default value name
+Possible Values: String
+Logic: Unique identifier
+
+Column Name: Content
+Description: Default value content
+Possible Values: JSON format string
+Logic: Provides default request body content
+```
 
 ### 4.5 Headers Sheet:
-| Column Name | Description | Possible Values | Logic |
-|-------------|-------------|-----------------|-------|
-| HeaderName | Header template name | String | Unique identifier |
-| Content | Header content | YAML format string | Defines request headers |
+```plaintext
+Column Name: HeaderName
+Description: Header template name
+Possible Values: String
+Logic: Unique identifier
+
+Column Name: Content
+Description: Header content
+Possible Values: YAML format string
+Logic: Defines request headers
+```
 
 ### 4.6 Endpoints Sheet:
-| Column Name | Description | Possible Values | Logic |
-|-------------|-------------|-----------------|-------|
-| Environment | Environment name | DEV, SIT, UAT, PROD, etc. | Corresponds to active_environment in config file |
-| Endpoint | Endpoint name | String | Unique identifier |
-| Method | HTTP method | GET, POST, PUT, DELETE, PATCH | Specifies request method |
-| Path | Request path | URL path string | Can include path parameters |
+```plaintext
+Column Name: Environment
+Description: Environment name
+Possible Values: DEV, SIT, UAT, PROD, etc.
+Logic: Corresponds to active_environment in config file
+
+Column Name: Endpoint
+Description: Endpoint name
+Possible Values: String
+Logic: Unique identifier
+
+Column Name: Method
+Description: HTTP method
+Possible Values: GET, POST, PUT, DELETE, PATCH
+Logic: Specifies request method
+
+Column Name: Path
+Description: Request path
+Possible Values: URL path string
+Logic: Can include path parameters
+```
 
 ## 5. Web UI Test Cases Excel Structure
 
@@ -229,69 +310,198 @@ python yaml_config_cli.py configs/api_test_config.yaml --remove-from-list tags d
 4. Locators: Element locators
 5. PageModules: Page object definitions
 6. WebEnvironments: Environment-specific configurations
-7. CustomActions: Custom Python actions
+7. CustomActions: Custom JavaScript actions
 
 ### 5.2 TestCases Sheet:
-| Column Name | Description | Possible Values | Logic |
-|-------------|-------------|-----------------|-------|
-| Case ID | Unique test case identifier | String, e.g., "UITC001" | Must be unique |
-| Name | Test case name | String | Descriptive name |
-| Descriptions | Test case description | String | Detailed explanation of test purpose |
-| Run | Whether to execute this case | "Y" or "N" | Y means execute, N means skip |
-| Tags | Case tags | Comma-separated string | For categorizing and filtering cases |
+```plaintext
+Column Name: Case ID
+Description: Unique test case identifier
+Possible Values: String, e.g., "UITC001"
+Logic: Must be unique
+
+Column Name: Name
+Description: Test case name
+Possible Values: String
+Logic: Descriptive name
+
+Column Name: Descriptions
+Description: Test case description
+Possible Values: String
+Logic: Detailed explanation of test purpose
+
+Column Name: Run
+Description: Whether to execute this case
+Possible Values: "Y" or "N"
+Logic: Y means execute, N means skip
+
+Column Name: Tags
+Description: Case tags
+Possible Values: Comma-separated string
+Logic: For categorizing and filtering cases
+```
 
 ### 5.3 TestSteps Sheet:
-| Column Name | Description | Possible Values | Logic |
-|-------------|-------------|-----------------|-------|
-| Case ID | Corresponding test case ID | String | Must match Case ID in TestCases |
-| Step ID | Unique identifier for each step | Integer | Defines execution order of steps |
-| Page Name | Page object name | String | Must match definitions in PageModules |
-| Module Name | Module name | String | Specific module within the page object |
-| Parameter Name | Parameter names | Comma-separated string | Corresponds to parameters in TestData |
-| Run | Whether to execute this step | "Y" or "N" | Y means execute, N means skip |
+```plaintext
+Column Name: Case ID
+Description: Corresponding test case ID
+Possible Values: String
+Logic: Must match Case ID in TestCases
+
+Column Name: Step ID
+Description: Unique identifier for each step
+Possible Values: Integer
+Logic: Defines execution order of steps
+
+Column Name: Page Name
+Description: Page object name
+Possible Values: String
+Logic: Must match definitions in PageModules
+
+Column Name: Module Name
+Description: Module name
+Possible Values: String
+Logic: Specific module within the page object
+
+Column Name: Parameter Name
+Description: Parameter names
+Possible Values: Comma-separated string
+Logic: Corresponds to parameters in TestData
+
+Column Name: Run
+Description: Whether to execute this step
+Possible Values: "Y" or "N"
+Logic: Y means execute, N means skip
+```
 
 ### 5.4 TestData Sheet:
-| Column Name | Description | Possible Values | Logic |
-|-------------|-------------|-----------------|-------|
-| Case ID | Corresponding test case ID | String | Must match Case ID in TestCases |
-| Data Set | Data set identifier | String | Used to distinguish multiple sets of test data |
-| Parameter Name | Parameter name | String | Corresponds to parameters in TestSteps |
-| Value | Parameter value | Any type | Actual test data |
-| Data Type | Data type | string, integer, json, etc. | Specifies the data type of the parameter |
+```plaintext
+Column Name: Case ID
+Description: Corresponding test case ID
+Possible Values: String
+Logic: Must match Case ID in TestCases
+
+Column Name: Data Set
+Description: Data set identifier
+Possible Values: String
+Logic: Used to distinguish multiple sets of test data
+
+Column Name: Parameter Name
+Description: Parameter name
+Possible Values: String
+Logic: Corresponds to parameters in TestSteps
+
+Column Name: Value
+Description: Parameter value
+Possible Values: Any type
+Logic: Actual test data
+
+Column Name: Data Type
+Description: Data type
+Possible Values: string, integer, json, etc.
+Logic: Specifies the data type of the parameter
+```
 
 ### 5.5 Locators Sheet:
-| Column Name | Description | Possible Values | Logic |
-|-------------|-------------|-----------------|-------|
-| Page | Page name | String | Corresponds to pages in PageModules |
-| Element Name | Element name | String | Unique identifier |
-| Locator Type | Location method | id, name, xpath, css, etc. | Selenium-supported location methods |
-| Locator Value | Location value | String | Specific location expression |
+```plaintext
+Column Name: Page
+Description: Page name
+Possible Values: String
+Logic: Corresponds to pages in PageModules
+
+Column Name: Element Name
+Description: Element name
+Possible Values: String
+Logic: Unique identifier
+
+Column Name: Locator Type
+Description: Location method
+Possible Values: id, name, xpath, css, etc.
+Logic: Selenium-supported location methods
+
+Column Name: Locator Value
+Description: Location value
+Possible Values: String
+Logic: Specific location expression
+```
 
 ### 5.6 PageModules Sheet:
-| Column Name | Description | Possible Values | Logic |
-|-------------|-------------|-----------------|-------|
-| Page Name | Page name | String | Unique identifier |
-| Module Name | Module name | String | Functional module within the page |
-| Element Name | Element name | String | Corresponds to Element Name in Locators |
-| Actions | Action name | String | E.g., click, input, verify, etc. |
-| Parameter Name | Parameters | Comma-separated string | Parameters needed for the action |
-| Highlight | Whether to highlight the element | "Y" or "N" | Y means highlight, N means don't highlight |
-| Screenshot | Whether to take a screenshot | "Y" or "N" | Y means take screenshot, N means don't |
-| Wait | Wait time after action (in seconds) | Number | Pause execution for specified time |
-| Run | Whether to execute this action | "Y" or "N" | Y means execute, N means skip |
+```plaintext
+Column Name: Page Name
+Description: Page name
+Possible Values: String
+Logic: Unique identifier
+
+Column Name: Module Name
+Description: Module name
+Possible Values: String
+Logic: Functional module within the page
+
+Column Name: Element Name
+Description: Element name
+Possible Values: String
+Logic: Corresponds to Element Name in Locators
+
+Column Name: Actions
+Description: Action name
+Possible Values: String
+Logic: E.g., click, input, verify, etc.
+
+Column Name: Parameter Name
+Description: Parameters
+Possible Values: Comma-separated string
+Logic: Parameters needed for the action
+
+Column Name: Highlight
+Description: Whether to highlight the element
+Possible Values: "Y" or "N"
+Logic: Y means highlight, N means don't highlight
+
+Column Name: Screenshot
+Description: Whether to take a screenshot
+Possible Values: "Y" or "N"
+Logic: Y means take screenshot, N means don't
+
+Column Name: Wait
+Description: Wait time after action (in seconds)
+Possible Values: Number
+Logic: Pause execution for specified time
+
+Column Name: Run
+Description: Whether to execute this action
+Possible Values: "Y" or "N"
+Logic: Y means execute, N means skip
+```
 
 ### 5.7 WebEnvironments Sheet:
-| Column Name | Description | Possible Values | Logic |
-|-------------|-------------|-----------------|-------|
-| Environment | Environment name | DEV, SIT, UAT, PROD, etc. | Corresponds to active_environment in config file |
-| URL | Environment URL | Complete URL string | Base URL of the test environment |
-| Browser | Browser type | chrome, firefox, edge, etc. | Specifies the browser to use |
+```plaintext
+Column Name: Environment
+Description: Environment name
+Possible Values: DEV, SIT, UAT, PROD, etc.
+Logic: Corresponds to active_environment in config file
+
+Column Name: URL
+Description: Environment URL
+Possible Values: Complete URL string
+Logic: Base URL of the test environment
+
+Column Name: Browser
+Description: Browser type
+Possible Values: chrome, firefox, edge, etc.
+Logic: Specifies the browser to use
+```
 
 ### 5.8 CustomActions Sheet:
-| Column Name   | Description              | Possible Values | Logic |
-|---------------|--------------------------|-----------------|-------|
-| Action Name   | Custom action name       | String | Unique identifier |
-| CustomAction1 | CustomAction python code | String | Custom python to be executed |
+```plaintext
+Column Name: Action Name
+Description: Custom action name
+Possible Values: String
+Logic: Unique identifier
+
+Column Name: JavaScript
+Description: JavaScript code
+Possible Values: String
+Logic: Custom JavaScript to be executed
+```
 
 ## 6. Writing Test Cases
 
