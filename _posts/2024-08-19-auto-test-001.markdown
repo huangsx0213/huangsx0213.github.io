@@ -11,9 +11,6 @@ tags:
     - Automated Testing
 ---
 
-
-好的,我将为您提供更新后完整的Automated Testing Framework User Manual,并将表格转换为纯文本格式。以下是完整的用户手册:
-
 # Automated Testing Framework User Manual
 
 ## Table of Contents
