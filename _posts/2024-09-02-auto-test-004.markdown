@@ -1,0 +1,396 @@
+---
+layout:     post
+title:      "WebDriver网络拦截"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-09-02 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+
+
+# WebDriver网络拦截 (Chrome版)
+
+## 1. 简介
+
+WebDriver网络拦截是一种强大的功能，允许我们监控、修改和分析web应用程序的网络流量。这对于测试、调试和性能分析非常有用。本指南将详细介绍如何使用Selenium WebDriver和BrowserMob Proxy在Chrome浏览器中实现网络拦截。
+
+## 2. 准备工作
+
+在开始之前，请确保您的系统中已安装以下组件：
+
+1. Python 3.7+
+2. Chrome浏览器
+3. ChromeDriver (与您的Chrome版本匹配)
+
+然后，安装必要的Python库：
+
+```
+pip install selenium browsermob-proxy
+```
+
+下载BrowserMob Proxy并解压到known的位置。
+
+## 3. 常用方法和详细例子
+
+### 3.1 基本设置
+
+首先，我们需要创建一个基本的设置函数，这将在所有例子中使用：
+
+```python
+import os
+from browsermob_proxy import Server
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+
+def setup_driver_and_proxy():
+    # 启动BrowserMob Proxy
+    server = Server("path/to/browsermob-proxy")
+    server.start()
+    proxy = server.create_proxy()
+
+    # 设置Chrome选项
+    chrome_options = Options()
+    chrome_options.add_argument(f'--proxy-server={proxy.proxy}')
+    chrome_options.add_argument('--ignore-certificate-errors')
+
+    # 设置ChromeDriver
+    service = Service('path/to/chromedriver')
+    
+    # 创建WebDriver实例
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    
+    return driver, proxy, server
+
+def teardown(driver, server):
+    driver.quit()
+    server.stop()
+```
+
+请确保将`"path/to/browsermob-proxy"`和`'path/to/chromedriver'`替换为您系统中的实际路径。
+
+### 3.2 拦截和修改请求
+
+例子: 修改用户代理
+
+这个例子展示了如何拦截并修改发出的请求，特别是更改用户代理字符串。
+
+```python
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+def modify_user_agent():
+    driver, proxy, server = setup_driver_and_proxy()
+
+    def request_interceptor(request):
+        del request.headers['User-Agent']
+        request.headers['User-Agent'] = 'My Custom User Agent'
+
+    proxy.request_interceptor = request_interceptor
+
+    try:
+        # 使用修改后的请求访问网站
+        driver.get("https://www.whatismybrowser.com/detect/what-is-my-user-agent/")
+
+        # 等待并获取显示的用户代理
+        user_agent_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "detected_value"))
+        )
+        displayed_user_agent = user_agent_element.text
+
+        print(f"Displayed User Agent: {displayed_user_agent}")
+        assert "My Custom User Agent" in displayed_user_agent, "User Agent was not modified successfully"
+        
+    finally:
+        teardown(driver, server)
+
+if __name__ == "__main__":
+    modify_user_agent()
+```
+
+这个例子访问了一个可以显示当前用户代理的网站，然后验证我们的自定义用户代理是否成功应用。
+
+### 3.3 拦截和修改响应
+
+例子: 替换网页内容
+
+这个例子演示了如何拦截和修改从服务器返回的响应。
+
+```python
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+def modify_response_content():
+    driver, proxy, server = setup_driver_and_proxy()
+
+    def response_interceptor(request, response):
+        if request.url == "https://example.com/":
+            content = response.body.decode('utf-8')
+            modified_content = content.replace("Example Domain", "My Modified Domain")
+            response.body = modified_content.encode('utf-8')
+
+    proxy.response_interceptor = response_interceptor
+
+    try:
+        driver.get("https://example.com")
+
+        # 等待并检查修改是否生效
+        modified_text = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "h1"))
+        )
+        
+        print(f"Modified text: {modified_text.text}")
+        assert "My Modified Domain" in modified_text.text, "Response was not modified successfully"
+
+    finally:
+        teardown(driver, server)
+
+if __name__ == "__main__":
+    modify_response_content()
+```
+
+这个例子修改了example.com的响应，将页面标题从"Example Domain"改为"My Modified Domain"。
+
+### 3.4 捕获和分析网络流量
+
+例子: 记录所有请求和响应
+
+这个例子展示了如何捕获和分析网页加载过程中的所有网络流量。
+
+```python
+import json
+
+def capture_network_traffic():
+    driver, proxy, server = setup_driver_and_proxy()
+
+    try:
+        # 开始新的HAR捕获
+        proxy.new_har("test")
+
+        # 访问网站
+        driver.get("https://example.com")
+
+        # 获取HAR数据
+        har = proxy.har
+
+        # 分析并打印请求和响应信息
+        for entry in har['log']['entries']:
+            print(f"URL: {entry['request']['url']}")
+            print(f"Method: {entry['request']['method']}")
+            print(f"Status: {entry['response']['status']}")
+            print(f"Response Size: {entry['response']['content']['size']} bytes")
+            print("---")
+
+        # 将完整的HAR数据保存到文件
+        with open('network_traffic.har', 'w') as f:
+            json.dump(har, f, indent=2)
+
+        print("Full HAR data has been saved to 'network_traffic.har'")
+
+    finally:
+        teardown(driver, server)
+
+if __name__ == "__main__":
+    capture_network_traffic()
+```
+
+这个例子捕获了访问example.com时的所有网络流量，打印了每个请求的基本信息，并将完整的HAR（HTTP Archive）数据保存到文件中。
+
+### 3.5 模拟网络条件
+
+例子: 模拟慢速网络
+
+这个例子演示了如何模拟慢速网络条件。
+
+```python
+import time
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+def simulate_slow_network():
+    driver, proxy, server = setup_driver_and_proxy()
+
+    try:
+        # 设置带宽限制：下载速度50kbps，上传速度1024kbps
+        proxy.limits({'downstream_kbps': 50, 'upstream_kbps': 1024})
+
+        start_time = time.time()
+
+        # 访问网站
+        driver.get("https://example.com")
+
+        # 等待页面加载完成
+        WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.TAG_NAME, "h1"))
+        )
+
+        end_time = time.time()
+        load_time = end_time - start_time
+
+        print(f"Page load time under slow network: {load_time:.2f} seconds")
+
+        # 恢复正常速度
+        proxy.limits({'downstream_kbps': -1, 'upstream_kbps': -1})
+
+        # 再次加载页面，比较加载时间
+        start_time = time.time()
+        driver.get("https://example.com")
+        WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.TAG_NAME, "h1"))
+        )
+        end_time = time.time()
+        normal_load_time = end_time - start_time
+
+        print(f"Page load time under normal network: {normal_load_time:.2f} seconds")
+        print(f"Difference: {load_time - normal_load_time:.2f} seconds")
+
+    finally:
+        teardown(driver, server)
+
+if __name__ == "__main__":
+    simulate_slow_network()
+```
+
+这个例子首先模拟了一个慢速网络环境，然后恢复到正常速度，并比较了两种情况下加载同一网页的时间差异。
+
+### 3.6 拦截和打印API Payload
+
+例子: 打印特定API的请求payload
+
+这个例子展示了如何拦截特定API请求并打印其payload。
+
+```python
+import json
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+def print_api_payload():
+    driver, proxy, server = setup_driver_and_proxy()
+
+    def request_interceptor(request):
+        if "api.github.com" in request.url:
+            print("Intercepted GitHub API request:")
+            print(f"URL: {request.url}")
+            print(f"Method: {request.method}")
+            if request.body:
+                try:
+                    body = json.loads(request.body.decode('utf-8'))
+                    print("Payload:")
+                    print(json.dumps(body, indent=2))
+                except json.JSONDecodeError:
+                    print(f"Body: {request.body}")
+            print("---")
+
+    proxy.request_interceptor = request_interceptor
+
+    try:
+        # 访问GitHub，这将触发一些API调用
+        driver.get("https://github.com")
+
+        # 等待页面加载完成
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+
+        print("Page loaded. Check the console for any intercepted API requests.")
+
+    finally:
+        teardown(driver, server)
+
+if __name__ == "__main__":
+    print_api_payload()
+```
+
+这个例子访问GitHub网站，并打印出所有对GitHub API的请求详情，包括URL、方法和payload（如果有）。
+
+### 3.7 阻止特定请求
+
+例子: 阻止图片加载
+
+这个例子演示了如何阻止特定类型的请求，在这里我们阻止了所有图片的加载。
+
+```python
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+def block_image_requests():
+    driver, proxy, server = setup_driver_and_proxy()
+
+    def request_interceptor(request):
+        if request.url.endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            request.abort()
+
+    proxy.request_interceptor = request_interceptor
+
+    try:
+        # 访问一个包含很多图片的网站
+        driver.get("https://unsplash.com")
+
+        # 等待页面加载完成
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+
+        # 获取所有图片元素
+        img_elements = driver.find_elements(By.TAG_NAME, "img")
+
+        # 检查图片是否真的被阻止了
+        blocked_images = 0
+        for img in img_elements:
+            if img.get_attribute("naturalWidth") == "0":
+                blocked_images += 1
+
+        print(f"Total images found: {len(img_elements)}")
+        print(f"Images blocked: {blocked_images}")
+
+        assert blocked_images > 0, "No images were blocked"
+
+    finally:
+        teardown(driver, server)
+
+if __name__ == "__main__":
+    block_image_requests()
+```
+
+这个例子访问了Unsplash网站（一个图片网站），并阻止了所有图片的加载。然后它统计了被成功阻止的图片数量。
+
+## 4. 最佳实践
+
+1. 始终在测试结束后关闭代理和WebDriver，使用`try-finally`块确保资源被正确释放。
+
+2. 对于大型项目，考虑创建一个自定义的Proxy类来封装常用的拦截逻辑。
+
+3. 在修改请求或响应时要小心，确保不会破坏应用程序的功能。
+
+4. 在处理敏感数据时，确保遵守所有相关的隐私和安全规定。
+
+5. 使用显式等待而不是隐式等待或`time.sleep()`，以提高测试的稳定性和效率。
+
+6. 定期检查和更新ChromeDriver，确保它与你的Chrome浏览器版本兼容。
+
+## 5. 常见问题解决
+
+1. SSL错误：如果遇到SSL错误，可以在Chrome选项中添加`--ignore-certificate-errors`参数（如我们的示例中所做的那样）。
+
+2. 代理启动问题：如果BrowserMob Proxy无法启动，检查路径是否正确，并确保有足够的权限。
+
+3. 元素定位问题：在单页应用中，可能需要使用更复杂的等待策略来确保元素已经加载。
+
+4. 性能问题：使用代理可能会略微降低浏览器的性能。在进行性能测试时，要考虑这一因素。
+
+## 结论
+
+WebDriver的网络拦截功能为Web应用测试提供了强大的工具。通过这些方法，我们可以模拟各种网络条件，调试复杂的网络交互，并确保我们的应用在各种情况下都能正常工作。上述例子展示了如何使用Selenium WebDriver和BrowserMob Proxy在Chrome浏览器中实现各种网络拦截和修改场景。这些技术可以大大提升我们的测试能力，帮助我们创建更健壮、更全面的自动化测试。
+
+希望这份详细的使用说明能帮助您更好地理解和利用WebDriver的网络拦截功能，从而提升测试效率和质量。在实际应用中，您可能需要根据具体的测试需求来调整和组合这些技术。
