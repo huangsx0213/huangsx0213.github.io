@@ -2556,6 +2556,7 @@ class PageObject:
 
     def _execute_action(self, action: str, locator, *args, **kwargs):
         action_map = {
+            # Basic operations
             'open_url': self.web_actions.open_url,
             'send_keys': self.web_actions.send_keys,
             'click': self.web_actions.click,
@@ -2570,28 +2571,48 @@ class PageObject:
             'scroll_to_element': self.web_actions.scroll_to_element,
             'get_text': self.web_actions.get_text,
             'get_attribute': self.web_actions.get_attribute,
+
+            # Element state verification
+            'element_text_should_be': self.web_actions.element_text_should_be,
+            'element_text_should_contains': self.web_actions.element_text_should_contains,
+            'title_should_be': self.web_actions.title_should_be,
+            'title_should_contains': self.web_actions.title_should_contains,
             'is_element_present': self.web_actions.is_element_present,
             'is_element_visible': self.web_actions.is_element_visible,
             'is_element_clickable': self.web_actions.is_element_clickable,
             'is_element_selected': self.web_actions.is_element_selected,
             'is_element_enabled': self.web_actions.is_element_enabled,
-            'element_text_should_be': self.web_actions.element_text_should_be,
-            'element_text_should_contains': self.web_actions.element_text_should_contains,
-            'title_should_be': self.web_actions.title_should_be,
-            'title_should_contains': self.web_actions.title_should_contains,
+
+            # Wait operations
             'wait_for_element_present': self.web_actions.wait_for_element_present,
             'wait_for_element_visible': self.web_actions.wait_for_element_visible,
             'wait_for_element_clickable': self.web_actions.wait_for_element_clickable,
             'wait_for_text_present_in_element': self.web_actions.wait_for_text_present_in_element,
             'wait_for_element_to_disappear': self.web_actions.wait_for_element_to_disappear,
             'wait_for_staleness_of': self.web_actions.wait_for_staleness_of,
+            'wait': self.web_actions.wait,
+
+            # Frame and window operations
             'switch_to_frame': self.web_actions.switch_to_frame,
             'switch_to_default_content': self.web_actions.switch_to_default_content,
+            'switch_to_window': self.web_actions.switch_to_window,
+            'get_window_handles': self.web_actions.get_window_handles,
+            'close_current_window': self.web_actions.close_current_window,
+
+            # JavaScript execution
             'execute_script': self.web_actions.execute_script,
+            'execute_async_script': self.web_actions.execute_async_script,
+
+            # Alert operations
             'accept_alert': self.web_actions.accept_alert,
             'dismiss_alert': self.web_actions.dismiss_alert,
             'get_alert_text': self.web_actions.get_alert_text,
+
+            # Screenshot and highlight
+            'capture_screenshot': self.web_actions.capture_screenshot,
             'highlight_element': self.web_actions.highlight_element,
+
+            # Table operations
             'verify_table_exact': self.web_actions.verify_table_exact,
             'verify_table_row_exact': self.web_actions.verify_table_row_exact,
             'verify_specific_cell_exact': self.web_actions.verify_specific_cell_exact,
@@ -2601,39 +2622,54 @@ class PageObject:
             'verify_table_regex': self.web_actions.verify_table_regex,
             'verify_table_row_regex': self.web_actions.verify_table_row_regex,
             'verify_specific_cell_regex': self.web_actions.verify_specific_cell_regex,
+            'verify_table_is_empty': self.web_actions.verify_table_is_empty,
+            'verify_unique_column_values': self.web_actions.verify_unique_column_values,
+            'verify_value_in_table': self.web_actions.verify_value_in_table,
+            'verify_row_count': self.web_actions.verify_row_count,
+            'verify_column_sorted': self.web_actions.verify_column_sorted,
             'select_table_row_checkbox': self.web_actions.select_table_row_checkbox,
             'select_multiple_table_row_checkboxes': self.web_actions.select_multiple_table_row_checkboxes,
-            'wait': self.web_actions.wait,
-            'capture_screenshot': self.web_actions.capture_screenshot,
+
+            # Element properties and styles
             'get_element_size': self.web_actions.get_element_size,
             'get_element_location': self.web_actions.get_element_location,
             'get_css_value': self.web_actions.get_css_value,
-            'switch_to_window': self.web_actions.switch_to_window,
-            'get_window_handles': self.web_actions.get_window_handles,
-            'close_current_window': self.web_actions.close_current_window,
+            'get_property': self.web_actions.get_property,
+
+            # Browser navigation
             'refresh_page': self.web_actions.refresh_page,
             'go_back': self.web_actions.go_back,
             'go_forward': self.web_actions.go_forward,
             'get_current_url': self.web_actions.get_current_url,
-            'execute_async_script': self.web_actions.execute_async_script,
-            'get_property': self.web_actions.get_property,
+
+            # Window management
             'set_window_size': self.web_actions.set_window_size,
             'maximize_window': self.web_actions.maximize_window,
             'minimize_window': self.web_actions.minimize_window,
             'fullscreen_window': self.web_actions.fullscreen_window,
+
+            # Accessibility
             'get_accessible_name': self.web_actions.get_accessible_name,
             'get_aria_role': self.web_actions.get_aria_role,
+
+            # Cookie operations
             'add_cookie': self.web_actions.add_cookie,
             'get_cookie': self.web_actions.get_cookie,
             'delete_cookie': self.web_actions.delete_cookie,
             'delete_all_cookies': self.web_actions.delete_all_cookies,
+
+            # Log retrieval
             'get_log': self.web_actions.get_log,
+
+            # JavaScript enhanced operations
             'js_click': self.web_actions.js_click,
             'js_send_keys': self.web_actions.js_send_keys,
             'js_clear': self.web_actions.js_clear,
             'js_scroll_into_view': self.web_actions.js_scroll_into_view,
             'js_select_option': self.web_actions.js_select_option,
             'js_hover': self.web_actions.js_hover,
+
+            # Value capture and assertion
             'capture_element_value': self.web_actions.capture_element_value,
             'assert_value_change': self.web_actions.assert_value_change,
         }
@@ -2687,6 +2723,7 @@ class PageObject:
     <pre>import logging
 from selenium.webdriver.common.by import By
 import re
+
 
 class TableVerifier:
     def __init__(self, driver):
@@ -2821,6 +2858,130 @@ class TableVerifier:
 
         self.logger.info(f"Verified column '{column}': {actual_value}")
 
+    def verify_table_is_empty(self, table_element):
+        """
+        Verify that the table contains no data rows.
+
+        :param table_element: WebElement of the table
+        """
+        try:
+            rows = table_element.find_elements(By.TAG_NAME, "tr")
+            assert len(rows) == 1, f"Table is not empty. Found {len(rows) - 1} data rows."
+
+            self.logger.info("Table is empty as expected.")
+        except Exception as e:
+            self.logger.error(f"Error verifying if table is empty: {str(e)}")
+            raise
+
+    def verify_unique_column_values(self, table_element, column):
+        """
+        Verify that all values in a specific column are unique.
+
+        :param table_element: WebElement of the table
+        :param column: Column name or index to verify uniqueness
+        """
+        try:
+            rows = table_element.find_elements(By.TAG_NAME, "tr")
+            headers = [header.text.strip().lower() for header in rows[0].find_elements(By.XPATH, ".//th | .//td")]
+
+            column_index = self._get_cell_index(headers, column)
+            values = set()
+
+            for row in rows[1:]:  # Skip header row
+                cells = row.find_elements(By.XPATH, ".//td|.//th")
+                if column_index &lt; len(cells):
+                    value = cells[column_index].text.strip()
+                    assert value not in values, f"Duplicate value found in column '{column}': {value}"
+                    values.add(value)
+
+            self.logger.info(f"All values in column '{column}' are unique.")
+        except Exception as e:
+            self.logger.error(f"Error verifying unique values in column: {str(e)}")
+            raise
+
+    def verify_value_in_table(self, table_element, search_value):
+        """
+        Verify if a specific value exists in the table.
+
+        :param table_element: WebElement of the table
+        :param search_value: The value to search for in the table
+        """
+        try:
+            rows = table_element.find_elements(By.TAG_NAME, "tr")
+
+            for row in rows[1:]:  # Skip header row
+                cells = row.find_elements(By.XPATH, ".//td|.//th")
+                for cell in cells:
+                    if search_value in cell.text.strip():
+                        self.logger.info(f"Value '{search_value}' found in table.")
+                        return True
+
+            raise ValueError(f"Value '{search_value}' not found in the table.")
+        except Exception as e:
+            self.logger.error(f"Error verifying presence of value in table: {str(e)}")
+            raise
+
+    def verify_row_count(self, table_element, expected_row_count):
+        """
+        Verify the number of rows in the table (excluding the header row).
+
+        :param table_element: WebElement of the table
+        :param expected_row_count: The expected number of data rows
+        """
+        try:
+            rows = table_element.find_elements(By.TAG_NAME, "tr")
+            actual_row_count = len(rows) - 1  # Exclude header row
+
+            assert actual_row_count == expected_row_count, \
+                f"Row count mismatch. Expected: {expected_row_count}, Actual: {actual_row_count}"
+
+            self.logger.info(f"Row count verified successfully: {actual_row_count}")
+        except Exception as e:
+            self.logger.error(f"Error verifying row count: {str(e)}")
+            raise
+
+    def verify_column_sorted(self, table_element, column, expected_order='ascending', strip_spaces=True):
+        """
+        Verify if a specific column in the table is sorted in the expected order.
+
+        :param table_element: WebElement of the table
+        :param column: Column name (or 1-based index) to verify sorting
+        :param expected_order: Expected sorting order, either 'ascending' or 'descending' (default is 'ascending')
+        :param strip_spaces: Boolean to determine whether to remove leading/trailing spaces from cell values (default is True)
+        """
+        try:
+            # Retrieve all rows and headers of the table
+            rows = table_element.find_elements(By.TAG_NAME, "tr")
+            headers = [header.text.strip().lower() for header in rows[0].find_elements(By.XPATH, ".//th | .//td")]
+
+            # Get the index of the target column
+            column_index = self._get_cell_index(headers, column)
+
+            # Collect all values from the target column (skipping the header row)
+            column_data = []
+            for row in rows[1:]:
+                cells = row.find_elements(By.XPATH, ".//td|.//th")
+                if column_index &lt; len(cells):
+                    cell_text = cells[column_index].text.strip()
+                    if strip_spaces:
+                        cell_text = cell_text.strip()  # Optionally strip spaces
+                    column_data.append(cell_text)
+                else:
+                    raise ValueError(f"Column '{column}' is out of range. This row has {len(cells)} columns.")
+
+            # Sort the column data based on the expected order
+            sorted_data = sorted(column_data)
+            if expected_order == 'descending':
+                sorted_data.reverse()
+
+            # Validate if the column data is sorted as expected
+            assert column_data == sorted_data, f"Column '{column}' is not sorted in {expected_order} order."
+
+            self.logger.info(f"Column '{column}' is correctly sorted in {expected_order} order.")
+        except Exception as e:
+            self.logger.error(f"Error verifying sorting for column '{column}': {str(e)}")
+            raise
+
     def select_table_row_checkbox(self, table_element, identifier_column, identifier_value, checkbox_column=1):
         """
         Select the checkbox in a specific row based on an identifier value in a specific column.
@@ -2867,7 +3028,9 @@ class TableVerifier:
         :param checkbox_column: Column index (1-based) of the checkbox (default is 1, assuming checkbox is in the first column)
         """
         for identifier_value in identifier_values:
-            self.select_table_row_checkbox(table_element, identifier_column, identifier_value, checkbox_column)</pre>
+            self.select_table_row_checkbox(table_element, identifier_column, identifier_value, checkbox_column)
+
+</pre>
 </div>
 
 <div class="code-container" id="D:_Projects_api_auto_test_libraries_web_web_element_actions_py">
@@ -3376,6 +3539,62 @@ class WebElementActions:
             logging.info(f"{self.__class__.__name__}: Checkboxes selected successfully for rows with {identifier_column}: {identifier_values} in table: {table_desc}")
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error selecting multiple checkboxes: {str(e)}")
+            raise
+
+    def verify_table_is_empty(self, table_locator: Union[tuple, WebElement]):
+        logging.info(f"{self.__class__.__name__}: Verifying table is empty")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            self.table_verifier.verify_table_is_empty(table_element)
+            logging.info(f"{self.__class__.__name__}: Table empty verification completed successfully for table: {table_desc}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying table is empty: {str(e)}")
+            raise
+
+    def verify_unique_column_values(self, table_locator: Union[tuple, WebElement], column: Union[str, int]):
+        logging.info(f"{self.__class__.__name__}: Verifying unique values in column: {column}")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            self.table_verifier.verify_unique_column_values(table_element, column)
+            logging.info(f"{self.__class__.__name__}: Unique column values verification completed successfully for table: {table_desc}, column: {column}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying unique column values: {str(e)}")
+            raise
+
+    def verify_value_in_table(self, table_locator: Union[tuple, WebElement], search_value: str):
+        logging.info(f"{self.__class__.__name__}: Verifying value '{search_value}' exists in table")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            result = self.table_verifier.verify_value_in_table(table_element, search_value)
+            logging.info(f"{self.__class__.__name__}: Value verification in table completed successfully for table: {table_desc}")
+            return result
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying value in table: {str(e)}")
+            raise
+
+    def verify_row_count(self, table_locator: Union[tuple, WebElement], expected_row_count: int):
+        logging.info(f"{self.__class__.__name__}: Verifying row count: expected {expected_row_count}")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            self.table_verifier.verify_row_count(table_element, expected_row_count)
+            logging.info(f"{self.__class__.__name__}: Row count verification completed successfully for table: {table_desc}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying row count: {str(e)}")
+            raise
+
+    def verify_column_sorted(self, table_locator: Union[tuple, WebElement], column: Union[str, int], expected_order='ascending', strip_spaces=True):
+        logging.info(f"{self.__class__.__name__}: Verifying column '{column}' is sorted in {expected_order} order")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            self.table_verifier.verify_column_sorted(table_element, column, expected_order, strip_spaces)
+            logging.info(f"{self.__class__.__name__}: Column sorting verification completed successfully for table: {table_desc}, column: {column}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying column sorting: {str(e)}")
             raise
 
     def wait(self, seconds):
@@ -4654,7 +4873,7 @@ if __name__ == "__main__":
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 55500.0
+        "CNY": 55300.0
     },
     "transactions": {
         "USD": {
@@ -4694,7 +4913,7 @@ if __name__ == "__main__":
             }
         },
         "CNY": {
-            "2024-09-03": {
+            "2024-09-05": {
                 "inbound": {
                     "count": 0,
                     "total_amount": 0.0
