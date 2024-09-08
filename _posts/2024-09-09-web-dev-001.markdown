@@ -1,0 +1,270 @@
+---
+layout:     post
+title:      "Flask中实现多个页面"
+subtitle:   "「 Web Devlopment 」" 
+date:       2024-09-09 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Web Devlopment
+---
+
+
+
+
+# Flask中实现多个页面
+
+以下展示如何在Flask中实现多个页面，且每个页面有其独特的功能。
+
+### 项目结构
+
+```
+my_flask_app/
+├── app/
+│   ├── __init__.py
+│   ├── controllers/
+│   │   ├── __init__.py
+│   │   ├── todo_controller.py
+│   │   └── detail_controller.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── todo.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   └── todo_service.py
+│   ├── templates/
+│   │   ├── index.html
+│   │   └── detail.html
+│   ├── static/
+│   │   ├── css/
+│   │   │   └── styles.css
+│   │   └── js/
+│   │       └── scripts.js
+│   └── main.py
+├── migrations/
+├── config.py
+└── requirements.txt
+```
+
+### 1. 配置文件 (`config.py`)
+```python
+import os
+
+class Config:
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///test.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = os.urandom(24)
+```
+
+### 2. 数据访问层 (`app/models/todo.py`)
+```python
+from app import db
+
+class Todo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.String(200), nullable=False)
+    completed = db.Column(db.Boolean, default=False)
+    details = db.Column(db.Text, nullable=True)
+```
+
+### 3. 业务逻辑层 (`app/services/todo_service.py`)
+```python
+from app.models.todo import Todo
+from app import db
+
+def get_all_todos():
+    return Todo.query.order_by(Todo.id).all()
+
+def get_todo_by_id(todo_id):
+    return Todo.query.get(todo_id)
+
+def add_todo(content, details=None):
+    new_task = Todo(content=content, details=details)
+    db.session.add(new_task)
+    db.session.commit()
+    return new_task
+
+def delete_todo_by_id(todo_id):
+    task_to_delete = Todo.query.get_or_404(todo_id)
+    db.session.delete(task_to_delete)
+    db.session.commit()
+```
+
+### 4. 表示层 (`app/controllers/todo_controller.py`)
+```python
+from flask import Blueprint, render_template, request, redirect, url_for
+from app.services import todo_service
+
+todo_bp = Blueprint('todo', __name__)
+
+@todo_bp.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        task_content = request.form['content']
+        task_details = request.form.get('details', '')
+        todo_service.add_todo(task_content, task_details)
+        return redirect('/')
+    else:
+        tasks = todo_service.get_all_todos()
+        return render_template('index.html', tasks=tasks)
+
+@todo_bp.route('/delete/<int:id>')
+def delete(id):
+    todo_service.delete_todo_by_id(id)
+    return redirect('/')
+```
+
+### 5. 表示层 (`app/controllers/detail_controller.py`)
+```python
+from flask import Blueprint, render_template
+from app.services import todo_service
+
+detail_bp = Blueprint('detail', __name__)
+
+@detail_bp.route('/detail/<int:id>')
+def detail(id):
+    task = todo_service.get_todo_by_id(id)
+    if task:
+        return render_template('detail.html', task=task)
+    else:
+        return "Task not found", 404
+```
+
+### 6. 应用初始化 (`app/__init__.py`)
+```python
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_bootstrap import Bootstrap
+from config import Config
+
+db = SQLAlchemy()
+
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
+    db.init_app(app)
+    Bootstrap(app)
+
+    from app.controllers.todo_controller import todo_bp
+    from app.controllers.detail_controller import detail_bp
+    app.register_blueprint(todo_bp)
+    app.register_blueprint(detail_bp)
+
+    return app
+```
+
+### 7. 入口文件 (`app/main.py`)
+```python
+from app import create_app, db
+
+app = create_app()
+
+with app.app_context():
+    db.create_all()
+
+if __name__ == "__main__":
+    app.run(debug=True)
+```
+
+### 8. 模板文件 (`app/templates/index.html`)
+这个模板包含一个链接到详细信息页面的链接。
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('bootstrap.static', filename='css/bootstrap.min.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Todo List</h1>
+        <form method="POST" action="/" class="form-inline my-3">
+            <input type="text" name="content" class="form-control mr-2" placeholder="Add a new task">
+            <textarea name="details" class="form-control mr-2" placeholder="Add details"></textarea>
+            <button type="submit" class="btn btn-primary">Add</button>
+        </form>
+        <ul class="list-group">
+            {% for task in tasks %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="{{ url_for('detail.detail', id=task.id) }}">{{ task.content }}</a>
+                <a href="/delete/{{ task.id }}" class="btn btn-danger btn-sm">Delete</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+</body>
+</html>
+```
+
+### 9. 模板文件 (`app/templates/detail.html`)
+这个模板显示每个任务的详细信息。
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo Details</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('bootstrap.static', filename='css/bootstrap.min.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Todo Details</h1>
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ task.content }}</h5>
+                <p class="card-text">{{ task.details }}</p>
+                <a href="/" class="btn btn-primary">Back to Todo List</a>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+</body>
+</html>
+```
+
+### 10. 静态资源 (`app/static/css/styles.css`)
+```css
+body {
+    padding-top: 20px;
+}
+```
+
+### 11. 静态资源 (`app/static/js/scripts.js`)
+```javascript
+// 添加一些自定义JavaScript代码
+```
+
+### 初始化数据库
+
+在启动应用程序之前，确保你的数据库已经初始化。在Python交互式环境中运行以下代码：
+
+```python
+from app import db, create_app
+app = create_app()
+with app.app_context():
+    db.create_all()
+```
+
+### 运行应用
+
+最后，运行你的应用程序：
+
+```bash
+python app/main.py
+```
+
+现在，你应该能够访问两个页面：
+1. `/`：显示Todo列表，并允许添加新的任务。
+2. `/detail/<id>`：显示特定任务的详细信息。
+
+这种方式通过分层架构和蓝图 (Blueprint) 实现了多个页面的功能，同时保持了代码的组织性和可维护性。
