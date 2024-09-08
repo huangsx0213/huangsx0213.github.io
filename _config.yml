@@ -91,6 +91,6 @@ page-mathjax: false
 # Friends
 friends:
   [
-    # { title: "Automated Testing Framework", href: "/pages/e2e_test_framework.html" },
+    { title: "Automated Testing Framework", href: "/pages/e2e_test_framework.html" },
     { title: "Robot Framework Dashboard", href: "/pages/dashboard.html" },
   ]
