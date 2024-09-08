@@ -1,0 +1,756 @@
+---
+layout:     post
+title:      "Selenium 4 和 Chrome DevTools Protocol (CDP) "
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-09-02 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+
+
+# Selenium 4 和 Chrome DevTools Protocol (CDP) 网络拦截
+
+## 简介
+
+详细介绍如何使用 Selenium 4 和 Chrome DevTools Protocol (CDP) 进行网络拦截和操作。这些技术可以帮助开发者和测试人员模拟各种网络条件，分析网页性能，以及进行高级的网络调试。
+
+## 安装说明
+
+在开始之前，请确保您的系统中已安装以下组件：
+
+1. Python 3.7 或更高版本
+2. Selenium 4
+3. WebDriver Manager
+4. Google Chrome 浏览器
+
+可以使用以下命令安装所需的 Python 包：
+
+```
+pip install selenium webdriver-manager
+```
+
+## 使用场景
+
+### 1. 基本的网络请求拦截
+
+**目的**：拦截所有网络请求并打印 URL。
+
+**应用场景**：监控网页加载过程中发生的所有网络请求，有助于性能优化和调试。
+
+**代码示例**：
+
+```python
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+
+def intercept_network_requests():
+    # 设置 Chrome 选项
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')
+
+    # 设置所需的功能
+    caps = DesiredCapabilities.CHROME.copy()
+    caps['goog:loggingPrefs'] = {'performance': 'ALL'}
+
+    # 初始化 WebDriver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), 
+                              options=chrome_options, 
+                              desired_capabilities=caps)
+
+    # 启用网络拦截
+    driver.execute_cdp_cmd('Network.enable', {})
+
+    # 添加事件监听器
+    def log_request(intercepted_request):
+        request = intercepted_request['request']
+        print(f"URL: {request['url']}")
+        print(f"Method: {request['method']}")
+        print(f"Headers: {request['headers']}")
+        print("---")
+
+    driver.execute_cdp_cmd('Network.setRequestInterception', {'patterns': [{'urlPattern': '*'}]})
+    driver.on('Network.requestWillBeSent', log_request)
+
+    # 访问网页
+    driver.get('https://www.example.com')
+
+    # 等待一段时间以确保所有请求都被拦截
+    driver.implicitly_wait(10)
+
+    # 关闭浏览器
+    driver.quit()
+
+if __name__ == "__main__":
+    intercept_network_requests()
+```
+
+### 2. 修改请求头
+
+**目的**：修改请求头，例如更改 User-Agent。
+
+**应用场景**：模拟不同的设备或浏览器，测试网站的响应式设计，或绕过某些基于 User-Agent 的访问限制。
+
+**代码示例**：
+
+```python
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+def modify_user_agent():
+    # 设置 Chrome 选项
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')
+
+    # 初始化 WebDriver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), 
+                              options=chrome_options)
+
+    # 启用网络拦截
+    driver.execute_cdp_cmd('Network.enable', {})
+
+    # 设置请求拦截
+    driver.execute_cdp_cmd('Network.setRequestInterception', {'patterns': [{'urlPattern': '*'}]})
+
+    # 定义拦截器函数
+    def interceptor(request):
+        # 修改 User-Agent
+        headers = request.get('headers', {})
+        headers['User-Agent'] = 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
+        request['headers'] = headers
+        return request
+
+    # 添加请求拦截器
+    driver.request_interceptor = interceptor
+
+    # 访问网页
+    driver.get('https://www.example.com')
+
+    # 等待一段时间
+    driver.implicitly_wait(10)
+
+    # 获取并打印页面源码，以验证 User-Agent 是否生效
+    page_source = driver.page_source
+    print("Page source:", page_source[:500])  # 只打印前 500 个字符
+
+    # 关闭浏览器
+    driver.quit()
+
+if __name__ == "__main__":
+    modify_user_agent()
+```
+
+### 3. 修改响应内容
+
+**目的**：拦截并修改特定 URL 的响应内容。
+
+**应用场景**：测试应用程序对不同响应的处理，模拟特定的服务器响应，或进行 A/B 测试。
+
+**代码示例**：
+
+```python
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+def modify_response_content():
+    # 设置 Chrome 选项
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')
+
+    # 初始化 WebDriver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), 
+                              options=chrome_options)
+
+    # 启用网络拦截
+    driver.execute_cdp_cmd('Network.enable', {})
+
+    # 设置响应拦截
+    driver.execute_cdp_cmd('Network.setRequestInterception', {'patterns': [{'urlPattern': '*'}]})
+
+    # 定义拦截器函数
+    def interceptor(request):
+        if request['request']['url'] == 'https://api.example.com/data':
+            # 修改响应内容
+            body = '{"modified": "This is a modified response"}'
+            return {
+                'interceptResponse': {
+                    'body': body,
+                    'status': 200,
+                    'headers': {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            }
+        return request
+
+    # 添加请求拦截器
+    driver.request_interceptor = interceptor
+
+    # 访问网页
+    driver.get('https://www.example.com')
+
+    # 等待一段时间
+    driver.implicitly_wait(10)
+
+    # 关闭浏览器
+    driver.quit()
+
+if __name__ == "__main__":
+    modify_response_content()
+```
+
+### 4. 模拟网络错误
+
+**目的**：为特定请求模拟网络失败。
+
+**应用场景**：测试应用程序对网络错误的处理能力，验证错误恢复机制。
+
+**代码示例**：
+
+```python
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+def simulate_network_error():
+    # 设置 Chrome 选项
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')
+
+    # 初始化 WebDriver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), 
+                              options=chrome_options)
+
+    # 启用网络拦截
+    driver.execute_cdp_cmd('Network.enable', {})
+
+    # 设置请求拦截
+    driver.execute_cdp_cmd('Network.setRequestInterception', {'patterns': [{'urlPattern': '*'}]})
+
+    # 定义拦截器函数
+    def interceptor(request):
+        if request['request']['url'] == 'https://api.example.com/data':
+            # 模拟网络错误
+            return {'errorReason': 'Failed'}
+        return request
+
+    # 添加请求拦截器
+    driver.request_interceptor = interceptor
+
+    # 访问网页
+    driver.get('https://www.example.com')
+
+    # 等待一段时间
+    driver.implicitly_wait(10)
+
+    # 关闭浏览器
+    driver.quit()
+
+if __name__ == "__main__":
+    simulate_network_error()
+```
+
+### 5. 阻止特定资源加载
+
+**目的**：阻止特定类型的资源加载，如图片和媒体文件。
+
+**应用场景**：提高页面加载速度，减少带宽使用，或测试网站在某些资源无法加载时的行为。
+
+**代码示例**：
+
+```python
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+def block_specific_resources():
+    # 设置 Chrome 选项
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')
+
+    # 初始化 WebDriver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), 
+                              options=chrome_options)
+
+    # 启用网络拦截
+    driver.execute_cdp_cmd('Network.enable', {})
+
+    # 设置请求拦截
+    driver.execute_cdp_cmd('Network.setRequestInterception', {'patterns': [{'urlPattern': '*'}]})
+
+    # 定义拦截器函数
+    def interceptor(request):
+        # 阻止图片和媒体资源
+        if request['resourceType'] in ['Image', 'Media']:
+            print(f"Blocked: {request['request']['url']}")
+            return {'cancel': True}
+        print(f"Allowed: {request['request']['url']}")
+        return request
+
+    # 添加请求拦截器
+    driver.request_interceptor = interceptor
+
+    # 访问网页
+    driver.get('https://www.example.com')
+
+    # 等待一段时间
+    driver.implicitly_wait(10)
+
+    # 获取并打印页面源码，以验证资源是否被阻止
+    page_source = driver.page_source
+    print("Page source:", page_source[:500])  # 只打印前 500 个字符
+
+    # 关闭浏览器
+    driver.quit()
+
+if __name__ == "__main__":
+    block_specific_resources()
+```
+
+### 6. 修改响应头
+
+**目的**：添加或修改自定义响应头。
+
+**应用场景**：测试应用程序对特定响应头的处理，模拟特定的服务器配置。
+
+**代码示例**：
+
+```python
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+def modify_response_headers():
+    # 设置 Chrome 选项
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')
+
+    # 初始化 WebDriver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), 
+                              options=chrome_options)
+
+    # 启用网络拦截
+    driver.execute_cdp_cmd('Network.enable', {})
+
+    # 设置响应拦截
+    driver.execute_cdp_cmd('Network.setRequestInterception', {'patterns': [{'urlPattern': '*'}]})
+
+    # 定义拦截器函数
+    def interceptor(request):
+        if request['request']['url'] == 'https://api.example.com/data':
+            # 修改响应头
+            headers = request.get('responseHeaders', {})
+            headers['Custom-Header'] = 'My Custom Value'
+            return {
+                'interceptResponse': {
+                    'responseHeaders': headers
+                }
+            }
+        return request
+
+    # 添加请求拦截器
+    driver.request_interceptor = interceptor
+
+    # 访问网页
+    driver.get('https://www.example.com')
+
+    # 等待一段时间
+    driver.implicitly_wait(10)
+
+    # 关闭浏览器
+    driver.quit()
+
+if __name__ == "__main__":
+    modify_response_headers()
+```
+
+### 7. 缓存控制
+
+**目的**：通过修改请求头来控制缓存行为。
+
+**应用场景**：测试网站在不同缓存策略下的行为，强制刷新特定资源。
+
+**代码示例**：
+
+```python
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+def control_caching():
+    # 设置 Chrome 选项
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')
+
+    # 初始化 WebDriver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), 
+                              options=chrome_options)
+
+    # 启用网络拦截
+    driver.execute_cdp_cmd('Network.enable', {})
+
+    # 设置请求拦截
+    driver.execute_cdp_cmd('Network.setRequestInterception', {'patterns': [{'urlPattern': '*'}]})
+
+    # 定义拦截器函数
+    def interceptor(request):
+        # 修改缓存控制头
+        headers = request.get('headers', {})
+        headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        request['headers'] = headers
+        return request
+
+    # 添加请求拦截器
+    driver.request_interceptor = interceptor
+
+    # 访问网页
+    driver.get('https://www.example.com')
+
+    # 等待一段时间
+    driver.implicitly_wait(10)
+
+    # 关闭浏览器
+    driver.quit()
+
+if __name__ == "__main__":
+    control_caching()
+```
+
+
+###8. Selenium 4 和 Chrome DevTools Protocol (CDP) 网络拦截完整例子：
+
+```python
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+import json
+import time
+
+class NetworkInterceptor:
+    def __init__(self):
+        self.chrome_options = webdriver.ChromeOptions()
+        self.chrome_options.add_argument('--headless')
+        self.driver = None
+
+    def setup_driver(self):
+        caps = DesiredCapabilities.CHROME.copy()
+        caps['goog:loggingPrefs'] = {'performance': 'ALL'}
+        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), 
+                                       options=self.chrome_options, 
+                                       desired_capabilities=caps)
+        self.driver.execute_cdp_cmd('Network.enable', {})
+
+    def close_driver(self):
+        if self.driver:
+            self.driver.quit()
+
+    def intercept_network_requests(self):
+        self.setup_driver()
+
+        def log_request(intercepted_request):
+            request = intercepted_request['request']
+            print(f"URL: {request['url']}")
+            print(f"Method: {request['method']}")
+            print(f"Headers: {json.dumps(request['headers'], indent=2)}")
+            
+            if 'postData' in request:
+                print(f"Payload: {request['postData']}")
+            else:
+                print("Payload: None")
+            
+            print("---")
+
+        self.driver.execute_cdp_cmd('Network.setRequestInterception', {'patterns': [{'urlPattern': '*'}]})
+        self.driver.on('Network.requestWillBeSent', log_request)
+
+        self.driver.get('https://www.example.com')
+        self.driver.implicitly_wait(10)
+
+        self.close_driver()
+
+    def modify_user_agent(self):
+        self.setup_driver()
+
+        def interceptor(request):
+            headers = request.get('headers', {})
+            headers['User-Agent'] = 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
+            request['headers'] = headers
+
+            print(f"URL: {request['url']}")
+            print(f"Modified Headers: {json.dumps(headers, indent=2)}")
+            if 'postData' in request:
+                print(f"Payload: {request['postData']}")
+            else:
+                print("Payload: None")
+            print("---")
+
+            return request
+
+        self.driver.request_interceptor = interceptor
+
+        self.driver.get('https://www.example.com')
+        self.driver.implicitly_wait(10)
+
+        page_source = self.driver.page_source
+        print("Page source:", page_source[:500])
+
+        self.close_driver()
+
+    def modify_response_content(self):
+        self.setup_driver()
+
+        def interceptor(request):
+            if request['request']['url'] == 'https://api.example.com/data':
+                if 'postData' in request['request']:
+                    print(f"Original Payload: {request['request']['postData']}")
+                else:
+                    print("Original Payload: None")
+
+                body = '{"modified": "This is a modified response"}'
+                print(f"Modified Response: {body}")
+
+                return {
+                    'interceptResponse': {
+                        'body': body,
+                        'status': 200,
+                        'headers': {
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                }
+            return request
+
+        self.driver.request_interceptor = interceptor
+
+        self.driver.get('https://www.example.com')
+        self.driver.implicitly_wait(10)
+
+        self.close_driver()
+
+    def simulate_network_error(self):
+        self.setup_driver()
+
+        def interceptor(request):
+            if request['request']['url'] == 'https://api.example.com/data':
+                print(f"Simulating network error for: {request['request']['url']}")
+                if 'postData' in request['request']:
+                    print(f"Request Payload: {request['request']['postData']}")
+                return {'errorReason': 'Failed'}
+            return request
+
+        self.driver.request_interceptor = interceptor
+
+        self.driver.get('https://www.example.com')
+        self.driver.implicitly_wait(10)
+
+        self.close_driver()
+
+    def block_specific_resources(self):
+        self.setup_driver()
+
+        def interceptor(request):
+            if request['resourceType'] in ['Image', 'Media']:
+                print(f"Blocked: {request['request']['url']}")
+                if 'postData' in request['request']:
+                    print(f"Blocked Payload: {request['request']['postData']}")
+                return {'cancel': True}
+            
+            print(f"Allowed: {request['request']['url']}")
+            if 'postData' in request['request']:
+                print(f"Allowed Payload: {request['request']['postData']}")
+            return request
+
+        self.driver.request_interceptor = interceptor
+
+        self.driver.get('https://www.example.com')
+        self.driver.implicitly_wait(10)
+
+        page_source = self.driver.page_source
+        print("Page source:", page_source[:500])
+
+        self.close_driver()
+
+    def modify_response_headers(self):
+        self.setup_driver()
+
+        def interceptor(request):
+            if request['request']['url'] == 'https://api.example.com/data':
+                headers = request.get('responseHeaders', {})
+                headers['Custom-Header'] = 'My Custom Value'
+                print(f"Modified Response Headers: {json.dumps(headers, indent=2)}")
+                return {
+                    'interceptResponse': {
+                        'responseHeaders': headers
+                    }
+                }
+            return request
+
+        self.driver.request_interceptor = interceptor
+
+        self.driver.get('https://www.example.com')
+        self.driver.implicitly_wait(10)
+
+        self.close_driver()
+
+    def control_caching(self):
+        self.setup_driver()
+
+        def interceptor(request):
+            headers = request.get('headers', {})
+            headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            request['headers'] = headers
+
+            print(f"URL: {request['url']}")
+            print(f"Modified Headers: {json.dumps(headers, indent=2)}")
+            if 'postData' in request:
+                print(f"Payload: {request['postData']}")
+            else:
+                print("Payload: None")
+            print("---")
+
+            return request
+
+        self.driver.request_interceptor = interceptor
+
+        self.driver.get('https://www.example.com')
+        self.driver.implicitly_wait(10)
+
+        self.close_driver()
+
+    def redirect_requests(self):
+        self.setup_driver()
+
+        def interceptor(request):
+            if request['request']['url'] == 'https://old-api.example.com/data':
+                print(f"Redirecting: {request['request']['url']} to https://new-api.example.com/data")
+                if 'postData' in request['request']:
+                    print(f"Request Payload: {request['request']['postData']}")
+                request['request']['url'] = 'https://new-api.example.com/data'
+            return request
+
+        self.driver.request_interceptor = interceptor
+
+        self.driver.get('https://www.example.com')
+        self.driver.implicitly_wait(10)
+
+        self.close_driver()
+
+    def simulate_network_conditions(self):
+        self.setup_driver()
+
+        self.driver.execute_cdp_cmd('Network.emulateNetworkConditions', {
+            'offline': False,
+            'latency': 100,  # 延迟 (ms)
+            'downloadThroughput': 750 * 1024 / 8,  # 下载速度 (bytes/s)
+            'uploadThroughput': 250 * 1024 / 8  # 上传速度 (bytes/s)
+        })
+
+        start_time = time.time()
+        self.driver.get('https://www.example.com')
+        self.driver.implicitly_wait(30)
+
+        load_time = time.time() - start_time
+        print(f"Page load time: {load_time:.2f} seconds")
+        print("Page title:", self.driver.title)
+
+        self.close_driver()
+
+    def capture_network_traffic(self):
+        self.setup_driver()
+
+        requests = []
+
+        def capture_request(request):
+            requests.append(request)
+
+        self.driver.on('Network.requestWillBeSent', capture_request)
+
+        self.driver.get('https://www.example.com')
+        self.driver.implicitly_wait(10)
+
+        total_size = 0
+        content_types = {}
+
+        for req in requests:
+            url = req['request']['url']
+            method = req['request']['method']
+            size = req['request'].get('bodySize', 0)
+            content_type = req['request']['headers'].get('Content-Type', 'unknown')
+
+            total_size += size
+            content_types[content_type] = content_types.get(content_type, 0) + 1
+
+            print(f"URL: {url}")
+            print(f"Method: {method}")
+            print(f"Size: {size} bytes")
+            print(f"Content-Type: {content_type}")
+            if 'postData' in req['request']:
+                print(f"Payload: {req['request']['postData']}")
+            else:
+                print("Payload: None")
+            print("---")
+
+        print(f"Total requests: {len(requests)}")
+        print(f"Total size: {total_size} bytes")
+        print("Content type distribution:")
+        for ctype, count in content_types.items():
+            print(f"  {ctype}: {count}")
+
+        self.close_driver()
+
+if __name__ == "__main__":
+    interceptor = NetworkInterceptor()
+    
+    print("1. Intercepting all network requests")
+    interceptor.intercept_network_requests()
+    
+    print("\n2. Modifying User-Agent")
+    interceptor.modify_user_agent()
+    
+    print("\n3. Modifying response content")
+    interceptor.modify_response_content()
+    
+    print("\n4. Simulating network error")
+    interceptor.simulate_network_error()
+    
+    print("\n5. Blocking specific resources")
+    interceptor.block_specific_resources()
+    
+    print("\n6. Modifying response headers")
+    interceptor.modify_response_headers()
+    
+    print("\n7. Controlling cache")
+    interceptor.control_caching()
+    
+    print("\n8. Redirecting requests")
+    interceptor.redirect_requests()
+    
+    print("\n9. Simulating network conditions")
+    interceptor.simulate_network_conditions()
+    
+    print("\n10. Capturing and analyzing network traffic")
+    interceptor.capture_network_traffic()
+```
+
+这个完整版本包含了一个 `NetworkInterceptor` 类，其中包括了所有之前讨论过的场景。每个方法都对应一个特定的网络拦截场景，并在适当的地方添加了 payload 打印功能。
+
+要使用这个脚本，您只需要运行它，它会依次执行所有的场景。您可以根据需要注释掉不需要的场景，或者修改 URL 和其他参数以适应您的具体需求。
+
+请注意，这个脚本假设您已经安装了所有必要的依赖（selenium、webdriver_manager）。如果还没有安装，可以使用以下命令安装：
+
+```
+pip install selenium webdriver-manager
+```
+
+此外，请确保您的系统中已安装了 Google Chrome 浏览器。这个脚本使用 Chrome 浏览器进行所有的网络拦截操作。
+

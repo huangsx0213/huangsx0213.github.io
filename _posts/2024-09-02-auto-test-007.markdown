@@ -1,0 +1,316 @@
+---
+layout:     post
+title:      "Java、Cucumber和Serenity BDD实现UI和API自动化测试"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-09-03 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+
+
+# Java、Cucumber和Serenity BDD实现UI和API自动化测试
+
+使用Java、Cucumber和Serenity BDD实现UI和API自动化测试的最佳实践。这是一个强大的组合，可以帮助您创建可读性强、可维护的自动化测试框架。我将为您提供详细的代码示例和解释。
+
+1. 首先，看看项目的基本结构：
+```
+src
+├── main
+│   └── java
+│       └── com
+│           └── example
+│               ├── pages
+│               │   ├── BasePage.java
+│               │   ├── HomePage.java
+│               │   └── LoginPage.java
+│               └── api
+│                   ├── ApiClient.java
+│                   └── UserApi.java
+└── test
+    ├── java
+    │   └── com
+    │       └── example
+    │           ├── steps
+    │           │   ├── BaseSteps.java
+    │           │   ├── UISteps.java
+    │           │   └── ApiSteps.java
+    │           ├── config
+    │           │   └── TestConfig.java
+    │           ├── utils
+    │           │   └── ApiTestUtils.java
+    │           ├── hooks
+    │           │   └── SmokeTestHooks.java
+    │           ├── plugins
+    │           │   └── SmokeTestPlugin.java
+    │           └── CucumberTestRunner.java
+    └── resources
+        ├── features
+        │   ├── ui_test.feature
+        │   └── api_test.feature
+        ├── api_config
+        │   ├── endpoints.json
+        │   ├── headers.json
+        │   └── bodies
+        │       ├── create_user.json
+        │       └── update_user.json
+        ├── serenity.conf
+        └── test_data.json
+```
+
+2. 创建 `SmokeTestPlugin.java`:
+
+```java
+package com.example.plugins;
+
+import io.cucumber.plugin.EventListener;
+import io.cucumber.plugin.event.*;
+
+public class SmokeTestPlugin implements EventListener {
+    private static boolean smokeTestFailed = false;
+
+    @Override
+    public void setEventPublisher(EventPublisher publisher) {
+        publisher.registerHandlerFor(TestCaseFinished.class, this::handleTestCaseFinished);
+    }
+
+    private void handleTestCaseFinished(TestCaseFinished event) {
+        if (event.getTestCase().getTags().contains("@smoke") && event.getResult().getStatus() == Status.FAILED) {
+            smokeTestFailed = true;
+        }
+    }
+
+    public static boolean hasSmokeTestFailed() {
+        return smokeTestFailed;
+    }
+}
+```
+
+3. 创建 `SmokeTestHooks.java`:
+
+```java
+package com.example.hooks;
+
+import com.example.plugins.SmokeTestPlugin;
+import io.cucumber.java.Before;
+import org.junit.Assume;
+
+public class SmokeTestHooks {
+
+    @Before(order = 1, value = "not @smoke")
+    public void skipTestsAfterSmokeTestFailure() {
+        Assume.assumeFalse("Skipping test due to smoke test failure", SmokeTestPlugin.hasSmokeTestFailed());
+    }
+}
+```
+
+4. 更新 `CucumberTestRunner.java`:
+
+```java
+package com.example;
+
+import io.cucumber.junit.CucumberOptions;
+import net.serenitybdd.cucumber.CucumberWithSerenity;
+import org.junit.runner.RunWith;
+
+@RunWith(CucumberWithSerenity.class)
+@CucumberOptions(
+    features = "src/test/resources/features",
+    glue = {"com.example.steps", "com.example.hooks"},
+    plugin = {"com.example.plugins.SmokeTestPlugin"},
+    tags = "not @ignore"
+)
+public class CucumberTestRunner {}
+```
+
+5. 更新 `ui_test.feature`:
+
+```gherkin
+Feature: UI Test
+
+@smoke @ui
+Scenario: User can access the home page
+  Given the user is on the home page
+  Then the user should see the welcome message
+
+@ui @regression
+Scenario Outline: User can login successfully
+  Given the user is on the login page
+  When the user logs in with username "<username>" and password "<password>"
+  Then the user should see the welcome message "Welcome, <username>!"
+
+  Examples:
+    | username | password |
+    | user1    | pass1    |
+    | user2    | pass2    |
+```
+
+6. 更新 `api_test.feature`:
+
+```gherkin
+Feature: API Test
+
+@smoke @api
+Scenario: Health check API is accessible
+  When I send a GET request to the health check endpoint
+  Then the response status code should be 200
+
+@api @regression
+Scenario: User can retrieve user information
+  When I request user information for user ID "123"
+  Then the response status code should be 200
+  And the response should contain user name "John Doe"
+
+@api @regression
+Scenario: User can create a new user
+  When I create a new user with the following details:
+    | name  | email           | age |
+    | Alice | alice@email.com | 30  |
+  Then the response status code should be 201
+  And the response should contain user name "Alice"
+```
+
+7. 更新 `ApiSteps.java` 以包含健康检查步骤：
+
+```java
+package com.example.steps;
+
+import com.example.api.UserApi;
+import io.cucumber.java.en.When;
+import io.cucumber.java.en.Then;
+import io.restassured.response.Response;
+import net.thucydides.core.annotations.Steps;
+import org.junit.Assert;
+
+import java.util.Map;
+
+public class ApiSteps {
+    @Steps
+    UserApi userApi;
+
+    private Response response;
+
+    @When("I send a GET request to the health check endpoint")
+    public void sendHealthCheckRequest() {
+        response = userApi.healthCheck();
+    }
+
+    @When("I request user information for user ID {string}")
+    public void requestUserInformation(String userId) {
+        response = userApi.getUserById(userId);
+    }
+
+    @When("I create a new user with the following details:")
+    public void createNewUser(Map<String, String> userDetails) {
+        response = userApi.createUser(userDetails);
+    }
+
+    @Then("the response status code should be {int}")
+    public void verifyResponseStatusCode(int expectedStatusCode) {
+        Assert.assertEquals(expectedStatusCode, response.getStatusCode());
+    }
+
+    @Then("the response should contain user name {string}")
+    public void verifyUserName(String expectedName) {
+        String actualName = response.jsonPath().getString("name");
+        Assert.assertEquals(expectedName, actualName);
+    }
+}
+```
+
+8. 更新 `UserApi.java` 以包含健康检查方法：
+
+```java
+package com.example.api;
+
+import com.example.utils.ApiTestUtils;
+import io.restassured.response.Response;
+import java.util.Map;
+
+public class UserApi {
+    private final ApiClient apiClient;
+
+    public UserApi(ApiClient apiClient) {
+        this.apiClient = apiClient;
+    }
+
+    public Response healthCheck() {
+        String endpoint = ApiTestUtils.getEndpoint("health_check");
+        Map<String, String> headers = ApiTestUtils.getHeaders("default");
+        return apiClient.sendRequest("GET", endpoint, headers, null);
+    }
+
+    public Response getUserById(String userId) {
+        String endpoint = ApiTestUtils.getEndpoint("get_user_by_id", userId);
+        Map<String, String> headers = ApiTestUtils.getHeaders("default");
+        return apiClient.sendRequest("GET", endpoint, headers, null);
+    }
+
+    public Response createUser(Map<String, Object> userData) {
+        String endpoint = ApiTestUtils.getEndpoint("create_user");
+        Map<String, String> headers = ApiTestUtils.getHeaders("default");
+        Object body = ApiTestUtils.getRequestBody("create_user", userData);
+        return apiClient.sendRequest("POST", endpoint, headers, body);
+    }
+
+    // Add more methods for other API operations
+}
+```
+
+9. 更新 `endpoints.json` 以包含健康检查端点：
+
+```json
+{
+  "health_check": "/health",
+  "get_user_by_id": "/users/%s",
+  "create_user": "/users",
+  "update_user": "/users/%s",
+  "delete_user": "/users/%s"
+}
+```
+
+这个更新后的框架现在包含了smoke test失败时跳过后续所有测试的功能。以下是主要的变化和改进：
+
+1. **SmokeTestPlugin**: 
+   - 这个自定义的Cucumber插件监听测试事件。
+   - 当带有@smoke标签的测试失败时，它会设置一个标志。
+
+2. **SmokeTestHooks**: 
+   - 这个类包含一个Before钩子，它在每个非smoke测试之前运行。
+   - 如果smoke测试已经失败，它会使用JUnit的Assume.assumeFalse()来跳过测试。
+
+3. **更新的特性文件**:
+   - 在UI和API测试中都添加了smoke测试场景。
+   - 使用@smoke标签标记了关键的测试场景。
+
+4. **健康检查API**:
+   - 添加了一个简单的健康检查API测试作为smoke测试的一部分。
+
+5. **CucumberTestRunner**:
+   - 更新以包含自定义插件和钩子。
+
+使用这个框架的主要优势包括：
+
+1. **快速失败**：如果smoke测试失败，后续的测试将被跳过，节省时间和资源。
+2. **清晰的测试分类**：使用@smoke和@regression标签清晰地分类测试。
+3. **灵活的配置**：仍然保持了之前的灵活API配置。
+4. **改进的测试流程**：通过添加健康检查API测试，确保基本的系统可用性。
+
+要运行测试，您可以使用以下Maven命令：
+
+```
+mvn clean verify
+```
+
+如果只想运行smoke测试：
+
+```
+mvn clean verify -Dcucumber.filter.tags="@smoke"
+```
+
+这个更新后的框架为您提供了一个强大、灵活且高效的自动化测试解决方案，特别适合在持续集成/持续部署（CI/CD）环境中使用。它允许您快速识别关键问题，同时保持测试套件的全面性和可维护性。
