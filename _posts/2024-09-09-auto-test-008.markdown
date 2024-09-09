@@ -1,0 +1,226 @@
+---
+layout:     post
+title:      "Cucumber如何在pipline中选择指定的测试用例运行"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-09-09 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+
+
+# Cucumber如何在pipline中选择指定的测试用例运行
+
+在CI/CD管道中选择并运行指定的测试用例对于优化测试执行时间和资源至关重要。以下是在CI/CD管道中实现这一目标的几种方法，以Java + Cucumber + Serenity BDD框架为例：
+
+### 1. 使用标签来选择测试用例
+
+Cucumber允许使用标签来组织和选择测试用例。您可以通过为特定的场景或功能文件添加标签，并在管道中配置只运行带有特定标签的测试。
+
+#### 在Feature文件中使用标签：
+
+```gherkin
+@smoke
+Scenario: Verify user login via UI
+  Given I am on the login page
+  When I enter valid credentials
+  Then I should be logged in successfully
+
+@regression
+Scenario: Verify user registration via API
+  Given I send a POST request to create a user
+  Then the response status code should be 201
+```
+
+#### 配置TestRunner类来选择特定标签的测试：
+
+```java
+import io.cucumber.junit.CucumberOptions;
+import net.serenitybdd.cucumber.CucumberWithSerenity;
+import org.junit.runner.RunWith;
+
+@RunWith(CucumberWithSerenity.class)
+@CucumberOptions(
+    plugin = {"pretty"},
+    features = "src/test/resources/features",
+    glue = "com.example.steps",
+    tags = "@smoke"
+)
+public class SmokeTestRunner {}
+```
+
+### 2. 使用环境变量来动态选择测试标签
+
+在CI/CD管道中，通过设置环境变量来动态选择要运行的测试标签。
+
+#### 修改TestRunner类以读取环境变量：
+
+```java
+@RunWith(CucumberWithSerenity.class)
+@CucumberOptions(
+    plugin = {"pretty"},
+    features = "src/test/resources/features",
+    glue = "com.example.steps",
+    tags = System.getProperty("cucumber.filter.tags", "@smoke")
+)
+public class CustomTestRunner {}
+```
+
+#### 在管道脚本中设置环境变量：
+
+对于Jenkins：
+
+```groovy
+pipeline {
+    agent any
+    environment {
+        TEST_TAGS = "@smoke"
+    }
+    stages {
+        stage('Run Tests') {
+            steps {
+                script {
+                    mvn clean verify -Dcucumber.filter.tags="${env.TEST_TAGS}"
+                }
+            }
+        }
+    }
+}
+```
+
+对于GitLab CI/CD：
+
+```yaml
+stages:
+  - test
+
+test:
+  stage: test
+  script:
+    - mvn clean verify -Dcucumber.filter.tags="@smoke"
+```
+
+### 3. 使用配置文件来选择测试
+
+另一种方法是使用配置文件来选择要运行的测试。
+
+#### 创建多个配置文件：
+
+`src/test/resources/config/smoke-test.properties`：
+
+```properties
+cucumber.filter.tags=@smoke
+```
+
+`src/test/resources/config/regression-test.properties`：
+
+```properties
+cucumber.filter.tags=@regression
+```
+
+#### 修改TestRunner类以读取配置文件：
+
+```java
+@RunWith(CucumberWithSerenity.class)
+@CucumberOptions(
+    plugin = {"pretty"},
+    features = "src/test/resources/features",
+    glue = "com.example.steps",
+    tags = System.getProperty("cucumber.filter.tags")
+)
+public class CustomTestRunner {}
+```
+
+#### 在管道脚本中指定配置文件：
+
+对于Jenkins：
+
+```groovy
+pipeline {
+    agent any
+    environment {
+        CONFIG_FILE = "src/test/resources/config/smoke-test.properties"
+    }
+    stages {
+        stage('Run Tests') {
+            steps {
+                script {
+                    def properties = new Properties()
+                    properties.load(new FileInputStream(env.CONFIG_FILE))
+                    def tags = properties.getProperty("cucumber.filter.tags")
+                    mvn clean verify -Dcucumber.filter.tags="${tags}"
+                }
+            }
+        }
+    }
+}
+```
+
+对于GitLab CI/CD：
+
+```yaml
+stages:
+  - test
+
+test:
+  stage: test
+  script:
+    - export CONFIG_FILE="src/test/resources/config/smoke-test.properties"
+    - export TEST_TAGS=$(grep 'cucumber.filter.tags' $CONFIG_FILE | cut -d '=' -f2)
+    - mvn clean verify -Dcucumber.filter.tags="${TEST_TAGS}"
+```
+
+### 4. 使用命令行参数来选择测试
+
+您还可以直接在命令行中通过传递参数来选择要运行的测试。
+
+#### 修改TestRunner类以读取命令行参数：
+
+```java
+@RunWith(CucumberWithSerenity.class)
+@CucumberOptions(
+    plugin = {"pretty"},
+    features = "src/test/resources/features",
+    glue = "com.example.steps",
+    tags = System.getProperty("cucumber.filter.tags")
+)
+public class CustomTestRunner {}
+```
+
+#### 在管道脚本中传递命令行参数：
+
+对于Jenkins：
+
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Run Tests') {
+            steps {
+                script {
+                    mvn clean verify -Dcucumber.filter.tags="@smoke"
+                }
+            }
+        }
+    }
+}
+```
+
+对于GitLab CI/CD：
+
+```yaml
+stages:
+  - test
+
+test:
+  stage: test
+  script:
+    - mvn clean verify -Dcucumber.filter.tags="@smoke"
+```
+
+通过使用标签、环境变量、配置文件或命令行参数，您可以在CI/CD管道中灵活选择和运行指定的测试用例。这些方法不仅能够提高测试执行的效率，还能够使测试管理更加灵活和可维护。
