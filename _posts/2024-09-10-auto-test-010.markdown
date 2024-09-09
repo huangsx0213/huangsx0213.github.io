@@ -1,0 +1,897 @@
+---
+layout:     post
+title:      "理解如何构建和运行Java + Cucumber + Serenity BDD框架2"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-09-10 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+
+
+# 理解如何构建和运行Java + Cucumber + Serenity BDD框架2
+
+本教程详细讲解了如何构建并运行基于Java、Cucumber和Serenity BDD的自动化测试框架。通过采用分层架构，教程展示了如何将业务逻辑和测试步骤分离、提高代码复用性和可维护性。同时，教程还介绍了如何使用Apache POI库读取Excel文件中的测试数据，并结合Serenity的强大功能生成详细的测试报告。此外，教程特别说明了如何通过标签和环境变量动态选择测试用例，从而灵活地管理和运行测试。本教程旨在帮助开发者和测试工程师构建高效、可维护的自动化测试框架，并通过实际代码示例和详细解释，确保每个步骤都易于理解和实现。
+
+### 一、运行原理
+
+1. **Cucumber**：使用Gherkin语言编写行为驱动开发（BDD）测试用例。每个用例包含步骤定义，这些步骤定义映射到Java方法。
+2. **Serenity**：扩展了Cucumber，提供更好的报告功能，并集成了WebDriver进行UI测试。Serenity还提供了丰富的注解和方法，使测试编写更加简洁和高效。
+3. **JUnit**：作为测试运行器，运行Cucumber测试用例并生成报告。
+4. **Apache POI**：用于读取Excel文件中的测试数据。
+
+### 二、项目文件结构
+
+```plaintext
+serenity-cucumber-demo/
+├── pom.xml
+├── src/
+│   ├── main/
+│   │   └── java/
+│   │       └── com/
+│   │           └── example/
+│   │               └── MyApplication.java
+│   ├── test/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── example/
+│   │   │           ├── steps/
+│   │   │           │   ├── ApiSteps.java
+│   │   │           │   ├── UiSteps.java
+│   │   │           │   └── Hooks.java
+│   │   │           ├── pages/
+│   │   │           │   └── LoginPage.java
+│   │   │           ├── runners/
+│   │   │           │   └── TestRunner.java
+│   │   │           ├── actions/
+│   │   │           │   └── LoginActions.java
+│   │   │           └── utils/
+│   │   │               └── ExcelUtils.java
+│   │   └── resources/
+│   │       ├── features/
+│   │       │   ├── login.feature
+│   │       │   └── user.feature
+│   │       ├── testdata/
+│   │       │   └── testdata.xlsx
+│   │       └── serenity.conf
+└── target/
+    └── ... (built files and reports)
+```
+
+### 三、主要文件和目录解释
+
+- **pom.xml**：Maven项目的配置文件，定义了依赖、插件和构建配置。
+- **src/main/java**：应用程序的主代码。
+- **src/test/java**：测试代码，包括步骤定义、页面对象、业务逻辑和测试运行器。
+  - **steps/**：存放Cucumber步骤定义和钩子。
+    - **ApiSteps.java**：API测试步骤定义。
+    - **UiSteps.java**：UI测试步骤定义。
+    - **Hooks.java**：前置和后置条件的钩子。
+  - **pages/**：存放页面对象类。
+    - **LoginPage.java**：登录页面对象。
+  - **runners/**：存放测试运行器类。
+    - **TestRunner.java**：Cucumber测试运行器。
+  - **actions/**：存放业务逻辑类，用于封装重复的操作步骤。
+    - **LoginActions.java**：登录操作类。
+  - **utils/**：存放工具类，例如读取Excel文件的类。
+    - **ExcelUtils.java**：读取Excel文件的工具类。
+- **src/test/resources**：资源文件，包括功能文件和配置文件。
+  - **features/**：存放Cucumber功能文件。
+    - **login.feature**：登录功能的Cucumber场景。
+    - **user.feature**：用户功能的Cucumber场景。
+  - **testdata/**：存放测试数据文件，例如Excel文件。
+    - **testdata.xlsx**：测试数据文件。
+  - **serenity.conf**：Serenity BDD的配置文件。
+- **target/**：Maven构建输出目录，包含生成的测试报告。
+
+### 四、配置Pom.xml
+
+打开`pom.xml`文件，添加以下依赖：
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://www.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>serenity-cucumber-demo</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <properties>
+        <serenity.version>3.3.0</serenity.version>
+        <cucumber.version>6.10.4</cucumber.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+    </properties>
+    <dependencies>
+        <!-- Serenity dependencies -->
+        <dependency>
+            <groupId>net.serenity-bdd</groupId>
+            <artifactId>serenity-core</artifactId>
+            <version>${serenity.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.serenity-bdd</groupId>
+            <artifactId>serenity-junit5</artifactId>
+            <version>${serenity.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.serenity-bdd</groupId>
+            <artifactId>serenity-cucumber6</artifactId>
+            <version>${serenity.version}</version>
+        </dependency>
+        <!-- Cucumber dependencies -->
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-java</artifactId>
+            <version>${cucumber.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit</artifactId>
+            <version>${cucumber.version}</version>
+        </dependency>
+        <!-- Selenium dependencies -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>3.141.59</version>
+        </dependency>
+        <!-- Apache POI dependencies -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.0.0</version>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <!-- Maven Surefire Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+            <!-- Serenity Maven Plugin -->
+            <plugin>
+                <groupId>net.serenity-bdd.maven.plugins</groupId>
+                <artifactId>serenity-maven-plugin</artifactId>
+                <version>${serenity.version}</version>
+                <executions>
+                    <execution>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>aggregate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+```
+
+### 五、编写业务逻辑层
+
+业务逻辑层抽象出复杂的操作步骤，使其可以在多个测试场景中复用。这样不仅提高了代码的可读性和可维护性，也使得测试步骤更加简洁。
+
+#### 代码示例：LoginActions.java
+
+```java
+package com.example.actions;
+
+import com.example.pages.LoginPage;
+import net.thucydides.core.annotations.Step;
+
+public class LoginActions {
+
+    LoginPage loginPage;
+
+    @Step("Open the login page")
+    public void openLoginPage() {
+        loginPage.open();
+    }
+
+    @Step("Enter username {0}")
+    public void enterUsername(String username) {
+        loginPage.enterUsername(username);
+    }
+
+    @Step("Enter password {0}")
+    public void enterPassword(String password) {
+        loginPage.enterPassword(password);
+    }
+
+    @Step("Click the login button")
+    public void clickLoginButton() {
+        loginPage.clickLoginButton();
+    }
+
+    @Step("Wait for login button to be visible")
+    public void waitForLoginButton() {
+        loginPage.waitForLoginButton();
+    }
+
+    @Step("Check if login is successful")
+    public boolean isLoginSuccessful() {
+        return loginPage.isLoginSuccessful();
+    }
+}
+```
+
+**原理说明**：
+- **业务逻辑层**：将复杂的操作步骤封装为独立的方法，使测试步骤更简洁，并提高代码复用性。
+- **Serenity的`@Step`注解**：`@Step`注解可以自动记录步骤信息，生成详细的测试报告。
+
+### 六、编写步骤定义
+
+步骤定义类将Cucumber的Gherkin语法步骤映射到实际的Java方法中。通过调用业务逻辑层的方法，步骤定义类将具体的操作逻辑委托给业务逻辑层，从而实现代码的复用和逻辑的分离。
+
+#### 代码示例：UiSteps.java
+
+```java
+package com.example.steps;
+
+import com.example.actions.LoginActions;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.When;
+import io.cucumber.java.en.Then;
+import net.thucydides.core.annotations.Steps;
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class UiSteps {
+
+    @Steps
+    LoginActions loginActions;
+
+    @Given("I am on the login page")
+    public void iAmOnTheLoginPage() {
+        loginActions.openLoginPage();
+    }
+
+    @When("I enter username {string} and password {string}")
+    public void iEnterCredentials(String username, String password) {
+        loginActions.enterUsername(username);
+        loginActions.enterPassword(password);
+        loginActions.clickLoginButton();
+    }
+
+    @Then("I should be logged in successfully")
+    public void iShouldBeLoggedInSuccessfully() {
+        //等待登录按钮可见
+        loginActions.waitForLoginButton();
+        //验证登录是否成功
+        assertThat(loginActions.isLoginSuccessful()).isTrue();
+    }
+}
+```
+
+**原理说明**：
+- **步骤定义**：步骤定义类映射Cucumber步骤到具体的业务逻辑方法。
+- **Serenity的`@Steps`注解**：`@Steps`注解用于注入业务逻辑类实例，使得步骤定义类可以方便地调用业务逻辑层的方法。
+
+### 七、编写Page Object
+
+Page Object模式将页面元素和操作方法封装到一个类中，提高了代码复用性和可维护性。
+
+#### 代码示例：LoginPage.java
+
+```java
+package com.example.pages;
+
+import net.serenitybdd.core.pages.PageObject;
+import net.thucydides.core.annotations.DefaultUrl;
+import org.openqa.selenium.By;
+
+@DefaultUrl("https://example.com/login")
+public class LoginPage extends PageObject {
+
+    private By usernameField = By.id("username");
+    private By passwordField = By.id("password");
+    private By loginButton = By.id("login-button");
+
+    public void enterUsername(String username) {
+        $(usernameField).type(username);
+    }
+
+    public void enterPassword(String password) {
+        $(passwordField).type(password);
+    }
+
+    public void clickLoginButton() {
+        $(loginButton).click();
+    }
+
+    // 等待登录按钮可见
+    public void waitForLoginButton() {
+        $(loginButton).waitUntilVisible();
+    }
+
+    // 检查是否成功登录
+    public boolean isLoginSuccessful() {
+        // 这里可以检查一些登录成功后的元素是否存在，假设有一个欢迎信息元素
+        By welcomeMessage = By.id("welcome-message");
+        return $(welcomeMessage).isPresent();
+    }
+}
+```
+
+**原理说明**：
+- **Page Object**：封装页面元素和操作方法，提高代码复用性和可维护性。
+- **Serenity的`PageObject`类**：提供便捷方法如`$()`用于元素查找和操作。
+- **Serenity的等待方法**：如`waitUntilVisible()`用于等待元素变得可见，`isPresent()`用于检查元素是否存在。
+
+### 八、编写Feature文件
+
+在`src/test/resources/features`下创建一个名为`login.feature`的文件，并添加以下内容：
+
+```gherkin
+Feature: User Login
+
+  Scenario Outline: Successful login with valid credentials
+    Given I am on the login page
+    When I enter username "<username>" and password "<password>"
+    Then I should be logged in successfully
+
+  Examples:
+    | username | password |
+    | user1    | pass1    |
+    | user2    | pass2    |
+```
+
+**原理说明**：
+- **Feature文件**：使用Gherkin语法编写，描述测试场景和步骤。支持参数化测试，通过Examples表格提供不同的输入数据。
+
+### 九、配置Serenity
+
+在`src/test/resources`下创建一个名为`serenity.conf`的文件：
+
+```hocon
+serenity {
+  project.name = "My Test Automation Project"
+  take.screenshots = AFTER_EACH_STEP
+}
+
+webdriver {
+  driver = chrome
+  autodownload = true
+}
+
+headless.mode = true
+```
+
+**原理说明**：
+- **Serenity配置文件**：配置Serenity的项目名称、截图策略和WebDriver设置。支持自动下载WebDriver并设置无头模式。
+
+### 十、编写测试运行器
+
+在`src/test/java/com/example/runners`下创建一个名为`TestRunner.java`的文件：
+
+```java
+package com.example.runners;
+
+import io.cucumber.junit.CucumberOptions;
+import net.serenitybdd.cucumber.CucumberWithSerenity;
+import org.junit.runner.RunWith;
+
+@RunWith(CucumberWithSerenity.class)
+@CucumberOptions(
+    plugin = {"pretty"},
+    features = "src/test/resources/features",
+    glue = "com.example.steps",
+    tags = System.getProperty("cucumber.filter.tags", "@smoke")
+)
+public class TestRunner {}
+```
+
+### 动态选择测试用例
+
+我们可以通过使用标签和环境变量来动态选择测试用例。
+
+#### 使用标签
+
+在Feature文件中使用标签来标记测试用例。
+
+```gherkin
+@smoke
+Feature: User Login
+
+  Scenario Outline: Successful login with valid credentials
+    Given I am on the login page
+    When I enter username "<username>" and password "<password>"
+    Then I should be logged in successfully
+
+  Examples:
+    | username | password |
+    | user1    | pass1    |
+    | user2    | pass2    |
+```
+
+在测试运行器中使用`tags`参数来选择特定标签的测试用例。
+
+```java
+@RunWith(CucumberWithSerenity.class)
+@CucumberOptions(
+    plugin = {"pretty"},
+    features = "src/test/resources/features",
+    glue = "com.example.steps",
+    tags = "@smoke"
+)
+public class TestRunner {}
+```
+
+#### 使用环境变量
+
+我们可以通过设置环境变量来动态选择要运行的测试用例。
+
+修改`TestRunner.java`以读取环境变量：
+
+```java
+@RunWith(CucumberWithSerenity.class)
+@CucumberOptions(
+    plugin = {"pretty"},
+    features = "src/test/resources/features",
+    glue = "com.example.steps",
+    tags = System.getProperty("cucumber.filter.tags", "@smoke")
+)
+public class TestRunner {}
+```
+
+在命令行中设置环境变量并运行测试：
+
+```sh
+mvn clean verify -Dcucumber.filter.tags="@regression"
+```
+
+**原理说明**：
+- **标签**：通过在Feature文件中使用标签，可以灵活地选择和运行特定的测试用例。
+- **环境变量**：通过在命令行中设置环境变量，可以动态地选择要运行的测试用例，避免修改代码。
+
+### 十一、使用Excel作为测试数据源
+
+在`src/test/resources/testdata`目录下创建一个Excel文件，例如`testdata.xlsx`，并添加以下数据：
+
+```
+| username | password |
+| user1    | pass1    |
+| user2    | pass2    |
+```
+
+创建工具类读取Excel文件
+
+在`src/test/java/com/example/utils`下创建一个名为`ExcelUtils.java`的文件：
+
+```java
+package com.example.utils;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+public class ExcelUtils {
+
+    public static List<String[]> getTestData(String filePath, String sheetName) {
+        List<String[]> data = new ArrayList<>();
+        try (FileInputStream fis = new FileInputStream(filePath);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+            Sheet sheet = workbook.getSheet(sheetName);
+            for (Iterator<Row> rowIterator = sheet.iterator(); rowIterator.hasNext(); ) {
+                Row row = rowIterator.next();
+                if (row.getRowNum() == 0) continue; // skip header row
+                String username = row.getCell(0).getStringCellValue();
+                String password = row.getCell(1).getStringCellValue();
+                data.add(new String[]{username, password});
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return data;
+    }
+}
+```
+
+**原理说明**：
+- **工具类**：读取Excel文件中的数据，将其转换为Java对象供测试使用。
+- **Apache POI库**：用于操作Excel文件，提供了丰富的API来读取和写入Excel数据。
+
+### 十二、运行测试
+
+1. **通过IDE运行**：
+   - 右键点击`TestRunner.java`文件，选择`Run 'TestRunner'`。
+
+2. **通过Maven运行**：
+   - 打开终端，导航到项目根目录，运行以下命令：
+     ```sh
+     mvn clean verify
+     ```
+
+### 十三、生成测试报告
+
+Serenity会在`target/site/serenity`目录下生成详细的测试报告。用浏览器打开`index.html`文件即可查看测试结果。
+
+
+
+### 十四、流程图
+
+以下是简化的流程图，展示了测试运行的主要步骤：
+
+```plaintext
++-------------------+
+| Run TestRunner.java|
++---------+---------+
+          |
+          v
++-------------------------------+
+| Parse feature files (.feature)|
++-------------------------------+
+          |
+          v
++-------------------------------+
+| Find step definitions        |
+| (@Given, @When, @Then)       |
++-------------------------------+
+          |
+          v
++-------------------------------+
+| Execute step definitions      |
+| (Call page objects or APIs)   |
++-------------------------------+
+          |
+          v
++-------------------------------+
+| Interact with Page Objects    |
+| (UI steps)                    |
++-------------------------------+
+          |
+          v
++-------------------------------+
+| Generate Serenity Report     |
+| (HTML, JSON)                 |
++-------------------------------+
+```
+
+### 十五、示例代码总结
+
+#### 1. `pom.xml`
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://www.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>serenity-cucumber-demo</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <properties>
+        <serenity.version>3.3.0</serenity.version>
+        <cucumber.version>6.10.4</cucumber.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+    </properties>
+    <dependencies>
+        <!-- Serenity dependencies -->
+        <dependency>
+            <groupId>net.serenity-bdd</groupId>
+            <artifactId>serenity-core</artifactId>
+            <version>${serenity.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.serenity-bdd</groupId>
+            <artifactId>serenity-junit5</artifactId>
+            <version>${serenity.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.serenity-bdd</groupId>
+            <artifactId>serenity-cucumber6</artifactId>
+            <version>${serenity.version}</version>
+        </dependency>
+        <!-- Cucumber dependencies -->
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-java</artifactId>
+            <version>${cucumber.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit</artifactId>
+            <version>${cucumber.version}</version>
+        </dependency>
+        <!-- Selenium dependencies -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>3.141.59</version>
+        </dependency>
+        <!-- Apache POI dependencies -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.0.0</version>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <!-- Maven Surefire Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+            <!-- Serenity Maven Plugin -->
+            <plugin>
+                <groupId>net.serenity-bdd.maven.plugins</groupId>
+                <artifactId>serenity-maven-plugin</artifactId>
+                <version>${serenity.version}</version>
+                <executions>
+                    <execution>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>aggregate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+```
+
+#### 2. `TestRunner.java`
+
+```java
+package com.example.runners;
+
+import io.cucumber.junit.CucumberOptions;
+import net.serenitybdd.cucumber.CucumberWithSerenity;
+import org.junit.runner.RunWith;
+
+@RunWith(CucumberWithSerenity.class)
+@CucumberOptions(
+    plugin = {"pretty"},
+    features = "src/test/resources/features",
+    glue = "com.example.steps",
+    tags = System.getProperty("cucumber.filter.tags", "@smoke")
+)
+public class TestRunner {}
+```
+
+#### 3. `LoginPage.java`
+
+```java
+package com.example.pages;
+
+import net.serenitybdd.core.pages.PageObject;
+import net.thucydides.core.annotations.DefaultUrl;
+import org.openqa.selenium.By;
+
+@DefaultUrl("https://example.com/login")
+public class LoginPage extends PageObject {
+
+    private By usernameField = By.id("username");
+    private By passwordField = By.id("password");
+    private By loginButton = By.id("login-button");
+
+    public void enterUsername(String username) {
+        $(usernameField).type(username);
+    }
+
+    public void enterPassword(String password) {
+        $(passwordField).type(password);
+    }
+
+    public void clickLoginButton() {
+        $(loginButton).click();
+    }
+
+    // 等待登录按钮可见
+    public void waitForLoginButton() {
+        $(loginButton).waitUntilVisible();
+    }
+
+    // 检查是否成功登录
+    public boolean isLoginSuccessful() {
+        // 这里可以检查一些登录成功后的元素是否存在，假设有一个欢迎信息元素
+        By welcomeMessage = By.id("welcome-message");
+        return $(welcomeMessage).isPresent();
+    }
+}
+```
+
+#### 4. `LoginActions.java`
+
+```java
+package com.example.actions;
+
+import com.example.pages.LoginPage;
+import net.thucydides.core.annotations.Step;
+
+public class LoginActions {
+
+    LoginPage loginPage;
+
+    @Step("Open the login page")
+    public void openLoginPage() {
+        loginPage.open();
+    }
+
+    @Step("Enter username {0}")
+    public void enterUsername(String username) {
+        loginPage.enterUsername(username);
+    }
+
+    @Step("Enter password {0}")
+    public void enterPassword(String password) {
+        loginPage.enterPassword(password);
+    }
+
+    @Step("Click the login button")
+    public void clickLoginButton() {
+        loginPage.clickLoginButton();
+    }
+
+    @Step("Wait for login button to be visible")
+    public void waitForLoginButton() {
+        loginPage.waitForLoginButton();
+    }
+
+    @Step("Check if login is successful")
+    public boolean isLoginSuccessful() {
+        return loginPage.isLoginSuccessful();
+    }
+}
+```
+
+#### 5. `UiSteps.java`
+
+```java
+package com.example.steps;
+
+import com.example.actions.LoginActions;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.When;
+import io.cucumber.java.en.Then;
+import net.thucydides.core.annotations.Steps;
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class UiSteps {
+
+    @Steps
+    LoginActions loginActions;
+
+    @Given("I am on the login page")
+    public void iAmOnTheLoginPage() {
+        loginActions.openLoginPage();
+    }
+
+    @When("I enter username {string} and password {string}")
+    public void iEnterCredentials(String username, String password) {
+        loginActions.enterUsername(username);
+        loginActions.enterPassword(password);
+        loginActions.clickLoginButton();
+    }
+
+    @Then("I should be logged in successfully")
+    public void iShouldBeLoggedInSuccessfully() {
+        //等待登录按钮可见
+        loginActions.waitForLoginButton();
+        //验证登录是否成功
+        assertThat(loginActions.isLoginSuccessful()).isTrue();
+    }
+}
+```
+
+#### 6. `ExcelUtils.java`
+
+```java
+package com.example.utils;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+public class ExcelUtils {
+
+    public static List<String[]> getTestData(String filePath, String sheetName) {
+        List<String[]> data = new ArrayList<>();
+        try (FileInputStream fis = new FileInputStream(filePath);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+            Sheet sheet = workbook.getSheet(sheetName);
+            for (Iterator<Row> rowIterator = sheet.iterator(); rowIterator.hasNext(); ) {
+                Row row = rowIterator.next();
+                if (row.getRowNum() == 0) continue; // skip header row
+                String username = row.getCell(0).getStringCellValue();
+                String password = row.getCell(1).getStringCellValue();
+                data.add(new String[]{username, password});
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return data;
+    }
+}
+```
+
+#### 7. `login.feature`
+
+```gherkin
+Feature: User Login
+
+  Scenario Outline: Successful login with valid credentials
+    Given I am on the login page
+    When I enter username "<username>" and password "<password>"
+    Then I should be logged in successfully
+
+  Examples:
+    | username | password |
+    | user1    | pass1    |
+    | user2    | pass2    |
+```
+
+#### 8. `serenity.conf`
+
+```hocon
+serenity {
+  project.name = "My Test Automation Project"
+  take.screenshots = AFTER_EACH_STEP
+}
+
+webdriver {
+  driver = chrome
+  autodownload = true
+}
+
+headless.mode = true
+```
+
+### 十六、运行测试
+
+1. **通过IDE运行**：
+   - 右键点击`TestRunner.java`文件，选择`Run 'TestRunner'`。
+
+2. **通过Maven运行**：
+   - 打开终端，导航到项目根目录，运行以下命令：
+     ```sh
+     mvn clean verify
+     ```
+
+### 十七、生成测试报告
+
+Serenity会在`target/site/serenity`目录下生成详细的测试报告。用浏览器打开`index.html`文件即可查看测试结果。
+
+通过以上详细步骤，您可以成功地构建并运行Java + Cucumber + Serenity BDD框架的自动化测试，采用分层架构来编写测试用例，使得业务逻辑可以更加复用，并结合Serenity的使用说明和具体例子，帮助您更高效地编写测试。如果有任何问题，请随时询问！
