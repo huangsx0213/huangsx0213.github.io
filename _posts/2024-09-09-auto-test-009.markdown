@@ -1,0 +1,272 @@
+---
+layout:     post
+title:      "理解如何构建和运行Java + Cucumber + Serenity BDD框架"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-09-09 12:05:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+
+
+# 理解如何构建和运行Java + Cucumber + Serenity BDD框架
+
+详细解析使用Java + Cucumber + Serenity BDD框架的文件结构，并解释测试运行的流程。以下是一个典型的项目文件结构和运行流程的详细解析。
+
+### 典型的项目文件结构
+
+```
+serenity-cucumber-demo/
+├── pom.xml
+├── src/
+│   ├── main/
+│   │   └── java/
+│   │       └── com/
+│   │           └── example/
+│   │               └── MyApplication.java
+│   ├── test/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── example/
+│   │   │           ├── steps/
+│   │   │           │   ├── ApiSteps.java
+│   │   │           │   ├── UiSteps.java
+│   │   │           │   └── Hooks.java
+│   │   │           ├── pages/
+│   │   │           │   └── LoginPage.java
+│   │   │           └── runners/
+│   │   │               └── TestRunner.java
+│   │   └── resources/
+│   │       ├── features/
+│   │       │   ├── login.feature
+│   │       │   └── user.feature
+│   │       └── serenity.conf
+└── target/
+    └── ... (built files and reports)
+```
+
+### 主要文件和目录解释
+
+- `pom.xml`：Maven项目的配置文件，定义了依赖、插件和构建配置。
+- `src/main/java`：应用程序的主代码。
+- `src/test/java`：测试代码，包括步骤定义、页面对象和测试运行器。
+  - `steps/`：存放Cucumber步骤定义和钩子。
+    - `ApiSteps.java`：API测试步骤定义。
+    - `UiSteps.java`：UI测试步骤定义。
+    - `Hooks.java`：前置和后置条件的钩子。
+  - `pages/`：存放页面对象类。
+    - `LoginPage.java`：登录页面对象。
+  - `runners/`：存放测试运行器类。
+    - `TestRunner.java`：Cucumber测试运行器。
+- `src/test/resources`：资源文件，包括功能文件和配置文件。
+  - `features/`：存放Cucumber功能文件。
+    - `login.feature`：登录功能的Cucumber场景。
+    - `user.feature`：用户功能的Cucumber场景。
+  - `serenity.conf`：Serenity BDD的配置文件。
+- `target/`：Maven构建输出目录，包含生成的测试报告。
+
+### 测试运行的流程
+
+以下是测试运行的详细流程：
+
+1. **运行TestRunner.java**：
+   - 启动测试运行器（例如，右键点击`TestRunner.java`并选择"Run"）。
+   - Cucumber会根据`@CucumberOptions`中的配置找到功能文件和步骤定义。
+
+2. **解析Feature文件**：
+   - Cucumber解析`src/test/resources/features`目录中的`.feature`文件。
+   - 根据Gherkin语法解析场景和步骤。
+
+3. **执行步骤定义**：
+   - Cucumber根据解析的步骤在`src/test/java/com/example/steps`目录中找到对应的步骤定义（如`@Given`、`@When`、`@Then`注解的方法）。
+   - 每个步骤定义会调用相应的页面对象方法或API请求。
+
+4. **与页面对象交互**：
+   - 如果是UI测试，步骤定义会调用页面对象类（如`LoginPage`）的方法进行页面操作。
+   - 页面对象类使用Serenity的`PageObject`类和Selenium库与浏览器进行交互。
+
+5. **生成测试报告**：
+   - 测试执行完成后，Serenity会生成详细的测试报告。
+   - 报告包含测试执行结果、步骤截图、执行时间等详细信息。
+   - 报告文件位于`target/site/serenity`目录下。
+
+### 流程图
+
+以下是简化的流程图，展示了测试运行的主要步骤：
+
+```plaintext
++-------------------+
+| Run TestRunner.java|
++---------+---------+
+          |
+          v
++-------------------------------+
+| Parse feature files (.feature)|
++-------------------------------+
+          |
+          v
++-------------------------------+
+| Find step definitions        |
+| (@Given, @When, @Then)       |
++-------------------------------+
+          |
+          v
++-------------------------------+
+| Execute step definitions      |
+| (Call page objects or APIs)   |
++-------------------------------+
+          |
+          v
++-------------------------------+
+| Interact with Page Objects    |
+| (UI steps)                    |
++-------------------------------+
+          |
+          v
++-------------------------------+
+| Generate Serenity Report     |
+| (HTML, JSON)                 |
++-------------------------------+
+```
+
+### 示例代码
+
+以下是一些示例代码片段，帮助您理解文件结构和运行流程。
+
+#### pom.xml
+
+```xml
+<dependencies>
+    <!-- Serenity dependencies -->
+    <dependency>
+        <groupId>net.serenity-bdd</groupId>
+        <artifactId>serenity-core</artifactId>
+        <version>2.4.51</version>
+    </dependency>
+    <dependency>
+        <groupId>net.serenity-bdd</groupId>
+        <artifactId>serenity-cucumber6</artifactId>
+        <version>2.4.51</version>
+    </dependency>
+    <!-- Cucumber dependencies -->
+    <dependency>
+        <groupId>io.cucumber</groupId>
+        <artifactId>cucumber-java</artifactId>
+        <version>6.10.4</version>
+    </dependency>
+    <dependency>
+        <groupId>io.cucumber</groupId>
+        <artifactId>cucumber-junit</artifactId>
+        <version>6.10.4</version>
+    </dependency>
+    <!-- Other dependencies -->
+    <dependency>
+        <groupId>org.seleniumhq.selenium</groupId>
+        <artifactId>selenium-java</artifactId>
+        <version>3.141.59</version>
+    </dependency>
+</dependencies>
+
+<build>
+    <plugins>
+        <!-- Serenity Maven Plugin -->
+        <plugin>
+            <groupId>net.serenity-bdd.maven.plugins</groupId>
+            <artifactId>serenity-maven-plugin</artifactId>
+            <version>2.4.51</version>
+            <executions>
+                <execution>
+                    <phase>test</phase>
+                    <goals>
+                        <goal>aggregate</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+```
+
+#### TestRunner.java
+
+```java
+import io.cucumber.junit.CucumberOptions;
+import net.serenitybdd.cucumber.CucumberWithSerenity;
+import org.junit.runner.RunWith;
+
+@RunWith(CucumberWithSerenity.class)
+@CucumberOptions(
+    plugin = {"pretty"},
+    features = "src/test/resources/features",
+    glue = "com.example.steps"
+)
+public class TestRunner {}
+```
+
+#### LoginPage.java
+
+```java
+import net.serenitybdd.core.pages.PageObject;
+import net.thucydides.core.annotations.DefaultUrl;
+import org.openqa.selenium.By;
+
+@DefaultUrl("https://example.com/login")
+public class LoginPage extends PageObject {
+
+    private By usernameField = By.id("username");
+    private By passwordField = By.id("password");
+    private By loginButton = By.id("login-button");
+
+    public void enterUsername(String username) {
+        $(usernameField).type(username);
+    }
+
+    public void enterPassword(String password) {
+        $(passwordField).type(password);
+    }
+
+    public void clickLoginButton() {
+        $(loginButton).click();
+    }
+}
+```
+
+#### UiSteps.java
+
+```java
+import com.example.pages.LoginPage;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.When;
+import io.cucumber.java.en.Then;
+import net.thucydides.core.annotations.Steps;
+
+public class UiSteps {
+
+    @Steps
+    LoginPage loginPage;
+
+    @Given("I am on the login page")
+    public void iAmOnTheLoginPage() {
+        loginPage.open();
+    }
+
+    @When("I enter valid credentials")
+    public void iEnterValidCredentials() {
+        loginPage.enterUsername("validuser");
+        loginPage.enterPassword("validpass");
+    }
+
+    @Then("I should be logged in successfully")
+    public void iShouldBeLoggedInSuccessfully() {
+        loginPage.clickLoginButton();
+        // Add verification logic here
+    }
+}
+```
+
+通过上述结构和流程，您可以更好地理解如何构建和运行Java + Cucumber + Serenity BDD框架的自动化测试。
