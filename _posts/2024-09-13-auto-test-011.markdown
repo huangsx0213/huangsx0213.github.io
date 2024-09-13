@@ -1,0 +1,234 @@
+---
+layout:     post
+title:      "动态定义Serenity BDD + Cucumber测试步骤"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-09-13 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+### 技术方案：通过Excel动态定义Serenity BDD + Cucumber测试步骤，并动态解析和执行操作
+
+#### 1. 需求概述
+
+在Serenity BDD + Cucumber测试框架中，通常测试步骤需要在Java代码中明确定义。但如果测试项目规模大，涉及的步骤复杂，测试步骤的管理和维护会变得繁琐。为了提高灵活性和可维护性，我们可以通过Excel文件动态定义测试步骤，并通过Java代码动态读取和执行这些步骤。
+
+该方案的目标是：
+- 使用Excel文件来定义Cucumber测试步骤的行为和操作。
+- 动态解析Excel中的操作定义，映射到具体的测试步骤中。
+- 在Serenity BDD框架中报告每个操作步骤的执行情况。
+  
+#### 2. 技术方案架构
+
+##### 2.1 Excel文件定义
+
+通过Excel文件定义每个步骤的行为及其具体操作，例如：
+- **步骤名称（method name）**：如`openBaiduHomepage`、`searchForKeyword`。
+- **操作类型（operation type）**：如`navigate`（导航到URL）、`input`（输入文本）、`click`（点击元素）、`assertText`（断言页面是否包含指定文本）。
+- **目标（operation target）**：操作的目标，如URL、页面元素的定位符（ID、Name、XPath等）。
+- **操作值（operation value）**：需要输入的值或断言的文本等。
+
+##### 2.2 示例Excel表格
+
+| Method Name        | Operation Type | Operation Target | Operation Value   |
+|--------------------|----------------|------------------|-------------------|
+| openBaiduHomepage  | navigate       | URL              | https://www.baidu.com |
+| searchForKeyword   | input          | id=kw            | ${keyword}        |
+| searchForKeyword   | click          | id=su            |                   |
+| verifySearchResult | assertText     | pageSource       | ${keyword}        |
+
+**说明**：
+- **Method Name**：表示Cucumber步骤中调用的方法。
+- **Operation Type**：定义操作类型，如导航、输入、点击等。
+- **Operation Target**：操作的目标，可能是URL或页面元素的定位方式（id、name、xpath等）。
+- **Operation Value**：实际操作的值，比如需要输入的文本，或者需要断言的内容。
+
+##### 2.3 操作步骤类结构
+
+需要设计一个Java类来解析Excel文件，动态生成测试步骤，并基于操作类型执行这些步骤。
+
+### 3. 具体实现步骤
+
+#### 3.1 Excel 读取工具类
+
+利用Apache POI库来读取Excel文件，将操作步骤加载到内存中：
+
+```java
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ExcelOperationReader {
+
+    public static List<Operation> readOperationsFromExcel(String filePath) throws IOException {
+        List<Operation> operations = new ArrayList<>();
+
+        try (FileInputStream fis = new FileInputStream(filePath);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue; // Skip header
+
+                String methodName = row.getCell(0).getStringCellValue();
+                String operationType = row.getCell(1).getStringCellValue();
+                String operationTarget = row.getCell(2).getStringCellValue();
+                String operationValue = row.getCell(3).getStringCellValue();
+
+                operations.add(new Operation(methodName, operationType, operationTarget, operationValue));
+            }
+        }
+
+        return operations;
+    }
+}
+```
+
+#### 3.2 `Operation` 类
+
+用来封装每个操作的属性，包括方法名称、操作类型、操作目标和操作值。
+
+```java
+public class Operation {
+    private String methodName;
+    private String operationType;
+    private String operationTarget;
+    private String operationValue;
+
+    public Operation(String methodName, String operationType, String operationTarget, String operationValue) {
+        this.methodName = methodName;
+        this.operationType = operationType;
+        this.operationTarget = operationTarget;
+        this.operationValue = operationValue;
+    }
+
+    public String getMethodName() { return methodName; }
+    public String getOperationType() { return operationType; }
+    public String getOperationTarget() { return operationTarget; }
+    public String getOperationValue() { return operationValue; }
+}
+```
+
+#### 3.3 `BaiduSearchSteps` 类
+
+在这个类中，我们会动态读取Excel中的操作定义，并根据步骤名称调用相应的操作（如导航到URL、输入文本、点击按钮等）。
+
+```java
+import net.serenitybdd.core.steps.UIInteractionSteps;
+import net.thucydides.core.annotations.Step;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+
+import java.io.IOException;
+import java.util.List;
+
+public class BaiduSearchSteps extends UIInteractionSteps {
+
+    private List<Operation> operations;
+
+    public BaiduSearchSteps() {
+        try {
+            // 动态读取操作定义
+            operations = ExcelOperationReader.readOperationsFromExcel("path/to/operations_definition.xlsx");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Step
+    public void executeOperations(String methodName, Object... args) {
+        WebDriver driver = getDriver();
+        
+        // 遍历所有与该方法名称相关的操作
+        for (Operation operation : operations) {
+            if (operation.getMethodName().equals(methodName)) {
+                switch (operation.getOperationType()) {
+                    case "navigate":
+                        navigateToUrl(operation.getOperationTarget());
+                        break;
+                    case "input":
+                        inputText(args.length > 0 ? args[0].toString() : "", operation.getOperationTarget());
+                        break;
+                    case "click":
+                        clickElement(operation.getOperationTarget());
+                        break;
+                    case "assertText":
+                        assertTextPresent(args.length > 0 ? args[0].toString() : "");
+                        break;
+                    default:
+                        throw new UnsupportedOperationException("Unknown operation type: " + operation.getOperationType());
+                }
+            }
+        }
+    }
+
+    @Step("Navigate to URL: {0}")
+    public void navigateToUrl(String url) {
+        getDriver().get(url);
+    }
+
+    @Step("Input text: {0} into element: {1}")
+    public void inputText(String text, String locator) {
+        getDriver().findElement(getByLocator(locator)).sendKeys(text);
+    }
+
+    @Step("Click element: {0}")
+    public void clickElement(String locator) {
+        getDriver().findElement(getByLocator(locator)).click();
+    }
+
+    @Step("Verify text: {0} in page source")
+    public void assertTextPresent(String expectedText) {
+        String pageSource = getDriver().getPageSource();
+        if (!pageSource.contains(expectedText)) {
+            throw new AssertionError("Expected text not found: " + expectedText);
+        }
+    }
+
+    private By getByLocator(String target) {
+        if (target.startsWith("id=")) {
+            return By.id(target.substring(3));
+        } else if (target.startsWith("name=")) {
+            return By.name(target.substring(5));
+        } else if (target.startsWith("xpath=")) {
+            return By.xpath(target.substring(6));
+        }
+        throw new IllegalArgumentException("Unknown locator type in target: " + target);
+    }
+}
+```
+
+#### 3.4 Cucumber Feature 文件
+
+通过Cucumber的特性文件描述测试用例，使用步骤名称映射到Excel中的方法名称：
+
+```gherkin
+Feature: Baidu Search
+  Scenario: Search for Serenity BDD on Baidu
+    Given I open Baidu homepage
+    When I search for "Serenity BDD"
+    Then I should see search results for "Serenity BDD"
+```
+
+### 4. 优势总结
+
+1. **灵活管理测试步骤**：测试步骤从Excel中读取，可以轻松增加、修改或删除步骤，无需改动代码。
+2. **可维护性高**：将操作逻辑从步骤定义中分离，减少代码重复，简化维护。
+3. **动态解析与执行**：通过Java代码动态解析Excel中的操作定义，避免硬编码的步骤定义，提高扩展性。
+
+### 5. 扩展方向
+
+- 支持更多的操作类型，如选择下拉框、文件上传等。
+- 使用更复杂的数据驱动测试，根据Excel中的数据动态生成测试用例。
+- 增强错误处理和日志记录，方便调试和测试报告分析。
+
+
