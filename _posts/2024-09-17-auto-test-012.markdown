@@ -1,0 +1,61 @@
+---
+layout:     post
+title:      "Cucumber调试变通方法使用指南"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-09-13 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+# Cucumber调试变通方法使用指南
+
+在调试Cucumber测试时，您可能会遇到Step Over无法正常工作的情况。以下是一个有效的变通方法，可以帮助您更顺畅地进行调试。
+
+## 步骤
+
+1. 在Cucumber步骤定义的开始处设置断点。
+
+2. 开始调试，程序将在第一个断点处停止。
+
+3. 使用Step Into (F7) 而不是Step Over (F8) 来进入步骤定义。
+
+4. 在步骤定义内：
+   - 使用Step Over (F8) 正常调试代码。
+   - 如果Step Into意外进入不需要的类文件：
+     a. 记下该类文件所在的包名。
+     b. 停止调试。
+     c. 打开IDEA设置 (File > Settings 或 IntelliJ IDEA > Preferences)。
+     d. 导航到 Build, Execution, Deployment > Debugger > Stepping。
+     e. 在"Do not step into the classes"中添加刚才记下的包名。
+     f. 应用设置并重新开始调试。
+
+5. 重复步骤4，直到您可以在当前步骤定义内正常使用Step Into和Step Over。
+
+6. 当需要移动到下一个Cucumber步骤时：
+   - 不要使用Step Over，它可能会导致程序一直运行到结束。
+   - 而是使用Step Into (F7) 来跳转到下一个Cucumber步骤。
+
+7. 在新的步骤定义中，重复步骤4-6。
+
+## 注意事项
+
+- 这种方法需要在调试过程中逐步完善您的stepping filter。
+- 随着调试的进行，您的filter列表会逐渐增加，使得后续的调试更加顺畅。
+- 记住，跨Cucumber步骤时始终使用Step Into，而不是Step Over。
+- 如果您不小心使用了Step Over并跳过了想要调试的步骤，请重新开始调试过程。
+
+## 建议
+
+- 保持耐心，这个过程可能需要一些时间来设置，但一旦完成，会大大提高您的调试效率。
+- 考虑将常用的第三方库或不需要深入调试的包提前添加到stepping filter中。
+- 如果某个特定的包或类经常需要调试，可以考虑从filter中移除它。
+
+通过遵循这个指南，您应该能够更有效地调试Cucumber测试，即使面对Step Over的异常行为。随着时间的推移，您将建立起一个优化的stepping filter列表，使得调试过程更加顺畅和高效。
+
+---
+
