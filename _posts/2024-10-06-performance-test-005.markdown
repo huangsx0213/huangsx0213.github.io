@@ -1,15 +1,18 @@
 ---
 layout:     post
-title:      "groovy无重复数据"
-subtitle:   "「 End to End Auto Testing 」" 
-date:       2024-10-05 12:00:00
+title:      "JMeter 从数据库查询不重复数据"
+subtitle:   "「 Performance Testing 」" 
+date:       2024-10-06 11:00:00
 author:     "Vick Huang"
 header-img: "img/bg-walle.jpg"
 catalog: true
 tags:
     - Testing
-    - Automated Testing
+    - Performance Testing
 ---
+
+
+# JMeter 从数据库查询不重复数据
 
 
 
