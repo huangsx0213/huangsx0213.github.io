@@ -1,6 +1,6 @@
 ---
 layout:     post
-title:      "groovy"
+title:      "groovy无重复数据"
 subtitle:   "「 End to End Auto Testing 」" 
 date:       2024-10-05 12:00:00
 author:     "Vick Huang"
@@ -13,19 +13,33 @@ tags:
 
 
 
-这个脚本看起来不错，但是有几个地方可以改进以提高性能和线程安全性：
+为了实现从数据库查询数据、使用这些数据发送HTTP请求、以及在测试结束后清理资源，我们需要结合以下几个关键组件：
 
-1.  **批量查询数据**：在 `queryDatabase` 方法中，您可以使用 `batchSize` 参数来控制每次查询的数据量。这样可以减少数据库的负担和网络传输的数据量。
+### 测试计划结构
 
-2.  **线程安全**：在 `getUnusedData` 方法中，您使用了 `queue.poll()` 来获取未使用的数据。这个方法是线程安全的，但是如果多个线程同时调用这个方法，可能会导致数据丢失或重复使用。为了避免这个问题，您可以使用 `synchronized` 块来确保只有一个线程可以访问队列。
+- **Test Plan**
+  - **Thread Group**
+    - **JDBC Connection Configuration**
+    - **While Controller**
+      - **JSR223 PreProcessor**
+      - **HTTP Request**
+    - **JSR223 Listener** (用于清理)
+  - **tearDown Thread Group**
+    - **JSR223 Sampler** (用于清理资源)
 
-3.  **数据刷新**：在 `refreshData` 方法中，您使用了 `queue.addAll(newData)` 来添加新数据到队列中。这个方法是线程安全的，但是如果多个线程同时调用这个方法，可能会导致数据重复添加。为了避免这个问题，您可以使用 `synchronized` 块来确保只有一个线程可以添加数据到队列中。
+### 详细配置
 
-4.  **计数器**：在 `counter.incrementAndGet()` 方法中，您使用了 `AtomicInteger` 来确保线程安全性。这个方法是正确的，但是您可以使用 `synchronized` 块来确保只有一个线程可以访问计数器。
+#### a) JDBC Connection Configuration
+- **Variable Name**: `dbConnection`
+- **Database URL**: `${__P(db.url,jdbc:postgresql://localhost:5432/your_database)}`
+- **JDBC Driver class**: `org.postgresql.Driver`
+- **Username**: `${__P(db.user,postgres)}`
+- **Password**: `${__P(db.pass,password)}`
 
-5.  **日志记录**：在脚本中，您使用了 `log.info` 和 `log.error` 来记录日志。这个方法是正确的，但是您可以使用 `synchronized` 块来确保只有一个线程可以访问日志记录。
+#### b) While Controller
+- **Condition**: `${__jexl3("${CONTINUE}" != "false")}`
 
-以下是改进后的脚本：
+#### c) JSR223 PreProcessor (使用Groovy)
 
 ```groovy
 import groovy.sql.Sql
@@ -143,4 +157,75 @@ synchronized (this) {
 props.put('dataUsageCounter', counter)
 ```
 
-这个改进后的脚本使用了 `synchronized` 块来确保线程安全性，避免了数据丢失或重复使用的问题。同时，使用了 `AtomicInteger` 来确保计数器的线程安全性。
+#### d) HTTP Request
+- **Method**: POST (或根据需求选择)
+- **Protocol**: http
+- **Server Name or IP**: your_server_address
+- **Path**: /your_api_endpoint
+- **Parameters**:
+  - Name: param1, Value: `${param1}`
+  - Name: param2, Value: `${param2}`
+
+#### e) Response Assertion (用于检查响应是否包含某个字符串)
+- **Assertion Type**: Response Assertion
+- **Pattern Matching Rules**: Contains
+- **Pattern to Test**: 要检查的字符串（如 "success"）
+- **Apply to**: Text Response
+
+#### f) tearDown Thread Group
+- **Name**: tearDown Thread Group
+- **Number of Threads**: 1
+- **Ramp-up Period**: 1
+- **Loop Count**: 1
+
+#### g) JSR223 Sampler (用于清理资源，在tearDown Thread Group中)
+```groovy
+// 清理连接池和全局数据
+def pool = props.get('dbConnectionPool')
+if (pool) {
+    pool.close()
+    props.remove('dbConnectionPool')
+}
+
+// 清理全局数据队列
+def queue = props.get('globalDataQueue')
+if (queue) {
+    queue.clear()
+    props.remove('globalDataQueue')
+}
+
+// 清理计数器
+def counter = props.get('dataUsageCounter')
+if (counter) {
+    props.remove('dataUsageCounter')
+}
+
+log.info("Cleaned up database connection pool, global data queue, and usage counter.")
+```
+
+### 设置 tearDown Thread Group 执行选项
+
+确保在 **Test Plan** 元件中勾选 **"Run tearDown Thread Groups after shutdown of main threads"**，这样可以保证在测试结束后，无论测试是否正常完成，tearDown Thread Group 都会执行。
+
+### 工作流程
+
+1. **初始化连接池和数据队列**：
+   - 在测试开始时，初始化数据库连接池和全局数据队列。
+
+2. **执行While Controller**：
+   - While Controller 确保测试持续运行直到没有更多可用数据。
+   - 每次迭代，JSR223 PreProcessor 执行以下操作：
+     - 检查是否有当前数据集，如果没有则查询数据库。
+     - 从当前数据集中查找未使用的数据。
+     - 如果所有数据都已使用，重新查询数据库并更新数据集。
+     - 如果找到未使用的数据，将其设置为变量供 HTTP Request 使用。
+     - 如果没有可用数据，停止测试。
+
+3. **发送HTTP请求**：
+   - HTTP Request 使用选定的数据作为参数发送请求。
+   - 使用 Response Assertion 检查响应是否包含或不包含某个字符串。
+
+4. **清理资源**：
+   - 在测试结束后，tearDown Thread Group 执行清理脚本，关闭数据库连接池，清空全局数据队列，移除计数器。
+
+通过这种方式，你可以确保在高并发场景下，数据被正确地使用和清理，同时保证资源在测试结束后被正确地释放。
