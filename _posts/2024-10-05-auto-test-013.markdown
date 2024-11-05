@@ -1,0 +1,152 @@
+---
+layout:     post
+title:      "groovy"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-10-05 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+您说得对，我在之前的代码中确实遗漏了这一点。感谢您的指出。让我们对代码进行修改，使 `batchSize` 成为一个可配置的参数，并正确地传递给 `queryDatabase()` 函数。
+
+以下是修改后的完整脚本：
+
+```groovy
+import groovy.sql.Sql
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.ConcurrentHashMap
+
+// 使用 ConcurrentHashMap 来存储全局对象
+def globalObjects = new ConcurrentHashMap()
+
+// 获取或初始化全局对象
+def getOrInitialize(String key, Closure initializer) {
+    globalObjects.computeIfAbsent(key, { k -> initializer() })
+}
+
+// 获取数据库连接池
+def getConnectionPool() {
+    getOrInitialize('dbConnectionPool') {
+        def dbUrl = props.get('db.url')
+        def dbUser = props.get('db.user')
+        def dbPass = props.get('db.pass')
+        Sql.newInstance(dbUrl, dbUser, dbPass, 'org.postgresql.Driver')
+    }
+}
+
+// 获取全局数据队列
+def getGlobalDataQueue() {
+    getOrInitialize('globalDataQueue') { new ConcurrentLinkedQueue() }
+}
+
+// 获取数据使用计数器
+def getDataUsageCounter() {
+    getOrInitialize('dataUsageCounter') { new AtomicInteger(0) }
+}
+
+// 获取批量大小
+def getBatchSize() {
+    props.get('batchSize') as Integer ?: 1000
+}
+
+// 批量查询数据
+def queryDatabase(int batchSize) {
+    def pool = getConnectionPool()
+    try {
+        def query = "SELECT column1, column2 FROM your_table LIMIT ${batchSize}"
+        return pool.rows(query)
+    } catch (Exception e) {
+        log.error("Database query failed: ${e.message}")
+        return []
+    }
+}
+
+// 刷新数据
+def refreshData() {
+    log.info("Querying database for new data.")
+    def batchSize = getBatchSize()
+    def newData = queryDatabase(batchSize)
+    def queue = getGlobalDataQueue()
+    queue.addAll(newData)
+    log.info("Added ${newData.size()} new items to the global queue.")
+}
+
+// 获取未使用的数据
+def getUnusedData() {
+    def queue = getGlobalDataQueue()
+    def data = queue.poll()
+    if (data == null && queue.isEmpty()) {
+        refreshData()
+        data = queue.poll()
+    }
+    return data
+}
+
+// 主逻辑
+def unusedData = getUnusedData()
+
+if (unusedData != null) {
+    vars.put('param1', unusedData.column1)
+    vars.put('param2', unusedData.column2)
+    log.info("Thread ${Thread.currentThread().getId()} using data: ${unusedData.column1}, ${unusedData.column2}")
+} else {
+    log.error("Failed to get unused data.")
+    vars.put('CONTINUE', 'false')
+}
+
+// 使用计数器并检查是否需要刷新数据
+def counter = getDataUsageCounter()
+def batchSize = getBatchSize()
+if (counter.incrementAndGet() % 1000 == 0) {
+    def queue = getGlobalDataQueue()
+    if (queue.size() < batchSize / 2) {
+        refreshData()
+    }
+}
+```
+
+在这个更新的版本中：
+
+1. 我们添加了一个 `getBatchSize()` 方法，它从 JMeter 属性中获取 `batchSize`，如果没有设置，则使用默认值 1000。
+
+2. `queryDatabase()` 方法现在接受 `batchSize` 作为参数。
+
+3. 在 `refreshData()` 和主逻辑中，我们使用 `getBatchSize()` 来获取当前的批量大小。
+
+要使用这个脚本，你需要在 JMeter 测试计划中执行以下步骤：
+
+1. 在测试计划的开始处（例如，在 setUp Thread Group 中）初始化数据库连接参数和批量大小：
+
+```groovy
+// 设置数据库连接参数
+props.put('db.url', 'jdbc:postgresql://your_host:5432/your_database')
+props.put('db.user', 'your_username')
+props.put('db.pass', 'your_password')
+
+// 设置批量大小
+props.put('batchSize', '1000') // 可以根据需要调整
+```
+
+2. 在主 Thread Group 中使用这个 JSR223 PreProcessor 脚本。
+
+3. 在 HTTP Request 中使用 `${param1}` 和 `${param2}` 作为参数。
+
+4. 在测试计划的结束处（在 tearDown Thread Group 中）清理资源：
+
+```groovy
+// 清理资源
+def pool = globalObjects.remove('dbConnectionPool')
+if (pool) {
+    pool.close()
+}
+globalObjects.clear()
+```
+
+这个修改后的版本允许你灵活地配置 `batchSize`，同时保持了代码的简洁性和线程安全性。你可以根据需要在测试过程中动态调整 `batchSize`，而不需要修改脚本本身。
+
+再次感谢您的反馈，这有助于改进代码质量和可用性。
