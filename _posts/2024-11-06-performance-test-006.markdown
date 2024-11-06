@@ -2,7 +2,7 @@
 layout:     post
 title:      "JMeter 从数据库查询不重复数据2"
 subtitle:   "「 Performance Testing 」" 
-date:       2024-10-06 11:00:02
+date:       2024-11-06 11:00:02
 author:     "Vick Huang"
 header-img: "img/bg-walle.jpg"
 catalog: true
