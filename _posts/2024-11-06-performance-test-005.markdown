@@ -15,41 +15,51 @@ tags:
 # JMeter 从数据库查询不重复数据
 
 
+### 完整方案和代码
 
-为了实现从数据库查询数据、使用这些数据发送HTTP请求、以及在测试结束后清理资源，我们需要结合以下几个关键组件：
+#### 1. JMeter 测试计划创建步骤
 
+##### 1.1 创建测试计划
+1. 打开 JMeter
+2. 右键点击测试计划
+3. 重命名为 "Database Performance Test"
 
-### 测试计划结构
+#### 2. User Defined Variables 配置
 
-- **Test Plan**
-  - **User Defined Variables** (全局变量)
-  - **setupThreadGroup**
-    - **JSR223 Sampler** (用于初始化)
-  - **Thread Group**
-    - **While Controller**
-      - **JSR223 PreProcessor**
-      - **HTTP Request**
-        - **Response Assertion**
-  - **tearDown Thread Group**
-    - **JSR223 Sampler** (用于清理资源)
-
-### 用户定义变量 (User Defined Variables)
+##### 2.1 添加 User Defined Variables
+1. 右键点击测试计划
+2. 添加 "Config Element" > "User Defined Variables"
+3. 配置以下变量：
 
 ```
 # 数据库查询配置
-SQL_TEMPLATE: SELECT ? AS col1, ? AS col2 FROM ? LIMIT ?
-DB_COLUMN1: id
-DB_COLUMN2: uetr
-DB_TABLE: your_table
-BATCH_SIZE: 1000
+SQL_TEMPLATE:        SELECT ? AS col1, ? AS col2 FROM ? LIMIT ?
+DB_COLUMN1:          id
+DB_COLUMN2:          uetr
+DB_TABLE:            your_table
+BATCH_SIZE:          1000
 
 # HTTP 请求配置
-HTTP_HOST: your_api_host
-HTTP_PATH: /your_api_endpoint
+HTTP_HOST:           your_api_host
+HTTP_PATH:           /your_api_endpoint
+
+# 测试配置
+TEST_THREADS:        50
+RAMP_UP_PERIOD:      10
+LOOP_COUNT:          -1  // Forever
 ```
 
-### 初始化脚本 (setupThreadGroup)
+#### 3. Setup Thread Group
 
+##### 3.1 添加 Setup Thread Group
+1. 右键点击测试计划
+2. 添加 "Threads (Users)" > "Setup Thread Group"
+3. 配置：
+   - 线程数：1
+   - Ramp-up Period：1
+   - 循环次数：1
+
+##### 3.2 添加 JSR223 Sampler (Groovy)
 ```groovy
 import groovy.sql.Sql
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -95,8 +105,22 @@ initUsedDataSet()
 log.info("Initialization complete: connection pool, data queue, and used data set created.")
 ```
 
-### JSR223 PreProcessor 脚本
+#### 4. Main Thread Group
 
+##### 4.1 添加 Thread Group
+1. 右键点击测试计划
+2. 添加 "Threads (Users)" > "Thread Group"
+3. 配置：
+   - 线程数：`${TEST_THREADS}`
+   - Ramp-up Period：`${RAMP_UP_PERIOD}`
+   - 循环次数：`${LOOP_COUNT}`
+
+##### 4.2 添加 While Controller
+1. 右键点击 Thread Group
+2. 添加 "Logic Controller" > "While Controller"
+3. 条件：`${__jexl3(true)}`
+
+##### 4.3 添加 JSR223 PreProcessor (Groovy)
 ```groovy
 import groovy.sql.Sql
 import java.sql.SQLException
@@ -145,9 +169,15 @@ def queryDatabase() {
     def pool = getConnectionPool()
     try {
         // 使用预编译语句防止 SQL 注入
-        return pool.rows(sqlTemplate, [dbColumn1, dbColumn2, dbTable, batchSize])
+        def startTime = System.currentTimeMillis()
+        def result = pool.rows(sqlTemplate, [dbColumn1, dbColumn2, dbTable, batchSize])
+        def endTime = System.currentTimeMillis()
+        
+        log.info("Database query completed in ${endTime - startTime} ms, retrieved ${result.size()} rows")
+        return result
     } catch (SQLException e) {
         log.error("Database query failed: ${e.message}")
+        log.error("Query details - Template: ${sqlTemplate}, Params: [${dbColumn1}, ${dbColumn2}, ${dbTable}, ${batchSize}]")
         return []
     }
 }
@@ -156,69 +186,114 @@ def queryDatabase() {
 def filterUnusedData(newData) {
     def usedData = getUsedDataSet()
     def unusedData = []
+    def duplicateCount = 0
+    def uniqueCount = 0
 
     newData.each { data ->
         def key = getDataKey(data)
         if (!usedData.containsKey(key)) {
             unusedData << data
             usedData[key] = true
+            uniqueCount++
+        } else {
+            duplicateCount++
         }
     }
 
+    log.info("Data filtering results: Total received: ${newData.size()}, Unique: ${uniqueCount}, Duplicate: ${duplicateCount}")
     return unusedData
 }
 
 // 获取或刷新数据
 def refreshData() {
-    def newData = queryDatabase()
-    def unusedData = filterUnusedData(newData)
+    try {
+        log.info("Initiating data refresh process")
+        def startTime = System.currentTimeMillis()
+        
+        def newData = queryDatabase()
+        def unusedData = filterUnusedData(newData)
 
-    if (unusedData) {
-        def queue = getGlobalDataQueue()
-        queue.addAll(unusedData)
-        log.info("Added ${unusedData.size()} unique items to queue")
-    } else {
-        log.warn("No new unique data found")
+        if (unusedData) {
+            def queue = getGlobalDataQueue()
+            queue.addAll(unusedData)
+            log.info("Added ${unusedData.size()} unique items to queue")
+        } else {
+            log.warn("No new unique data found in database")
+        }
+
+        def endTime = System.currentTimeMillis()
+        log.info("Data refresh process completed in ${endTime - startTime} ms")
+    } catch (Exception e) {
+        log.error("Error in data refresh process: ${e.message}")
     }
 }
 
 // 获取未使用的数据
 def getUnusedData() {
-    def queue = getGlobalDataQueue()
-    def data = queue.poll()
-    
-    if (data == null && queue.isEmpty()) {
-        refreshData()
-        data = queue.poll()
+    try {
+        def queue = getGlobalDataQueue()
+        def data = queue.poll()
+        
+        // 如果队列为空，尝试刷新数据
+        if (data == null && queue.isEmpty()) {
+            log.info("Data queue is empty, attempting to refresh")
+            refreshData()
+            data = queue.poll()
+        }
+        
+        return data
+    } catch (Exception e) {
+        log.error("Error getting unused data: ${e.message}")
+        return null
     }
-    
-    return data
 }
 
 // 主逻辑
 def unusedData = getUnusedData()
 
 if (unusedData) {
+    // 记录使用的数据
     vars.put('param1', unusedData[dbColumn1])
     vars.put('param2', unusedData[dbColumn2])
-    log.info("Using data: ${unusedData[dbColumn1]}, ${unusedData[dbColumn2]}")
+    
+    log.info("Using data: ${dbColumn1}=${unusedData[dbColumn1]}, ${dbColumn2}=${unusedData[dbColumn2]}")
 } else {
     log.warn("No unused data available")
-    return  // 直接返回，跳过当前迭代
+    // 直接返回，跳过当前迭代
+    return
 }
 ```
 
-### HTTP Request 配置
+##### 4.4 添加 HTTP Request
+1. 右键点击 While Controller
+2. 添加 "Sampler" > "HTTP Request"
+3. 配置：
+   - Protocol: http
+   - Server Name: `${HTTP_HOST}`
+   - Path: `${HTTP_PATH}`
+   - Parameters:
+     - Name: id, Value: `${param1}`
+     - Name: uetr, Value: `${param2}`
 
-- **Protocol**: http
-- **Server Name or IP**: `${HTTP_HOST}`
-- **Path**: `${HTTP_PATH}`
-- **Parameters**:
-  - Name: id, Value: `${param1}`
-  - Name: uetr, Value: `${param2}`
+##### 4.5 添加 Response Assertion
+1. 右键点击 HTTP Request
+2. 添加 "Assertions" > "Response Assertion"
+3. 配置：
+   - 断言类型：Not Contains
+   - 模式匹配规则：包含特定字符串（如 "error"）
+   - 应用于：Text Response
 
-### tearDown Thread Group 脚本
+#### 5. Teardown Thread Group
 
+##### 5.1 添加 Teardown Thread Group
+1. 右键点击测试计划
+2. 添加 "Threads (Users)" > "Teardown Thread Group"
+3. 配置：
+   - 线程数：1
+   - Ramp-up Period：1
+   - 循环次数：1
+
+##### 5.2 添加 JSR223 Sampler (Groovy)
 ```groovy
 // 清理数据库连接池
 def pool = props.get('dbConnectionPool')
@@ -240,38 +315,43 @@ props.remove('usedDataSet')
 log.info("Resources cleaned up successfully")
 ```
 
-### 主要改进点
+#### 6. 性能测试监控（可选）
 
-1. **安全的变量获取**：
-   - 添加 `safeGetVariable` 方法
-   - 提供默认值
-   - 防止空指针异常
+##### 6.1 添加监控元件
+1. 右键点击测试计划
+2. 添加 "Listener" > "View Results Tree"
+3. 添加 "Listener" > "Aggregate Report"
+4. 添加 "Listener" > "Summary Report"
 
-2. **SQL 注入防护**：
-   - 使用预编译语句
-   - 参数化查询
+#### 7. 运行配置
 
-3. **灵活的配置**：
-   - 通过用户变量和系统属性配置
-   - 易于在不同环境间切换
+##### 7.1 命令行参数示例
+```bash
+jmeter -n -t your_test_plan.jmx \
+  -Jdb.url=jdbc:postgresql://your_database_host:5432/your_database \
+  -Jdb.user=your_username \
+  -Jdb.pass=your_password
+```
 
-4. **日志记录**：
-   - 详细的日志信息
-   - 错误和警告信息清晰
+### 注意事项
 
-5. **性能优化**：
-   - 使用线程安全的集合
-   - 减少不必要的锁
+1. 确保 PostgreSQL JDBC 驱动在 JMeter 的 `lib` 目录下
+2. 根据实际环境调整数据库连接信息
+3. 监控日志和性能报告
+4. 根据系统负载调整线程数和批量大小
 
-6. **错误处理**：
-   - 捕获并记录异常
-   - 提供默认行为
+### 优势
 
-### 使用建议
+1. 高度可配置
+2. 安全的数据处理
+3. 灵活的测试场景
+4. 详细的日志记录
+5. 资源自动清理
 
-1. 根据实际环境调整数据库连接信息
-2. 配置合适的批量大小
-3. 监控日志输出
-4. 根据性能测试需求调整线程数和循环次数
+### 建议的优化点
 
-这个方案提供了一个安全、灵活、易于维护的性能测试解决方案，可以根据具体需求进行定制。
+1. 根据实际性能测试需求调整参数
+2. 添加更多详细的日志记录
+3. 考虑添加性能监控和告警机制
+
+这个方案提供了一个全面、安全且灵活的 JMeter 性能测试解决方案，可以根据具体需求进行定制和调整。
