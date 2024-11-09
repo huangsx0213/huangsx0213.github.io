@@ -53,7 +53,7 @@ Test Plan
 DB_URL: jdbc:postgresql://localhost:5432/testdb
 DB_USER: postgres
 DB_PASSWORD: password
-DB_QUERY: SELECT id, reference_no FROM test_table WHERE status = 'PENDING' LIMIT ?
+DB_QUERY: SELECT *  FROM transfer where status='PENDING'  LIMIT ?
 
 # 数据池配置
 POOL_LOW_WATER_MARK: 100
@@ -79,7 +79,7 @@ import org.apache.commons.dbcp2.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-// 测试数据模型
+// 定义数据类
 class TestData implements Serializable {
     private String id
     private String referenceNo
@@ -97,14 +97,13 @@ class TestData implements Serializable {
 class DataPoolManager {
     private static final Logger log = LoggerFactory.getLogger(DataPoolManager.class)
     
-    // 核心数据结构
-    private final ConcurrentLinkedQueue<TestData> dataQueue
-    private final ConcurrentHashMap<String, Boolean> usedData
-    private final AtomicInteger processedCount
-    private final AtomicBoolean isRefilling
-    private final ReentrantLock refillLock
-    private final BasicDataSource dataSource
-    private final Properties config
+    private ConcurrentLinkedQueue<TestData> dataQueue
+    private ConcurrentHashMap<String, Boolean> usedData
+    private AtomicInteger processedCount
+    private AtomicBoolean isRefilling
+    private ReentrantLock refillLock
+    private BasicDataSource dataSource
+    private Properties config
     
     DataPoolManager(Properties config) {
         this.config = config
@@ -118,7 +117,6 @@ class DataPoolManager {
         initialFill()
     }
     
-    // 初始化数据源
     private BasicDataSource setupDataSource() {
         BasicDataSource ds = new BasicDataSource()
         ds.setUrl(config.getProperty("DB_URL"))
@@ -126,36 +124,30 @@ class DataPoolManager {
         ds.setPassword(config.getProperty("DB_PASSWORD"))
         ds.setInitialSize(5)
         ds.setMaxTotal(20)
-        ds.setMaxWaitMillis(10000)
-        ds.setValidationQuery("SELECT 1")
         return ds
     }
     
-    // 获取下一条测试数据
     TestData getNextData() {
         TestData data = dataQueue.poll()
         
         if (data != null) {
-            // 确保数据唯一性
             if (usedData.putIfAbsent(data.getId(), Boolean.TRUE) != null) {
-                return getNextData() // 如果数据已使用，递归获取下一条
+                return getNextData()
             }
             processedCount.incrementAndGet()
             
-            // 检查是否需要补充数据
             if (dataQueue.size() < Integer.parseInt(config.getProperty("POOL_LOW_WATER_MARK", "100"))) {
+
                 triggerRefill()
             }
             
             return data
         }
-        
-        // 队列为空时，同步补充数据
+
         refillDataPool()
         return dataQueue.poll()
     }
     
-    // 触发异步数据补充
     private void triggerRefill() {
         if (isRefilling.compareAndSet(false, true)) {
             Thread.start {
@@ -168,20 +160,16 @@ class DataPoolManager {
         }
     }
     
-    // 补充数据池
     private void refillDataPool() {
         if (refillLock.tryLock()) {
             try {
                 int batchSize = Integer.parseInt(config.getProperty("POOL_BATCH_SIZE", "1000"))
                 String query = config.getProperty("DB_QUERY")
-                
                 Connection conn = dataSource.getConnection()
                 try {
                     PreparedStatement stmt = conn.prepareStatement(query)
                     stmt.setInt(1, batchSize)
                     ResultSet rs = stmt.executeQuery()
-                    
-                    int addedCount = 0
                     while (rs.next()) {
                         TestData data = new TestData(
                             rs.getString("id"),
@@ -189,11 +177,10 @@ class DataPoolManager {
                         )
                         if (!usedData.containsKey(data.getId())) {
                             dataQueue.offer(data)
-                            addedCount++
                         }
                     }
                     
-                    log.info("Refilled pool. Added: ${addedCount}, Current size: ${dataQueue.size()}")
+                    log.info("Refilled pool. Current size: " + dataQueue.size())
                 } finally {
                     conn.close()
                 }
@@ -205,12 +192,10 @@ class DataPoolManager {
         }
     }
     
-    // 初始数据填充
     private void initialFill() {
         refillDataPool()
     }
     
-    // 资源清理
     void shutdown() {
         try {
             dataSource.close()
@@ -219,7 +204,6 @@ class DataPoolManager {
         }
     }
     
-    // 获取处理统计
     int getProcessedCount() {
         return processedCount.get()
     }
@@ -227,19 +211,38 @@ class DataPoolManager {
     int getAvailableCount() {
         return dataQueue.size()
     }
-    
-    // 获取使用状态报告
-    String getStatusReport() {
-        return String.format(
-            "Data Pool Status [Processed: %d, Available: %d, Unique Used: %d]",
-            processedCount.get(),
-            dataQueue.size(),
-            usedData.size()
-        )
-    }
+    // 在 DataPoolManager 类中添加
+	void updateStatus(String referenceNo, String status) {
+	    Connection conn = null
+	    PreparedStatement stmt = null
+	    try {
+	        conn = dataSource.getConnection()
+	        String updateQuery = "UPDATE transfer SET status = ? WHERE reference_no = ?"
+	        stmt = conn.prepareStatement(updateQuery)
+	        stmt.setString(1, status)
+	        stmt.setString(2, referenceNo)
+	        int updated = stmt.executeUpdate()
+	        
+	        if (updated > 0) {
+	            log.debug("Updated status to ${status} for reference_no: ${referenceNo}")
+	        } else {
+	            log.warn("No record found to update for reference_no: ${referenceNo}")
+	        }
+	    } catch (SQLException e) {
+	        log.error("Error updating status for reference_no: ${referenceNo}", e)
+	        throw e
+	    } finally {
+	        try {
+	            if (stmt != null) stmt.close()
+	            if (conn != null) conn.close()
+	        } catch (SQLException e) {
+	            log.error("Error closing resources", e)
+	        }
+	    }
+	}
 }
 
-// 初始化配置和数据池
+// 创建配置
 Properties config = new Properties()
 config.put("DB_URL", vars.get("DB_URL"))
 config.put("DB_USER", vars.get("DB_USER"))
@@ -247,12 +250,17 @@ config.put("DB_PASSWORD", vars.get("DB_PASSWORD"))
 config.put("DB_QUERY", vars.get("DB_QUERY"))
 config.put("POOL_LOW_WATER_MARK", vars.get("POOL_LOW_WATER_MARK"))
 config.put("POOL_BATCH_SIZE", vars.get("POOL_BATCH_SIZE"))
+config.put("HTTP_PROTOCOL", vars.get("HTTP_PROTOCOL"))
+config.put("HTTP_DOMAIN", vars.get("HTTP_DOMAIN"))
+config.put("HTTP_PATH", vars.get("HTTP_PATH"))
+config.put("HTTP_METHOD", vars.get("HTTP_METHOD"))
 
-// 创建数据池管理器
+// 初始化数据池管理器
 DataPoolManager dataPool = new DataPoolManager(config)
 props.put("dataPool", dataPool)
+props.put("config", config)
 
-log.info("Data pool initialized: " + dataPool.getStatusReport())
+log.info("Data pool initialized successfully")
 ```
 
 #### 3.2 Thread Group - JSR223 PreProcessor (获取测试数据)
@@ -266,15 +274,21 @@ def data = dataPool.getNextData()
 
 if (data != null) {
     // 设置请求参数
-    vars.put("id", data.getId())
-    vars.put("referenceNo", data.getReferenceNo())
-    
-    // 定期输出状态日志
+    vars.put("id", data.id)
+    vars.put("referenceNo", data.referenceNo)
+    log.info("===id: " + data.id+" referenceNo: "+data.referenceNo+"===")
+    dataPool.updateStatus(data.referenceNo, "COMPLETED")
+    log.info("===Updated status to CANCELLED for reference_no: ${data.referenceNo}===")
+    // 记录状态（每100次请求）
     if (ctx.getThreadNum() % 100 == 0) {
-        log.info("Thread ${ctx.getThreadNum()}: " + dataPool.getStatusReport())
+        log.info(String.format(
+            "Pool status - Processed: %d, Available: %d",
+            dataPool.getProcessedCount(),
+            dataPool.getAvailableCount()
+        ))
     }
 } else {
-    log.error("No data available for thread ${ctx.getThreadNum()}")
+    log.error("No data available")
     SampleResult.setSuccessful(false)
 }
 ```
@@ -286,8 +300,6 @@ if (data != null) {
 def dataPool = props.get("dataPool")
 
 if (dataPool != null) {
-    // 输出最终状态报告
-    log.info("Final Status: " + dataPool.getStatusReport())
     // 清理资源
     dataPool.shutdown()
     log.info("Data pool resources cleaned up successfully")
