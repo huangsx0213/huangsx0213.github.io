@@ -12,3 +12,174 @@ tags:
 
 # Temp1 
 
+当然，我很乐意为您提供20个在软件测试中常用的Splunk查询实际例子。这些例子涵盖了性能测试、错误分析、用户行为跟踪等多个方面，可以作为软件测试中使用Splunk的参考范例。
+
+1. 性能测试 - 响应时间分析
+```
+sourcetype=access_logs
+| stats avg(response_time) as avg_response_time, max(response_time) as max_response_time, count as request_count by endpoint
+| sort -avg_response_time
+```
+用途：分析不同API端点的平均响应时间、最大响应时间和请求数量。
+
+2. 错误率监控
+```
+sourcetype=application_logs
+| stats count(eval(status="error")) as error_count, count as total_count by api_name
+| eval error_rate=round(error_count/total_count * 100, 2)
+| sort -error_rate
+```
+用途：计算每个API的错误率，并按错误率降序排列。
+
+3. 用户会话分析
+```
+sourcetype=user_activity
+| transaction sessionID maxspan=30m
+| stats avg(duration) as avg_session_duration, count as session_count by user
+| sort -avg_session_duration
+```
+用途：分析用户会话的平均持续时间和会话数量。
+
+4. 并发用户数量追踪
+```
+sourcetype=login_events
+| timechart span=5m count(eval(action="login")) as logins, count(eval(action="logout")) as logouts
+| eval active_users=coalesce(running_sum(logins-logouts),0)
+| fields _time, active_users
+```
+用途：追踪每5分钟的并发活跃用户数量。
+
+5. 功能使用频率分析
+```
+sourcetype=feature_usage
+| stats count by feature_name
+| sort -count
+```
+用途：统计各个功能的使用频率，帮助识别最受欢迎和最少使用的功能。
+
+6. 页面加载时间趋势
+```
+sourcetype=page_load_times
+| timechart span=1h avg(load_time) by page_name
+```
+用途：生成每小时各页面平均加载时间的趋势图。
+
+7. 异常登录活动检测
+```
+sourcetype=auth_logs
+| stats count as login_attempts, values(ip_address) as ip_list by user
+| where login_attempts > 5 AND mvcount(ip_list) > 3
+```
+用途：检测可能的异常登录活动，如一个用户从多个IP地址进行多次登录尝试。
+
+8. API版本使用情况
+```
+sourcetype=api_calls
+| stats count by api_version
+| eval percentage=round(count/sum(count)*100,2)
+```
+用途：分析不同API版本的使用情况，有助于决定何时废弃旧版本。
+
+9. 错误堆栈跟踪分析
+```
+sourcetype=error_logs
+| rex field=_raw "(?s)Error:(?<error_message>.*?)Stack trace:(?<stack_trace>.*)"
+| stats count by error_message, stack_trace
+| sort -count
+```
+用途：提取并分析最常见的错误消息和相关的堆栈跟踪。
+
+10. 用户注册漏斗分析
+```
+sourcetype=user_journey
+| stats count(eval(stage="view")) as views, 
+         count(eval(stage="start")) as starts, 
+         count(eval(stage="complete")) as completes
+| eval conversion_rate=round(completes/views*100,2)
+```
+用途：分析用户注册过程中各阶段的转化率。
+
+11. 数据库查询性能
+```
+sourcetype=db_logs
+| stats avg(query_time) as avg_time, max(query_time) as max_time, count as query_count by query_type
+| sort -avg_time
+```
+用途：监控不同类型数据库查询的平均和最大执行时间。
+
+12. 移动应用崩溃分析
+```
+sourcetype=mobile_app_logs eventtype=crash
+| stats count by os_version, app_version
+| sort -count
+```
+用途：分析移动应用在不同操作系统版本和应用版本上的崩溃频率。
+
+13. A/B测试结果分析
+```
+sourcetype=ab_test_results
+| stats avg(conversion_rate) as avg_conversion, count as sample_size by test_group
+| sort -avg_conversion
+```
+用途：比较A/B测试中不同测试组的平均转化率和样本大小。
+
+14. 用户反馈情绪分析
+```
+sourcetype=user_feedback
+| eval sentiment=case(rating >= 4, "positive", rating <= 2, "negative", true(), "neutral")
+| stats count by sentiment
+| eval percentage=round(count/sum(count)*100,2)
+```
+用途：基于用户评分对反馈进行情绪分类和统计。
+
+15. API调用频率监控
+```
+sourcetype=api_logs
+| timechart span=1m count by api_endpoint
+| foreach * [eval <<FIELD>>=if('<<FIELD>>'>"100","100",<<FIELD>>)]
+```
+用途：生成每分钟各API端点的调用次数热图，超过100次的显示为100。
+
+16. 测试覆盖率趋势
+```
+sourcetype=test_coverage_reports
+| timechart span=1d avg(line_coverage) as line_coverage, avg(branch_coverage) as branch_coverage
+```
+用途：跟踪每日的代码行覆盖率和分支覆盖率趋势。
+
+17. 性能测试 - 资源使用分析
+```
+sourcetype=resource_usage
+| stats avg(cpu_usage) as avg_cpu, avg(memory_usage) as avg_mem, avg(disk_io) as avg_io by host
+| sort -avg_cpu
+```
+用途：在性能测试期间分析不同主机的平均CPU、内存和磁盘I/O使用情况。
+
+18. 用户操作序列分析
+```
+sourcetype=user_actions
+| transaction userID maxspan=30m
+| stats count by mvjoin(action, "->")
+| sort -count
+```
+用途：分析用户在30分钟内最常执行的操作序列。
+
+19. 测试环境使用情况
+```
+sourcetype=test_env_logs
+| stats latest(status) as current_status, count(eval(action="allocate")) as allocations, count(eval(action="release")) as releases by env_name
+| eval usage_rate=round(allocations/(allocations+releases)*100,2)
+| sort -usage_rate
+```
+用途：监控测试环境的当前状态和使用率。
+
+20. 接口契约违反检测
+```
+sourcetype=api_validation_logs
+| stats count(eval(result="fail")) as failures, count as total_checks by api_name, check_type
+| where failures > 0
+| sort -failures
+```
+用途：检测并统计API接口契约验证失败的情况。
+
+这些Splunk查询示例涵盖了软件测试中的多个方面，包括性能分析、错误跟踪、用户行为分析、安全监控等。您可以根据具体的测试需求和数据结构对这些查询进行调整和优化。使用这些查询可以帮助您更好地理解应用程序的行为、识别潜在问题，并为持续改进提供数据支持。
