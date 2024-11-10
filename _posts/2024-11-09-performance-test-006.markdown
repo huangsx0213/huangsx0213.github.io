@@ -58,6 +58,7 @@ DB_QUERY: SELECT *  FROM transfer where status='PENDING'  LIMIT ?
 # 数据池配置
 POOL_LOW_WATER_MARK: 100
 POOL_BATCH_SIZE: 1000
+CLEAN_UP_THRESHOLD：1000
 
 # HTTP配置
 HTTP_PROTOCOL: https
@@ -71,197 +72,229 @@ HTTP_METHOD: POST
 #### 3.1 setUp Thread Group - JSR223 Sampler (初始化数据池)
 
 ```groovy
-import java.util.concurrent.*
-import java.util.concurrent.atomic.*
-import java.util.concurrent.locks.*
-import java.sql.*
-import org.apache.commons.dbcp2.*
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
+import java.sql.*;
+import org.apache.commons.dbcp2.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // 定义数据类
 class TestData implements Serializable {
-    private String id
-    private String referenceNo
+    private String id;
+    private String referenceNo;
     
     TestData(String id, String referenceNo) {
-        this.id = id
-        this.referenceNo = referenceNo
+        this.id = id;
+        this.referenceNo = referenceNo;
     }
     
-    String getId() { return id }
-    String getReferenceNo() { return referenceNo }
+    String getId() { return id; }
+    String getReferenceNo() { return referenceNo; }
 }
 
 // 数据池管理器
 class DataPoolManager {
-    private static final Logger log = LoggerFactory.getLogger(DataPoolManager.class)
+    private static final Logger log = LoggerFactory.getLogger(DataPoolManager.class);
     
-    private ConcurrentLinkedQueue<TestData> dataQueue
-    private ConcurrentHashMap<String, Boolean> usedData
-    private AtomicInteger processedCount
-    private AtomicBoolean isRefilling
-    private ReentrantLock refillLock
-    private BasicDataSource dataSource
-    private Properties config
-    
+    private ConcurrentLinkedQueue<TestData> dataQueue;
+    private ConcurrentHashMap<String, Boolean> usedData;
+    private AtomicInteger processedCount;
+    private AtomicBoolean isRefilling;
+    private ReentrantLock refillLock;
+    private BasicDataSource dataSource;
+    private Properties config;
+
+    // 清理阈值和清理比例
+    private final int cleanUpThreshold;
+    private final double cleanUpRatio = 0.3;
+    private final int poolLowWaterMark;
+    private final int poolBatchSize;
+
     DataPoolManager(Properties config) {
-        this.config = config
-        this.dataQueue = new ConcurrentLinkedQueue<>()
-        this.usedData = new ConcurrentHashMap<>()
-        this.processedCount = new AtomicInteger(0)
-        this.isRefilling = new AtomicBoolean(false)
-        this.refillLock = new ReentrantLock()
-        this.dataSource = setupDataSource()
-        
-        initialFill()
+        this.config = config;
+        this.dataQueue = new ConcurrentLinkedQueue<>();
+        this.usedData = new ConcurrentHashMap<>();
+        this.processedCount = new AtomicInteger(0);
+        this.isRefilling = new AtomicBoolean(false);
+        this.refillLock = new ReentrantLock();
+        this.dataSource = setupDataSource();
+
+        // 读取清理阈值配置
+        this.cleanUpThreshold = Integer.parseInt(config.getProperty("CLEAN_UP_THRESHOLD", "100"));
+        this.poolLowWaterMark = Integer.parseInt(config.getProperty("POOL_LOW_WATER_MARK", "100"));
+        this.poolBatchSize = Integer.parseInt(config.getProperty("POOL_BATCH_SIZE", "1000"));
+
+        initialFill();
     }
     
     private BasicDataSource setupDataSource() {
-        BasicDataSource ds = new BasicDataSource()
-        ds.setUrl(config.getProperty("DB_URL"))
-        ds.setUsername(config.getProperty("DB_USER"))
-        ds.setPassword(config.getProperty("DB_PASSWORD"))
-        ds.setInitialSize(5)
-        ds.setMaxTotal(20)
-        return ds
+        BasicDataSource ds = new BasicDataSource();
+        ds.setUrl(config.getProperty("DB_URL"));
+        ds.setUsername(config.getProperty("DB_USER"));
+        ds.setPassword(config.getProperty("DB_PASSWORD"));
+        ds.setInitialSize(5);
+        ds.setMaxTotal(20);
+        return ds;
     }
     
     TestData getNextData() {
-        TestData data = dataQueue.poll()
+        TestData data = dataQueue.poll();
         
         if (data != null) {
             if (usedData.putIfAbsent(data.getId(), Boolean.TRUE) != null) {
-                return getNextData()
+                return getNextData();
             }
-            processedCount.incrementAndGet()
+            processedCount.incrementAndGet();
             
-            if (dataQueue.size() < Integer.parseInt(config.getProperty("POOL_LOW_WATER_MARK", "100"))) {
-
-                triggerRefill()
+            if (dataQueue.size() < poolLowWaterMark) {
+                triggerRefill();
             }
             
-            return data
+            return data;
         }
 
-        refillDataPool()
-        return dataQueue.poll()
+        refillDataPool();
+        return dataQueue.poll();
     }
     
     private void triggerRefill() {
         if (isRefilling.compareAndSet(false, true)) {
-            Thread.start {
+            new Thread(() -> {
                 try {
-                    refillDataPool()
+                    refillDataPool();
                 } finally {
-                    isRefilling.set(false)
+                    isRefilling.set(false);
                 }
-            }
+            }).start();
         }
     }
     
     private void refillDataPool() {
         if (refillLock.tryLock()) {
             try {
-                int batchSize = Integer.parseInt(config.getProperty("POOL_BATCH_SIZE", "1000"))
-                String query = config.getProperty("DB_QUERY")
-                Connection conn = dataSource.getConnection()
+            	  // 检查usedData是否达到清理阈值
+	            if (usedData.size() > cleanUpThreshold) {
+	                cleanUp(); 
+	            }
+
+                String query = config.getProperty("DB_QUERY");
+                Connection conn = dataSource.getConnection();
                 try {
-                    PreparedStatement stmt = conn.prepareStatement(query)
-                    stmt.setInt(1, batchSize)
-                    ResultSet rs = stmt.executeQuery()
+                    PreparedStatement stmt = conn.prepareStatement(query);
+                    stmt.setInt(1, poolBatchSize);
+                    ResultSet rs = stmt.executeQuery();
                     while (rs.next()) {
                         TestData data = new TestData(
                             rs.getString("id"),
                             rs.getString("reference_no")
-                        )
+                        );
                         if (!usedData.containsKey(data.getId())) {
-                            dataQueue.offer(data)
+                            dataQueue.offer(data);
                         }
                     }
                     
-                    log.info("Refilled pool. Current size: " + dataQueue.size())
+                    log.info("Refilled pool. Current size: " + dataQueue.size());
                 } finally {
-                    conn.close()
+                    conn.close();
                 }
             } catch (Exception e) {
-                log.error("Database error during refill", e)
+                log.error("Database error during refill", e);
             } finally {
-                refillLock.unlock()
+                refillLock.unlock();
             }
         }
     }
     
     private void initialFill() {
-        refillDataPool()
+        refillDataPool();
     }
     
     void shutdown() {
         try {
-            dataSource.close()
+            dataSource.close();
         } catch (Exception e) {
-            log.error("Error closing data source", e)
+            log.error("Error closing data source", e);
         }
     }
     
     int getProcessedCount() {
-        return processedCount.get()
+        return processedCount.get();
     }
     
     int getAvailableCount() {
-        return dataQueue.size()
+        return dataQueue.size();
     }
-    // 在 DataPoolManager 类中添加
-	void updateStatus(String referenceNo, String status) {
-	    Connection conn = null
-	    PreparedStatement stmt = null
-	    try {
-	        conn = dataSource.getConnection()
-	        String updateQuery = "UPDATE transfer SET status = ? WHERE reference_no = ?"
-	        stmt = conn.prepareStatement(updateQuery)
-	        stmt.setString(1, status)
-	        stmt.setString(2, referenceNo)
-	        int updated = stmt.executeUpdate()
-	        
-	        if (updated > 0) {
-	            log.debug("Updated status to ${status} for reference_no: ${referenceNo}")
-	        } else {
-	            log.warn("No record found to update for reference_no: ${referenceNo}")
-	        }
-	    } catch (SQLException e) {
-	        log.error("Error updating status for reference_no: ${referenceNo}", e)
-	        throw e
-	    } finally {
-	        try {
-	            if (stmt != null) stmt.close()
-	            if (conn != null) conn.close()
-	        } catch (SQLException e) {
-	            log.error("Error closing resources", e)
-	        }
-	    }
-	}
+    
+    void updateStatus(String referenceNo, String status) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        try {
+            conn = dataSource.getConnection();
+            String updateQuery = "UPDATE transfer SET status = ? WHERE reference_no = ?";
+            stmt = conn.prepareStatement(updateQuery);
+            stmt.setString(1, status);
+            stmt.setString(2, referenceNo);
+            int updated = stmt.executeUpdate();
+            
+            if (updated > 0) {
+                log.debug("Updated status to " + status + " for reference_no: " + referenceNo);
+            } else {
+                log.warn("No record found to update for reference_no: " + referenceNo);
+            }
+        } catch (SQLException e) {
+            log.error("Error updating status for reference_no: " + referenceNo, e);
+            throw e;
+        } finally {
+            try {
+                if (stmt != null) stmt.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                log.error("Error closing resources", e);
+            }
+        }
+    }
+
+    // 清理方法
+    private void cleanUp() {
+        if (usedData.size() > cleanUpThreshold) {
+            int itemsToRemove = (int) (usedData.size() * cleanUpRatio);
+            log.info("Cleaning up " + itemsToRemove + " items from used data.");
+
+            // 遍历并移除一定比例的数据
+            Iterator<String> it = usedData.keySet().iterator();
+            while (it.hasNext() && itemsToRemove > 0) {
+                it.next(); // 获取下一个键
+                it.remove(); // 移除该键
+                itemsToRemove--;
+            }
+
+            log.info("Cleanup completed. Current used data count: " + usedData.size());
+        }
+    }
 }
 
 // 创建配置
-Properties config = new Properties()
-config.put("DB_URL", vars.get("DB_URL"))
-config.put("DB_USER", vars.get("DB_USER"))
-config.put("DB_PASSWORD", vars.get("DB_PASSWORD"))
-config.put("DB_QUERY", vars.get("DB_QUERY"))
-config.put("POOL_LOW_WATER_MARK", vars.get("POOL_LOW_WATER_MARK"))
-config.put("POOL_BATCH_SIZE", vars.get("POOL_BATCH_SIZE"))
-config.put("HTTP_PROTOCOL", vars.get("HTTP_PROTOCOL"))
-config.put("HTTP_DOMAIN", vars.get("HTTP_DOMAIN"))
-config.put("HTTP_PATH", vars.get("HTTP_PATH"))
-config.put("HTTP_METHOD", vars.get("HTTP_METHOD"))
+Properties config = new Properties();
+config.put("DB_URL", vars.get("DB_URL"));
+config.put("DB_USER", vars.get("DB_USER"));
+config.put("DB_PASSWORD", vars.get("DB_PASSWORD"));
+config.put("DB_QUERY", vars.get("DB_QUERY"));
+config.put("POOL_LOW_WATER_MARK", vars.get("POOL_LOW_WATER_MARK"));
+config.put("POOL_BATCH_SIZE", vars.get("POOL_BATCH_SIZE"));
+config.put("HTTP_PROTOCOL", vars.get("HTTP_PROTOCOL"));
+config.put("HTTP_DOMAIN", vars.get("HTTP_DOMAIN"));
+config.put("HTTP_PATH", vars.get("HTTP_PATH"));
+config.put("HTTP_METHOD", vars.get("HTTP_METHOD"));
+config.put("CLEAN_UP_THRESHOLD", vars.get("CLEAN_UP_THRESHOLD")); // 添加清理阈值配置
 
 // 初始化数据池管理器
-DataPoolManager dataPool = new DataPoolManager(config)
-props.put("dataPool", dataPool)
-props.put("config", config)
+DataPoolManager dataPool = new DataPoolManager(config);
+props.put("dataPool", dataPool);
+props.put("config", config);
 
-log.info("Data pool initialized successfully")
-```
+log.info("Data pool initialized successfully,pool.Current size: " + dataPool.dataQueue.size());```
 
 #### 3.2 Thread Group - JSR223 PreProcessor (获取测试数据)
 
@@ -289,7 +322,7 @@ if (data != null) {
     }
 } else {
     log.error("No data available")
-    SampleResult.setSuccessful(false)
+    return
 }
 ```
 
