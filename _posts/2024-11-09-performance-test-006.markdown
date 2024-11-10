@@ -294,7 +294,8 @@ DataPoolManager dataPool = new DataPoolManager(config);
 props.put("dataPool", dataPool);
 props.put("config", config);
 
-log.info("Data pool initialized successfully,pool.Current size: " + dataPool.dataQueue.size());```
+log.info("Data pool initialized successfully,pool.Current size: " + dataPool.dataQueue.size());
+```
 
 #### 3.2 Thread Group - JSR223 PreProcessor (获取测试数据)
 
