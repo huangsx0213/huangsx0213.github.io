@@ -10,4 +10,269 @@ tags:
     - Testing
 ---
 
-# Temp2
+以下是针对日常工作的Splunk命令和语法的详细参考手册，涵盖了各类常用命令、时间语法、字段操作、统计和图表命令等。
+
+## 一、基础搜索语法
+
+### 1. 搜索运算符
+```splunk
+# 布尔运算符
+AND OR NOT XOR
+error AND (warn* OR fail*)
+error NOT timeout
+
+# 比较运算符
+= != > < >= <=
+status=404
+status>=500
+
+# 通配符
+* ? [] [^]
+fail* *error f?il
+
+# 字段运算符
+EXISTS NOT EXISTS BETWEEN
+host="webserver01" status=500
+```
+
+### 2. 时间语法
+```splunk
+# 相对时间
+earliest=-24h latest=now
+earliest=-7d@d latest=@d
+earliest=-1w@w latest=@w
+
+# 绝对时间
+earliest=01/15/2023:12:00:00
+latest="2023-01-15 13:00:00"
+
+# 时间修饰符
+@d @h @w @mon
+earliest=relative_time(now(), "-1d@d")
+latest=relative_time(now(), "@d")
+
+# 例子：昨天9点到今天18点
+earliest=@d+9h latest=@d+18h
+```
+
+## 二、字段操作命令
+
+### 1. 字段别名和重命名
+```splunk
+# rename命令
+| rename source AS src
+| rename old_field AS "New Field Name"
+
+# eval命令（计算和转换）
+| eval new_field = field1 + field2
+| eval is_error = if(status >= 400, 1, 0)
+```
+
+### 2. 字段提取
+```splunk
+# rex命令
+| rex field=_raw "pattern=(?<field_name>.*?)"
+| extract field=_raw "pattern"
+
+# kvform命令（键值对形式）
+| kvform field=_raw "pattern"
+```
+
+### 3. 字段显示和隐藏
+```splunk
+# fields命令
+| fields + host, status
+| fields - temp*
+```
+
+## 三、过滤和限制命令
+
+### 1. 基本过滤
+```splunk
+# search命令
+index=main sourcetype=access_logs status=404
+
+# regex命令
+index=syslogs | regex "error=Deprecation Warning"
+
+# rex命令（正则表达式）
+source="email_dump.txt" | rex "(?<email>\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b)"
+```
+
+### 2. 排序和限制
+```splunk
+# sort命令
+| sort field1
+| sort -field1
+
+# head/tail命令
+| head 10
+| tail 5
+
+# limit命令
+| limit 100
+```
+
+## 四、统计和图表命令
+
+### 1. 统计命令
+```splunk
+# stats命令
+| stats count
+| stats avg(response_time)
+| stats sum(bytes) by host
+
+# eventstats命令（事件级统计）
+| eventstats count as event_count by user
+
+# streamstats命令（流式统计）
+| streamstats sum(bytes) as total_bytes by host
+```
+
+### 2. 图表命令
+```splunk
+# chart/timechart命令
+| chart count over field
+| timechart span=1h count
+| timechart span=1d sum(bytes) by host
+
+# sistats/sitimechart命令（summary indexing版本）
+| sistats count by field
+| sitimechart span=1d count by field
+```
+
+## 五、事务和关联命令
+
+### 1. 事务分析
+```splunk
+# transaction命令
+| transaction field1 maxspan=5m startswith="start" endswith="end"
+
+# searchtxn命令（事务搜索）
+| searchtxn field1 maxspan=5m startswith="start" endswith="end"
+```
+
+### 2. 关联和连接
+```splunk
+# join命令
+| join type=inner field1 [search sourcetype=other | fields field1, field2]
+
+# selfjoin命令（自连接）
+| selfjoin field1
+```
+
+## 六、数据处理和转换命令
+
+### 1. 数据转换
+```splunk
+# eval命令（计算）
+| eval result = number1 + number2
+
+# makemv/mvcombine/mvexpand命令（多值字段）
+| makemv field delimiter=","
+| mvcombine field
+| mvexpand field
+
+# fillnull/filldown命令（填充空值）
+| fillnull field value="default"
+| filldown field
+```
+
+### 2. 数据聚合
+```splunk
+# cluster命令（聚类）
+| cluster showcount=true field=message
+
+# dedup命令（删除重复）
+| dedup field1
+
+# accum命令（累计）
+| accum field sum(field)
+```
+
+## 七、实时监控和告警命令
+
+### 1. 实时搜索
+```splunk
+# realtime命令
+| realtime
+
+# rt命令（实时简写）
+| rt
+```
+
+### 2. 告警设置
+```splunk
+# alert/sendalert命令
+| alert
+| sendalert
+
+# savedsearch命令（保存搜索）
+| savedsearch
+```
+
+## 八、时间范围和工作时间搜索
+
+### 1. 工作时间搜索
+```splunk
+# 使用date_hour字段
+<your search> date_hour>9 date_hour<18
+
+# 使用相对时间修饰符
+earliest=@d+9h latest=@d+18h
+```
+
+### 2. 每日统计
+```splunk
+# 使用bucket/timechart命令
+mysearch | bucket _time span=day | stats count by _time
+index=%yourIndexHere% websiteName=* | timechart span=1d count by websiteName limit=0
+```
+
+## 九、常用命令参考表
+
+### 基础命令
+| 命令 | 描述 |
+|------|------|
+| `chart` | 返回表格输出用于图表 |
+| `dedup` | 删除重复结果 |
+| `eval` | 计算表达式 |
+| `fields` | 移除字段 |
+| `head/tail` | 返回前/后N条结果 |
+| `lookup` | 从外部源添加字段值 |
+| `rename` | 重命名字段 |
+| `rex` | 根据正则表达式提取字段 |
+
+### 统计和图表命令
+| 命令 | 描述 |
+|------|------|
+| `stats` | 提供统计，分组字段可选 |
+| `eventstats` | 事件级统计 |
+| `streamstats` | 流式统计 |
+| `timechart` | 时间序列图表 |
+| `sistats/sitimechart` | summary indexing版本的统计和图表 |
+
+### 事务和关联命令
+| 命令 | 描述 |
+|------|------|
+| `transaction` | 事务分析 |
+| `searchtxn` | 事务搜索 |
+| `join` | 连接 |
+| `selfjoin` | 自连接 |
+
+### 数据处理和转换命令
+| 命令 | 描述 |
+|------|------|
+| `makemv/mvcombine/mvexpand` | 多值字段操作 |
+| `fillnull/filldown` | 填充空值 |
+| `cluster` | 聚类分析 |
+| `dedup` | 删除重复 |
+
+### 实时监控和告警命令
+| 命令 | 描述 |
+|------|------|
+| `realtime` | 实时搜索 |
+| `alert/sendalert` | 设置和发送告警 |
+| `savedsearch` | 保存搜索 |
+
+这份手册涵盖了Splunk的大多数常用命令和语法，希望能帮助您在日常工作中更高效地使用Splunk进行数据分析和监控。如有特定问题或需要进一步深入学习某个领域，可以参考官方文档和社区资源[1][2][5].
