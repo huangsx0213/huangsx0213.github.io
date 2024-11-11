@@ -1,6 +1,6 @@
 ---
 layout:     post
-title:      "JMeter 高并发测试方案：支持多数据池的线程安全参数化测试实现"
+title:      "JMeter 高并发测试方案：支持多数据池的线程安全参数化测试实现（动态数据模型篇）"
 subtitle:   "「 Performance Testing 」" 
 date:       2024-11-12 11:00:01
 author:     "Vick Huang"
