@@ -483,6 +483,8 @@ def paymentPool = DataPoolFactory.getOrCreate("PAYMENT_POOL", config)
 // Store in global properties
 props.put("transferPool", transferPool)
 props.put("paymentPool", paymentPool)
+// 将 DataPoolFactory 类存储为 JMeter 属性
+props.put("DataPoolFactory", DataPoolFactory)
 
 log.info("Data pools initialized:\n" + DataPoolFactory.getPoolsStatus())
 ```
@@ -542,9 +544,16 @@ if (data != null) {
 ### 5. tearDown Thread Group - JSR223 Sampler
 
 ```groovy
-log.info("Final status:\n" + DataPoolFactory.getPoolsStatus())
-DataPoolFactory.shutdown()
-log.info("All data pools have been shut down")
+// 从 JMeter 属性中获取 DataPoolFactory
+def DataPoolFactory = props.get("DataPoolFactory")
+
+if (DataPoolFactory) {
+    log.info("Final status:\n" + DataPoolFactory.getPoolsStatus())
+    DataPoolFactory.shutdown()
+    log.info("All data pools have been shut down")
+} else {
+    log.error("DataPoolFactory not found in properties")
+}
 ```
 
 ## 四、使用说明
