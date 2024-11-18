@@ -13,22 +13,7 @@ tags:
 
 
 
-### JMeter 高并发测试方案：支持多数据池的线程安全参数化测试实现
-
----
-
-### 目录
-
-1. 方案概述
-2. 测试计划结构
-3. 完整代码实现
-   - User Defined Variables 配置
-   - `setUp Thread Group` - JSR223 Sampler（初始化数据池）
-   - 转账测试线程组 - JSR223 PreProcessor
-   - 支付测试线程组 - JSR223 PreProcessor
-   - `tearDown Thread Group` - JSR223 Sampler（资源清理）
-4. 使用说明
-5. 注意事项
+## JMeter 高并发测试方案：支持多数据池的线程安全参数化测试实现
 
 ---
 
