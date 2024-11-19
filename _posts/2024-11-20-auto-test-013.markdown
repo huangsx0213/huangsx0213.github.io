@@ -1,0 +1,270 @@
+---
+layout:     post
+title:      "性能测试方案：Taurus + JMeter + Robot Framework 自定义封装库 + Selenium（构想）"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-11-20 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+### **性能测试方案：Taurus + JMeter + Robot Framework 自定义封装库 + Selenium（构想）**
+
+---
+
+#### **一、方案背景**
+
+随着 Web 应用的日益复杂，性能测试变得越来越重要。为了确保应用在高并发场景下能够平稳运行，同时能够保证前端用户体验的顺畅性，我们设计了一个全面的应用性能测试方案。该方案结合了 **Taurus** 进行统一的测试调度、**JMeter** 进行 API 压力测试、**Robot Framework + 自定义的 Selenium 封装库** 进行前端功能测试，从多个层面验证应用的性能和稳定性。
+
+#### **二、方案目标**
+
+1. **API 性能测试**：使用 **JMeter** 压测应用的后端 API，验证其在高并发下的响应时间、错误率以及吞吐量。
+   
+2. **前端性能测试**：使用 **Robot Framework** 和自定义的 **Selenium 库**，在多个并发浏览器实例中模拟用户操作，测试前端页面的加载时间、功能完整性和用户体验。
+
+3. **统一调度**：通过 **Taurus** 统一调度管理，进行多场景的并发测试，生成统一的报告和日志，方便测试结果的分析。
+
+---
+
+#### **三、测试工具及技术栈**
+
+- **Taurus**：用于整合和调度 **JMeter** 和 **Robot Framework** 测试，并生成测试报告。
+- **JMeter**：进行后端 API 的压力测试，模拟高并发场景下的 API 调用。
+- **Robot Framework + 自定义 Selenium 封装库**：进行前端功能的并发测试，验证用户操作的正确性。
+- **Selenium WebDriver**：用于浏览器自动化，模拟不同用户操作。
+
+---
+
+#### **四、测试环境准备**
+
+1. **JMeter 安装**
+   - 确保安装了 JMeter，并配置好相关的环境变量。
+   - 创建 JMeter 压测计划（`.jmx` 文件），用于 API 性能测试。
+
+2. **Robot Framework + Selenium 环境安装**
+   - 安装 **Robot Framework** 和 **Selenium WebDriver**，以及相关库：
+     ```bash
+     pip install robotframework
+     pip install selenium
+     pip install taurus
+     ```
+
+3. **Taurus 安装**
+   - 安装 Taurus：
+     ```bash
+     pip install bzt
+     ```
+
+4. **浏览器驱动**
+   - 下载并安装适合的 **ChromeDriver** 或 **GeckoDriver**，并将其路径添加到系统环境变量中。
+
+---
+
+#### **五、测试场景设计**
+
+##### **场景 1: API 压力测试**
+- **目标**：对应用的 API 进行压力测试，模拟并发用户的 API 调用，验证后端服务在高并发下的响应时间和稳定性。
+- **工具**：JMeter
+- **测试内容**：
+  - 并发用户数：50
+  - API 请求类型：POST/GET
+  - 目标 URL：`http://example.com/api`
+  - 请求数据：模拟用户登录、数据提交等操作。
+
+##### **场景 2: 前端功能测试**
+- **目标**：并发模拟多个用户对前端页面的操作，验证页面加载速度、响应时间和功能完整性。
+- **工具**：Robot Framework + 自定义 Selenium 封装库
+- **测试内容**：
+  - 并发用户数：10
+  - 模拟操作：访问主页、登录、执行搜索、添加购物车等操作。
+
+##### **场景 3: 全链路测试**
+- **目标**：同时进行 API 压力测试和前端功能测试，验证系统在真实场景下的性能表现。
+- **工具**：Taurus 统一调度，JMeter 和 Robot Framework 联合执行。
+
+---
+
+#### **六、测试方案实施**
+
+##### **步骤 1: JMeter API 压测计划**
+
+创建一个 JMeter 压测计划，设置目标 API 的请求。保存为 `api_test_plan.jmx`。
+
+**示例 JMeter XML 配置**：
+```xml
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.4">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="API Load Test" enabled="true">
+      <stringProp name="TestPlan.comments"/>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments"/>
+      <stringProp name="TestPlan.user_define_classpath"/>
+      <hashTree>
+        <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group" enabled="true">
+          <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+          <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+            <boolProp name="LoopController.continue_forever">false</boolProp>
+            <stringProp name="LoopController.loops">1</stringProp>
+          </elementProp>
+          <stringProp name="ThreadGroup.num_threads">50</stringProp> <!-- 并发用户 -->
+          <stringProp name="ThreadGroup.ramp_time">60</stringProp> <!-- 并发逐步增加到50个 -->
+        </ThreadGroup>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="API Request" enabled="true">
+            <stringProp name="HTTPSampler.domain">example.com</stringProp>
+            <stringProp name="HTTPSampler.port">80</stringProp>
+            <stringProp name="HTTPSampler.protocol">http</stringProp>
+            <stringProp name="HTTPSampler.path">/api/endpoint</stringProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
+          </HTTPSamplerProxy>
+        </hashTree>
+      </hashTree>
+    </TestPlan>
+  </hashTree>
+</jmeterTestPlan>
+```
+
+---
+
+##### **步骤 2: 自定义 Selenium 封装**
+
+我们将自定义一个 **Selenium 自动化库**，用于代替 **SeleniumLibrary**，实现浏览器自动化操作。
+
+**示例自定义 Selenium 库**：
+
+```python
+from selenium import webdriver
+
+class CustomSeleniumWrapper:
+    def __init__(self, browser='chrome'):
+        if browser == 'chrome':
+            self.driver = webdriver.Chrome()
+        elif browser == 'firefox':
+            self.driver = webdriver.Firefox()
+        else:
+            raise ValueError("Unsupported browser")
+
+    def open_page(self, url):
+        """打开指定URL"""
+        self.driver.get(url)
+
+    def check_title(self, expected_title):
+        """验证页面标题"""
+        assert expected_title in self.driver.title, f"Expected '{expected_title}' in title, but got '{self.driver.title}'"
+
+    def find_element(self, by, value):
+        """根据定位信息查找元素"""
+        return self.driver.find_element(by, value)
+
+    def close_browser(self):
+        """关闭浏览器"""
+        self.driver.quit()
+
+# 使用示例
+if __name__ == '__main__':
+    browser = CustomSeleniumWrapper(browser='chrome')
+    browser.open_page("http://example.com")
+    browser.check_title("Example Domain")
+    browser.close_browser()
+```
+
+---
+
+##### **步骤 3: 编写 Robot Framework 测试用例**
+
+使用自定义的 **Selenium 封装库** 编写 Robot Framework 的测试用例。
+
+**测试用例 1 - `test_case_1.robot`**
+
+```robot
+*** Settings ***
+Library    CustomSeleniumWrapper    browser=chrome
+
+*** Test Cases ***
+Validate Home Page Title
+    Open Page    http://example.com
+    Check Title    Example Domain
+    Close Browser
+```
+
+**测试用例 2 - `test_case_2.robot`**
+
+```robot
+*** Settings ***
+Library    CustomSeleniumWrapper    browser=chrome
+
+*** Test Cases ***
+Login Page Fields Validation
+    Open Page    http://example.com/login
+    Find Element    name    username
+    Find Element    name    password
+    Close Browser
+```
+
+---
+
+##### **步骤 4: Taurus 配置文件**
+
+编写 **Taurus YAML 配置文件**，整合 **JMeter API 压测** 和 **Robot Framework Selenium 前端测试**。
+
+```yaml
+execution:
+  - concurrency: 50                      # API 压测并发用户数
+    hold-for: 1m                         # 持续 1 分钟
+    ramp-up: 30s                         # 并发用户逐步增长
+    scenario: api_test                   # JMeter 场景
+
+  - concurrency: 10                      # 前端测试并发用户数
+    hold-for: 1m                         # 持续 1 分钟
+    ramp-up: 30s                         # 并发用户逐步增长
+    scenarios:                           # Robot Framework 场景
+      - home_page_test                   # 测试主页
+      - login_page_test                  # 测试登录页
+
+scenarios:
+  api_test:
+    script: api_test_plan.jmx            # 调用 JMeter 压测计划
+
+  home_page_test:
+    script: test_case_1.robot            # 调用 Robot Framework 测试用例
+
+  login_page_test:
+    script: test_case_2.robot            # 调用 Robot Framework 测试用例
+
+reporting:
+  - module: console                      # 控制台输出
+  - module: final-stats                  # 最终统计
+  - module: junit-xml                    # JUnit XML 报告
+```
+
+---
+
+#### **七、执行测试**
+
+使用以下命令运行 **Taurus**，同时启动 **JMeter API 压测** 和 **Robot Framework** 前端并发测试：
+
+```bash
+bzt taurus_testrun.yml
+```
+
+---
+
+#### **八、结果分析**
+
+1. **报告生成**：
+   - **HTML 报告**：Taurus 自动生成包含 API 和前端测试结果的综合报告。
+   - **JUnit XML 报告**：适用于集成 **CI/CD** 工具（如 **Jenkins**）。
+
+2. **控制台输出**：
+   - 实时显示每个场景的执行状态、成功率、错误率、响应时间等。
+
+---
+
+#### **九、总结**
+
+该方案结合了 **JMeter** 和 **Robot Framework**，同时对应用的前后端进行并发测试。通过 **Taurus** 的统一调度，你可以轻松管理多场景的并发测试，并生成详细的报告用于性能分析。这种全面的测试方式确保了应用不仅在后端高并发下能够稳定运行，同时前端用户体验也能够得到保障。
