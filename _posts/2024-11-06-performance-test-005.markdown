@@ -13,80 +13,90 @@ tags:
 
 
 
-## JMeter 高并发测试方案：支持多数据池的线程安全参数化测试实现
+# JMeter 高并发测试方案：多数据池线程安全参数化测试实现（一）
 
----
+## 一、方案概述
 
-### 一、方案概述
+### 1.1 目标
+本方案旨在解决JMeter高并发测试中的数据参数化问题，实现一个线程安全、高效的多数据池管理系统。
 
-本方案针对高并发测试场景，旨在使用 **JMeter** 进行多数据池的线程安全参数化测试。通过动态从数据库中获取数据作为 HTTP 请求参数，确保每个线程能获取到唯一的测试数据，并且在高并发场景下，数据能够安全且高效地处理。
+### 1.2 主要功能
+1. **多数据池管理**：支持多个独立数据池的创建和管理
+2. **数据唯一性**：确保测试数据不被重复使用
+3. **自动补充机制**：数据池存量不足时自动补充
+4. **线程安全**：支持高并发场景下的安全访问
+5. **状态监控**：实时监控数据池状态和使用情况
+6. **资源管理**：自动管理数据库连接和资源清理
 
-#### 主要特点：
+### 1.3 技术特点
+1. **并发控制**
+   - ConcurrentLinkedQueue 用于数据存储
+   - synchronized 同步访问机制
+   - 原子操作计数器
+   
+2. **数据管理**
+   - 数据库连接池
+   - 批量数据获取
+   - 自动清理机制
+   
+3. **监控统计**
+   - 数据使用统计
+   - 实时状态报告
+   - 详细日志记录
 
-1. **多数据池支持**：支持创建多个独立的数据池，针对不同的测试场景提供数据。
-2. **数据唯一性保证**：通过线程安全的数据结构，确保测试数据不会被不同线程重复使用。
-3. **高性能数据获取**：使用数据库连接池和批量查询优化性能。
-4. **动态数据补充**：自动化的数据补充机制，确保数据池中的测试数据持续可用。
-5. **资源智能管理**：完整的资源初始化和清理机制。
-6. **实时状态监控**：提供多数据池的状态实时监控。
-7. **字段配置灵活性**：支持通过配置文件动态定义数据字段和类型。
-8. **灵活的唯一键定义**：支持单一键和复合键，可通过配置灵活定义唯一性。
-9. **自动移除过期数据**：使用 `LinkedHashMap` 实现自动移除最旧数据的功能。
-10. **增强的线程安全性**：使用 `Collections.synchronizedMap` 确保数据操作的线程安全。
-
----
-
-### 二、测试计划结构
+## 二、测试计划结构
 
 ```plaintext
 Test Plan
 ├── User Defined Variables (配置参数)
 ├── setUp Thread Group (初始化数据池)
 │   └── JSR223 Sampler (数据池初始化脚本)
-├── Thread Group (转账测试)
-│   ├── JSR223 PreProcessor (获取转账数据)
-│   └── HTTP Request (转账请求)
-├── Thread Group (支付测试)
-│   ├── JSR223 PreProcessor (获取支付数据)
-│   └── HTTP Request (支付请求)
-└── tearDown Thread Group
-    └── JSR223 Sampler (清理资源)
+├── Thread Group (测试线程组)
+│   └── JSR223 Sampler (测试执行脚本)
+└── tearDown Thread Group (资源清理)
+    └── JSR223 Sampler (清理脚本)
 ```
 
----
+## 三、配置参数设置
 
-### 三、完整代码实现
-
-#### 1. User Defined Variables 配置
-
-```plaintext
-# 数据库基础配置
+### 3.1 数据库基础配置
+```properties
 DB_URL: jdbc:postgresql://localhost:5432/testdb
 DB_USER: postgres
 DB_PASSWORD: password
+```
 
+### 3.2 数据池配置
+```properties
 # 转账数据池配置
-TRANSFER_POOL_QUERY: SELECT id, reference_no, amount, currency, status FROM transfer WHERE status='PENDING' LIMIT ?
+TRANSFER_POOL_QUERY: SELECT id, reference_no FROM transfer WHERE status='PENDING' LIMIT ?
 TRANSFER_POOL_UPDATE_SQL: UPDATE transfer SET status = ? WHERE reference_no = ?
 TRANSFER_POOL_BATCH_SIZE: 1000
 TRANSFER_POOL_LOW_WATER_MARK: 100
 TRANSFER_POOL_CLEAN_UP_THRESHOLD: 1000
-TRANSFER_POOL_FIELDS: id:String,reference_no:String,amount:BigDecimal,currency:String,status:String
+TRANSFER_POOL_FIELDS: id:String,reference_no:String
 TRANSFER_POOL_KEY_FIELDS: id,reference_no
-
-# 支付数据池配置
-PAYMENT_POOL_QUERY: SELECT id, reference_no, payment_method, amount, status FROM payment WHERE status='INIT' LIMIT ?
-PAYMENT_POOL_UPDATE_SQL: UPDATE payment SET status = ? WHERE reference_no = ?
-PAYMENT_POOL_BATCH_SIZE: 500
-PAYMENT_POOL_LOW_WATER_MARK: 50
-PAYMENT_POOL_CLEAN_UP_THRESHOLD: 500
-PAYMENT_POOL_FIELDS: id:String,reference_no:String,payment_method:String,amount:BigDecimal,status:String
-PAYMENT_POOL_KEY_FIELDS: id,reference_no
 ```
 
----
+## 四、核心类设计
 
-#### 2. setUp Thread Group - JSR223 Sampler（初始化数据池）
+### 4.1 类图关系
+```plaintext
+DataPoolFactory
+    └── DataPoolManager
+        ├── DataPoolConfig
+        ├── FieldDefinition
+        └── DynamicTestData
+```
+
+### 4.2 主要职责
+1. **DataPoolFactory**: 数据池工厂，管理多个数据池实例
+2. **DataPoolManager**: 数据池核心管理类，处理数据获取和更新
+3. **DataPoolConfig**: 数据池配置类，管理配置参数
+4. **FieldDefinition**: 字段定义类，处理字段类型和转换
+5. **DynamicTestData**: 测试数据封装类，提供数据访问接口
+
+## 五、实现代码（第一部分：FieldDefinition和DataPoolConfig）
 
 ```groovy
 import java.util.concurrent.*
@@ -142,7 +152,6 @@ class DataPoolConfig implements Serializable {
     final int cleanUpThreshold
     final List<FieldDefinition> fieldDefinitions
     final List<String> keyFields
-    final double cleanUpRatio = 0.3
     
     DataPoolConfig(String name, Properties props) {
         this.poolName = name
@@ -196,7 +205,19 @@ class DataPoolConfig implements Serializable {
         }
     }
 }
+```
 
+这是方案的第一部分，主要包含了配置和字段定义相关的实现。下一部分将继续介绍 DynamicTestData 和 DataPoolManager 的实现。
+
+
+
+# JMeter 高并发测试方案：多数据池线程安全参数化测试实现（二）
+
+继续前面的实现，本部分主要介绍 DynamicTestData 和 DataPoolManager 类的实现。
+
+## 六、实现代码（第二部分：DynamicTestData和DataPoolManager）
+
+```groovy
 // DynamicTestData class
 class DynamicTestData implements Serializable {
     private Map<String, Object> fields
@@ -207,6 +228,7 @@ class DynamicTestData implements Serializable {
         this.keyFields = keyFields
     }
     
+    // 生成数据唯一键
     String getUniqueKey() {
         return keyFields.collect { fieldName ->
             Object value = fields.get(fieldName)
@@ -219,6 +241,7 @@ class DynamicTestData implements Serializable {
         }.join('|')
     }
     
+    // 获取字段值
     Object get(String fieldName) {
         if (!fields.containsKey(fieldName)) {
             throw new IllegalArgumentException(
@@ -228,6 +251,7 @@ class DynamicTestData implements Serializable {
         return fields.get(fieldName)
     }
     
+    // 获取所有字段
     Map<String, Object> getAllFields() {
         return new HashMap<>(fields)
     }
@@ -269,8 +293,9 @@ class DataPoolManager {
         this.poolName = config.poolName
         this.config = config
         this.dataQueue = new ConcurrentLinkedQueue<>()
+        // 使用LinkedHashMap实现LRU缓存
         this.usedData = Collections.synchronizedMap(
-            new LinkedHashMap<String, Boolean>(config.cleanUpThreshold + 1, 0.75f, true) {
+            new LinkedHashMap<String, Boolean>(config.cleanUpThreshold + 1, 0.75f, false) {
                 @Override
                 protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
                     return size() > config.cleanUpThreshold
@@ -286,7 +311,7 @@ class DataPoolManager {
         initialFill()
     }
     
-    // Setup the database connection pool
+    // 设置数据库连接池
     private BasicDataSource setupDataSource() {
         BasicDataSource ds = new BasicDataSource()
         ds.setUrl(config.dbUrl)
@@ -299,7 +324,7 @@ class DataPoolManager {
         return ds
     }
     
-    // Retrieve the next available data from the pool
+    // 获取下一个可用数据
     DynamicTestData getNextData() {
         DynamicTestData data = dataQueue.poll()
         
@@ -323,7 +348,7 @@ class DataPoolManager {
         return dataQueue.poll()
     }
     
-    // Trigger a new refill in the background if needed
+    // 触发异步数据补充
     private void triggerRefill() {
         if (isRefilling.compareAndSet(false, true)) {
             Thread.start {
@@ -336,7 +361,7 @@ class DataPoolManager {
         }
     }
     
-    // Attempt to refill the data pool by querying the database
+    // 补充数据池
     private void refillDataPool() {
         if (refillLock.tryLock()) {
             try {
@@ -346,12 +371,12 @@ class DataPoolManager {
                     stmt.setInt(1, config.batchSize)
                     ResultSet rs = stmt.executeQuery()
 
-                    int totalFetched = 0       // Counter for total records fetched from the database
-                    int addedCount = 0         // Counter for records actually added to the queue
-                    int duplicateCount = 0     // Counter for duplicate records
+                    int totalFetched = 0    // 从数据库获取的总记录数
+                    int addedCount = 0      // 实际添加到队列的记录数
+                    int duplicateCount = 0  // 重复的记录数
 
                     while (rs.next()) {
-                        totalFetched++         // Increase total fetched count
+                        totalFetched++
 
                         DynamicTestData data = createDataFromResultSet(rs)
                         synchronized (usedData) {
@@ -364,8 +389,10 @@ class DataPoolManager {
                         }
                     }
 
-                    // Log the statistics of fetched data
-                    log.info("${poolName} - Refilled pool. Fetched: ${totalFetched}, Added: ${addedCount}, Duplicates: ${duplicateCount}, Current size: ${dataQueue.size()}")
+                    // 记录数据补充统计信息
+                    log.info("${poolName} - Refilled pool. Fetched: ${totalFetched}, " +
+                            "Added: ${addedCount}, Duplicates: ${duplicateCount}, " +
+                            "Current size: ${dataQueue.size()}")
 
                 } finally {
                     conn.close()
@@ -379,7 +406,7 @@ class DataPoolManager {
         }
     }
 
-    // Create a DynamicTestData object from a result set row
+    // 从ResultSet创建测试数据对象
     private DynamicTestData createDataFromResultSet(ResultSet rs) {
         Map<String, Object> fields = new HashMap<>()
         config.fieldDefinitions.each { fieldDef ->
@@ -389,30 +416,30 @@ class DataPoolManager {
         return new DynamicTestData(fields, config.keyFields)
     }
 
-    // Perform the initial data pool fill
+    // 初始化数据池
     private void initialFill() {
         refillDataPool()
     }
     
-    // Update the status of the current data in the database
-    void updateStatus(DynamicTestData data, String status) {
+    // 更新数据状态
+    void updateStatus(String status, String reference_no) {
         Connection conn = null
         PreparedStatement stmt = null
         try {
             conn = dataSource.getConnection()
             stmt = conn.prepareStatement(config.updateSQL)
             stmt.setString(1, status)
-            stmt.setString(2, data.get("reference_no"))
+            stmt.setString(2, reference_no)
             int updated = stmt.executeUpdate()
             
             if (updated > 0) {
                 updateCount.incrementAndGet()
-                log.debug("${poolName} - Updated status to ${status} for record: ${data}")
+                log.debug("${poolName} - Updated status to ${status} for record: ${reference_no}")
             } else {
-                log.warn("${poolName} - No record found to update for: ${data}")
+                log.warn("${poolName} - No record found to update for: ${reference_no}")
             }
         } catch (SQLException e) {
-            log.error("${poolName} - Error updating status for: ${data}", e)
+            log.error("${poolName} - Error updating status for: ${reference_no}", e)
             throw e
         } finally {
             try {
@@ -425,7 +452,7 @@ class DataPoolManager {
         }
     }
     
-    // Shut down the data pool and close any resources
+    // 关闭数据池
     void shutdown() {
         try {
             dataSource.close()
@@ -436,7 +463,7 @@ class DataPoolManager {
         }
     }
     
-    // Get the current status of the data pool
+    // 获取数据池状态报告
     String getStatusReport() {
         return String.format(
             "%s Status [Processed: %d, Available: %d, Updated: %d, Used: %d]",
@@ -448,13 +475,40 @@ class DataPoolManager {
         )
     }
 }
+```
 
+这部分代码主要实现了：
+
+1. **DynamicTestData类**：
+   - 测试数据的封装
+   - 唯一键生成
+   - 字段值访问
+   - 数据展示格式化
+
+2. **DataPoolManager类**：
+   - 数据池核心管理
+   - 线程安全的数据访问
+   - 自动数据补充机制
+   - 状态监控和报告
+   - 数据库操作封装
+   - 资源管理
+
+下一部分将介绍 DataPoolFactory 和主程序的实现。
+
+
+# JMeter 高并发测试方案：多数据池线程安全参数化测试实现（三）
+
+## 七、实现代码（第三部分：DataPoolFactory和主程序实现）
+
+### 7.1 DataPoolFactory 实现
+
+```groovy
 // DataPoolFactory class
 class DataPoolFactory {
     private static final ConcurrentHashMap<String, DataPoolManager> pools = new ConcurrentHashMap<>()
     private static final Logger log = LoggerFactory.getLogger(DataPoolFactory.class)
     
-    // Get or create a new data pool based on the configuration
+    // 获取或创建数据池
     static DataPoolManager getOrCreate(String poolName, Properties config) {
         return pools.computeIfAbsent(poolName, { name ->
             log.info("Creating new data pool: " + name)
@@ -463,7 +517,7 @@ class DataPoolFactory {
         })
     }
     
-    // Shut down all data pools and release resources
+    // 关闭所有数据池
     static void shutdown() {
         pools.each { name, pool -> 
             try {
@@ -477,7 +531,7 @@ class DataPoolFactory {
         pools.clear()
     }
 
-    // Get the status of all data pools
+    // 获取所有数据池状态
     static String getPoolsStatus() {
         StringBuilder status = new StringBuilder("Data Pools Status:\n")
         pools.each { name, pool ->
@@ -486,7 +540,13 @@ class DataPoolFactory {
         return status.toString()
     }
 }
+```
 
+### 7.2 测试计划实现
+
+#### 1. setUp Thread Group - JSR223 Sampler（初始化脚本）
+
+```groovy
 // Main program: Initialize configuration and data pools
 Properties config = new Properties()
 vars.entrySet().each { entry ->
@@ -495,98 +555,44 @@ vars.entrySet().each { entry ->
 
 // Initialize data pools
 def transferPool = DataPoolFactory.getOrCreate("TRANSFER_POOL", config)
-def paymentPool = DataPoolFactory.getOrCreate("PAYMENT_POOL", config)
 
 // Store in global properties
 props.put("transferPool", transferPool)
-props.put("paymentPool", paymentPool)
+
 // Store DataPoolFactory as a JMeter property
 props.put("DataPoolFactory", DataPoolFactory)
 
 log.info("Data pools initialized:\n" + DataPoolFactory.getPoolsStatus())
 ```
 
----
-
-#### 3. 转账测试线程组 - JSR223 PreProcessor
+#### 2. Thread Group - JSR223 Sampler（测试执行脚本）
 
 ```groovy
 try {
-    def pool = props.get("transferPool")
-    def data = pool.getNextData()
+    def transferPool = props.get("transferPool")
+    def data = transferPool.getNextData()
 
     if (data != null) {
-        // 获取字段值
-        vars.put("id", data.get("id"))
-        vars.put("referenceNo", data.get("reference_no"))
-        vars.put("amount", data.get("amount").toString())
-        vars.put("currency", data.get("currency"))
+        // 设置测试数据到变量中
+        vars.put("id", data.get("id").toString())
+        vars.put("reference_no", data.get("reference_no"))
         
-        // 更新状态
-        pool.updateStatus(data, "PROCESSING")
+        // 记录日志
+        log.info("===JSR223 Sampler is running with id:${data.id},reference_no:${data.reference_no} ===")
         
-        if (ctx.getThreadNum() % 100 == 0) {
-            log.info("Transfer data: " + data.toString())
-            log.info(pool.getStatusReport())
-        }
-    } else {
-        log.error("No transfer data available")
-        SampleResult.setSuccessful(false)
-    }
-} catch (SQLException sqlEx) {
-    log.error("SQL Error during transfer data fetching or updating", sqlEx)
-    SampleResult.setSuccessful(false)
-} catch (NullPointerException npEx) {
-    log.error("Null data received during transfer data processing", npEx)
-    SampleResult.setSuccessful(false)
+        // 更新数据状态
+        transferPool.updateStatus("COMPLETED", data.reference_no)
+    } 
 } catch (Exception ex) {
+    // 发生异常时记录数据池状态和错误信息
+    log.info(transferPool.getStatusReport())
     log.error("Unexpected error in Transfer PreProcessor", ex)
-    SampleResult.setSuccessful(false)
+    Thread.sleep(1000)
+    return
 }
 ```
 
----
-
-#### 4. 支付测试线程组 - JSR223 PreProcessor
-
-```groovy
-try {
-    def pool = props.get("paymentPool")
-    def data = pool.getNextData()
-
-    if (data != null) {
-        // 获取字段值
-        vars.put("id", data.get("id"))
-        vars.put("referenceNo", data.get("reference_no"))
-        vars.put("paymentMethod", data.get("payment_method"))
-        vars.put("amount", data.get("amount").toString())
-        
-        // 更新状态
-        pool.updateStatus(data, "PROCESSING")
-        
-        if (ctx.getThreadNum() % 100 == 0) {
-            log.info("Payment data: " + data.toString())
-            log.info(pool.getStatusReport())
-        }
-    } else {
-        log.error("No payment data available")
-        SampleResult.setSuccessful(false)
-    }
-} catch (SQLException sqlEx) {
-    log.error("SQL Error during payment data fetching or updating", sqlEx)
-    SampleResult.setSuccessful(false)
-} catch (NullPointerException npEx) {
-    log.error("Null data received during payment data processing", npEx)
-    SampleResult.setSuccessful(false)
-} catch (Exception ex) {
-    log.error("Unexpected error in Payment PreProcessor", ex)
-    SampleResult.setSuccessful(false)
-}
-```
-
----
-
-#### 5. tearDown Thread Group - JSR223 Sampler
+#### 3. tearDown Thread Group - JSR223 Sampler（清理脚本）
 
 ```groovy
 // Get DataPoolFactory from JMeter properties
@@ -601,29 +607,100 @@ if (DataPoolFactory) {
 }
 ```
 
----
+## 八、使用说明
 
-### 四、使用说明
+### 8.1 配置步骤
 
-1. 在JMeter中创建测试计划，按照上述结构设置线程组和取样器。
-2. 使用User Defined Variables配置所有必要的参数。
-3. 在 `setUp Thread Group` 添加 JSR223 Sampler 并复制上述代码到其中。
-4. 在 `Thread Group` 中分别为转账和支付测试线程组添加 JSR223 PreProcessor，并复制相应代码。
-5. 在 `tearDown Thread Group` 中添加 JSR223 Sampler 并复制资源清理代码。
-6. 设置适当的线程数和循环次数。可以根据业务需求修改批量获取大小、低水位线等参数。
+1. 在JMeter中创建测试计划
+2. 添加User Defined Variables并设置必要的配置参数
+3. 创建setUp Thread Group并添加初始化脚本
+4. 创建测试线程组并添加测试执行脚本
+5. 创建tearDown Thread Group并添加清理脚本
 
----
+### 8.2 配置参数示例
 
-### 五、注意事项
+```properties
+# 数据库配置
+DB_URL=jdbc:postgresql://localhost:5432/testdb
+DB_USER=postgres
+DB_PASSWORD=password
 
-1. 确保数据库连接正常，数据表中有足够的测试数据。
-2. 根据业务需求适当调整批量查询大小、低水位标记等参数来优化性能。
-3. 注意监控数据库负载，特别是在高并发场景下，必要时优化SQL查询。
-4. 定期检查日志输出，关注数据池状态报告，确保测试执行顺利。
-5. 根据具体测试场景，调整字段定义和唯一键配置。
-6. 测试结束后务必正确释放资源，防止内存泄露或数据库连接未能正确关闭。
-7. 在进行压力测试前，建议先执行小规模测试以验证配置正确性。
+# 转账数据池配置
+TRANSFER_POOL_QUERY=SELECT id, reference_no FROM transfer WHERE status='PENDING' LIMIT ?
+TRANSFER_POOL_UPDATE_SQL=UPDATE transfer SET status = ? WHERE reference_no = ?
+TRANSFER_POOL_BATCH_SIZE=1000
+TRANSFER_POOL_LOW_WATER_MARK=100
+TRANSFER_POOL_CLEAN_UP_THRESHOLD=1000
+TRANSFER_POOL_FIELDS=id:String,reference_no:String
+TRANSFER_POOL_KEY_FIELDS=id,reference_no
+```
 
----
+## 九、监控与调优
 
-通过此方案，您可以在高并发场景下通过多数据池进行线程安全的参数化测试，有效提升测试的准确性和可扩展性。
+### 9.1 监控指标
+
+1. **数据池状态**
+   - 已处理数据量（Processed）
+   - 可用数据量（Available）
+   - 已更新数据量（Updated）
+   - 已使用数据量（Used）
+
+2. **数据补充情况**
+   - 获取的总记录数（Fetched）
+   - 实际添加记录数（Added）
+   - 重复记录数（Duplicates）
+
+### 9.2 调优参数
+
+1. **批量大小（BATCH_SIZE）**
+   - 控制每次从数据库获取的数据量
+   - 建议根据并发量调整
+
+2. **低水位标记（LOW_WATER_MARK）**
+   - 触发数据补充的阈值
+   - 建议设置为批量大小的10%-20%
+
+3. **清理阈值（CLEAN_UP_THRESHOLD）**
+   - 已使用数据的最大保留量
+   - 建议根据内存使用情况调整
+
+## 十、注意事项
+
+1. **数据库连接**
+   - 确保数据库连接参数正确
+   - 监控连接池使用情况
+   - 适当设置最大连接数
+
+2. **内存管理**
+   - 监控JVM内存使用情况
+   - 适当调整清理阈值
+   - 注意数据补充频率
+
+3. **异常处理**
+   - 所有数据库操作都要有异常处理
+   - 记录详细的错误日志
+   - 实现优雅降级策略
+
+4. **性能优化**
+   - 合理设置批量查询大小
+   - 优化数据库查询语句
+   - 考虑添加索引
+
+## 十一、扩展建议
+
+1. **功能扩展**
+   - 添加数据预热机制
+   - 实现数据验证功能
+   - 添加更多监控指标
+
+2. **性能优化**
+   - 实现数据分片机制
+   - 优化数据结构
+   - 添加缓存层
+
+3. **监控改进**
+   - 添加性能统计
+   - 实现实时监控
+   - 优化日志记录
+
+这就是完整的方案实现。该方案提供了一个线程安全、高效的数据池管理系统，适用于各种高并发测试场景。您可以根据具体需求进行调整和优化。
