@@ -12,524 +12,210 @@ tags:
 
 
 
-# Splunk完整命令语法与原理解析指南（上）
+# 前端性能测试
 
-# 一、基础搜索语法
+下面是一个完整的方案和代码，用于使用Selenium和Python进行多轮测试，检测每个功能点的内存使用量和响应时间，并生成相应的趋势图：
 
-## 1. 搜索运算符
+### 方案概述：
 
-```splunk
-# 1. 布尔运算符
-AND OR NOT XOR             # 基本布尔运算
-error AND (warn* OR fail*) # 复合布尔运算
-error NOT timeout          # 排除特定条件
+1. **安装必要的库**：
+   ```bash
+   pip install selenium matplotlib
+   ```
 
-# 2. 比较运算符
-=  !=                      # 等于/不等于
->  <                       # 大于/小于
->=  <=                    # 大于等于/小于等于
-IN                        # 包含于列表中
-LIKE                      # 模式匹配
+2. **准备环境**：
+   - 确保有适用于目标浏览器的WebDriver。
+   - 准备目标网站的URL和功能点对应的元素ID。
 
-# 3. 通配符
-*                         # 匹配零个或多个字符
-?                         # 匹配单个字符
-[]                        # 匹配字符集合
-[^]                       # 匹配补集
+3. **编写测试脚本**：
+   - 使用Selenium WebDriver模拟浏览器行为。
+   - 对每个功能点进行多轮测试，每轮测试包括：
+     - 导航到目标页面。
+     - 获取JavaScript内存使用量。
+     - 模拟用户操作，测量响应时间。
+   - 记录所有数据到JSON文件中。
 
-# 4. 字段运算符
-EXISTS                    # 字段存在
-NOT EXISTS                # 字段不存在
-BETWEEN                   # 范围匹配
-```
+4. **数据分析与可视化**：
+   - 读取JSON文件中的数据。
+   - 使用`matplotlib`生成响应时间和内存使用量的趋势图。
 
-## 2. 时间语法详解
+### 完整代码：
 
-```splunk
-# 1. 相对时间
--<数字><时间单位>
-earliest=-1h@h           # 从上个小时开始
-latest=-5m              # 到5分钟前
-earliest=-24h@h latest=now   # 最近24小时
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+import json
+from matplotlib import pyplot as plt
 
-# 2. 时间单位
-s   # 秒
-m   # 分钟
-h   # 小时
-d   # 天
-w   # 周
-mon # 月
-q   # 季度
-y   # 年
+# 初始化WebDriver，这里使用Chrome作为示例
+driver = webdriver.Chrome(executable_path='/path/to/chromedriver')
 
-# 3. 时间修饰符
-@d  # 日期边界
-@h  # 小时边界
-@w  # 周边界
-@mon # 月边界
+# 记录数据的列表
+data = []
 
-# 4. 时间函数
-earliest=relative_time(now(), "-1d@d")
-latest=relative_time(now(), "@d")
-```
+# 测试轮数
+rounds = 5
 
-## 3. 字段提取与操作
+def get_js_memory():
+    """获取当前页面的JavaScript内存使用量"""
+    js_memory = driver.execute_script("return window.performance.memory;")
+    if js_memory:
+        return js_memory.get('usedJSHeapSize', 0), js_memory.get('totalJSHeapSize', 0)
+    return None, None
 
-```splunk
-# 1. 字段别名
-| rename old_field AS new_field
-| rename old_field AS "New Field Name"
+def test_function_point_1():
+    """测试功能点1的响应时间"""
+    try:
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function1"))
+        )
+        # 这里可以添加具体的操作，如点击按钮等
+        # element.click()
+        return "功能点1", True
+    except Exception as e:
+        print(f"Error in 功能点1: {e}")
+        return "功能点1", False
 
-# 2. 字段提取
-| rex field=_raw "pattern=(?<field_name>.*?)"
-| extract field=_raw "pattern"
+def test_function_point_2():
+    """测试功能点2的响应时间"""
+    try:
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function2"))
+        )
+        # 这里可以添加具体的操作，如点击按钮等
+        # element.click()
+        return "功能点2", True
+    except Exception as e:
+        print(f"Error in 功能点2: {e}")
+        return "功能点2", False
 
-# 3. 字段计算
-| eval new_field=field1 + field2
-| eval is_error=if(status>=400, 1, 0)
+def test_function_point_3():
+    """测试功能点3的响应时间"""
+    try:
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function3"))
+        )
+        # 这里可以添加具体的操作，如点击按钮等
+        # element.click()
+        return "功能点3", True
+    except Exception as e:
+        print(f"Error in 功能点3: {e}")
+        return "功能点3", False
 
-# 4. 字段转换
-| convert timeformat="%Y-%m-%d" ctime(timestamp)
-| convert num(string_field)
-```
+# 功能点测试方法列表
+function_points = [test_function_point_1, test_function_point_2, test_function_point_3]
 
-# 二、高级搜索命令
+# 进行测试
+for round_num in range(rounds):
+    for func_test in function_points:
+        # 导航到目标页面
+        driver.get('your_target_url')
 
-## 1. 统计命令详解
+        # 获取JavaScript内存使用量
+        used_js_heap_size, total_js_heap_size = get_js_memory()
+        print(f"Round {round_num+1} - {func_test.__name__} - JS Memory: Used {used_js_heap_size}, Total {total_js_heap_size}")
+        
+        # 记录内存数据
+        data_point = {
+            "round": round_num+1,
+            "function_point": func_test.__name__,
+            "js_memory": {"used": used_js_heap_size, "total": total_js_heap_size},
+        }
+        
+        # 模拟用户操作，测量响应时间
+        start_time = time.time()
+        func_name, success = func_test()
+        end_time = time.time()
+        response_time = end_time - start_time if success else None
+        print(f"Round {round_num+1} - {func_name} - Response Time: {response_time} seconds")
+        data_point["response_time"] = response_time
 
-```splunk
-# 1. 基础统计
-| stats count                # 事件计数
-| stats distinct_count(field) # 唯一值计数
-| stats values(field)        # 字段所有值
-| stats list(field)          # 字段值列表
+        # 将数据点添加到数据列表中
+        data.append(data_point)
 
-# 2. 数值统计
-| stats sum(field)          # 求和
-| stats avg(field)          # 平均值
-| stats median(field)       # 中位数
-| stats mode(field)         # 众数
-| stats stdev(field)        # 标准差
-| stats var(field)          # 方差
+# 保存数据
+with open('test_data.json', 'w') as f:
+    json.dump(data, f)
 
-# 3. 百分位统计
-| stats perc<N>(field)      # N百分位数
-| stats perc25(field)       # 25分位数
-| stats perc50(field)       # 中位数
-| stats perc75(field)       # 75分位数
-| stats perc90(field)       # 90分位数
+# 计算每个功能点的百分位数
+for func_test in function_points:
+    func_name = func_test.__name__
+    func_response_times = [d['response_time'] for d in data if d['function_point'] == func_name and d['response_time'] is not None]
+    if func_response_times:
+        print(f"{func_name} - 50th Percentile (Median) Response Time: {sorted(func_response_times)[len(func_response_times)//2]}")
+        print(f"{func_name} - 95th Percentile Response Time: {sorted(func_response_times)[int(len(func_response_times) * 0.95)]}")
 
-# 4. 分组统计
-| stats count by field1, field2
-| stats sum(value) as total by category
-| stats avg(response_time) as avg_rt by endpoint
+# 生成响应时间趋势图
+fig, axs = plt.subplots(len(function_points), 1, figsize=(10, 5 * len(function_points)))
 
-# 5. 复杂统计
-| stats first(field)        # 首次出现值
-| stats last(field)         # 最后出现值
-| stats range(field)        # 最大值减最小值
-| stats earliest(field)     # 最早时间
-| stats latest(field)       # 最新时间
-```
+for i, func in enumerate(function_points):
+    func_data = [d for d in data if d['function_point'] == func.__name__ and d['response_time'] is not None]
+    rounds = [d['round'] for d in func_data]
+    response_times = [d['response_time'] for d in func_data]
 
-## 2. 转换命令详解
-
-```splunk
-# 1. eval命令高级用法
-| eval 
-    # 数学运算
-    result = number1 + number2,
-    product = price * quantity,
+    if len(function_points) > 1:
+        ax = axs[i]
+    else:
+        ax = axs
     
-    # 字符串操作
-    full_name = first_name + " " + last_name,
-    lower_name = lower(name),
-    upper_name = upper(name),
+    ax.plot(rounds, response_times, marker='o', linestyle='-', color='b', label='响应时间')
+    ax.set_title(f'{func.__name__} 响应时间趋势')
+    ax.set_xlabel('测试轮次')
+    ax.set_ylabel('响应时间 (秒)')
+    ax.legend()
+    ax.grid(True)
+
+plt.tight_layout()
+plt.savefig('response_time_trends.png')
+plt.show()
+
+# 生成内存使用量趋势图
+fig, axs = plt.subplots(len(function_points), 2, figsize=(20, 5 * len(function_points)))
+
+for i, func in enumerate(function_points):
+    func_data = [d for d in data if d['function_point'] == func.__name__]
     
-    # 条件判断
-    status_type = case(
-        status >= 500, "error",
-        status >= 400, "warning",
-        status >= 300, "redirect",
-        status >= 200, "success",
-        1=1, "unknown"
-    ),
-    
-    # 时间处理
-    hour = strftime(_time, "%H"),
-    date = strftime(_time, "%Y-%m-%d"),
-    
-    # 类型转换
-    size_mb = round(size/1024/1024, 2),
-    is_valid = if(status=200, "true", "false")
+    rounds = [d['round'] for d in func_data]
+    used_js_heap_size = [d['js_memory']['used'] / (1024 * 1024) for d in func_data]  # 转换为MB
+    total_js_heap_size = [d['js_memory']['total'] / (1024 * 1024) for d in func_data]  # 转换为MB
 
-# 2. where命令高级用法
-| where 
-    # 复杂条件
-    status>=500 OR response_time>1000,
-    
-    # 字符串匹配
-    like(url, "%.php%"),
-    match(user_agent, "Mozilla.*"),
-    
-    # 数值比较
-    value BETWEEN 100 AND 200,
-    
-    # 字段存在性
-    isnotnull(field_name),
-    
-    # 正则匹配
-    match(field, "pattern")
+    if len(function_points) > 1:
+        ax1, ax2 = axs[i]
+    else:
+        ax1, ax2 = axs[0]
 
-# 3. fields命令
-| fields + field1, field2    # 保留字段
-| fields - field1, field2    # 排除字段
-| fields field1, field2      # 仅保留指定字段
+    # 绘制已使用的JS堆内存
+    ax1.plot(rounds, used_js_heap_size, marker='o', linestyle='-', color='b', label='已使用内存')
+    ax1.set_title(f'{func.__name__} - 已使用内存趋势')
+    ax1.set_xlabel('测试轮次')
+    ax1.set_ylabel('内存使用量 (MB)')
+    ax1.legend()
+    ax1.grid(True)
 
-# 4. rename命令
-| rename 
-    field1 AS "New Field 1",
-    field2 AS "New Field 2"
+    # 绘制总的JS堆内存
+    ax2.plot(rounds, total_js_heap_size, marker='o', linestyle='-', color='r', label='总内存')
+    ax2.set_title(f'{func.__name__} - 总内存趋势')
+    ax2.set_xlabel('测试轮次')
+    ax2.set_ylabel('内存使用量 (MB)')
+    ax2.legend()
+    ax2.grid(True)
+
+plt.tight_layout()
+plt.savefig('memory_usage_trends.png')
+plt.show()
+
+# 关闭浏览器
+driver.quit()
 ```
 
-## 3. 排序和限制命令
+### 使用说明：
 
-```splunk
-# 1. sort命令
-| sort field1                # 升序排序
-| sort -field1              # 降序排序
-| sort limit=100 field1     # 限制结果数
-| sort -field1 +field2      # 多字段排序
+1. **替换路径**：请将`/path/to/chromedriver`替换为你的WebDriver的实际路径。
+2. **目标URL**：在`driver.get('your_target_url')`中替换为你要测试的网页URL。
+3. **功能点元素ID**：根据实际情况修改`test_function_point_X`中的元素ID。
+4. **运行脚本**：确保所有必要的库已经安装，然后运行此脚本。
 
-# 2. head/tail命令
-| head 10                   # 前10条结果
-| tail 5                    # 后5条结果
-
-# 3. limit命令
-| limit 100                 # 限制结果数量
-```
-
-## 4. 表格操作命令
-
-```splunk
-# 1. table命令
-| table field1, field2      # 选择显示字段
-| table _time, host, status # 指定字段顺序
-
-# 2. chart命令
-| chart count over field    # 基本图表
-| chart sum(value) by field # 聚合图表
-| chart avg(field) over time by host # 时间序列
-
-# 3. timechart命令
-| timechart span=1h count   # 时间序列统计
-| timechart span=1d sum(bytes) by host # 按主机统计
-```
-
-# 三、高级功能命令
-
-## 1. 事务分析命令
-
-```splunk
-# 1. transaction命令
-| transaction field1 
-    maxspan=5m            # 最大时间跨度
-    maxpause=2m          # 最大暂停时间
-    startswith="start"   # 开始条件
-    endswith="end"       # 结束条件
-
-# 2. 事务属性
-| transaction field1
-    maxevents=100       # 最大事件数
-    maxspan=1h          # 最大跨度
-    keepevicted=false   # 保留未完成事务
-```
-
-[未完待续，这是第一部分。接下来的部分将包含更多高级命令、实战场景、性能优化和最佳实践等内容。]
-
-
-
-
-# Splunk完整命令语法与原理解析指南（下）
-
-# 四、进阶搜索命令
-
-## 1. 子搜索与连接命令
-
-```splunk
-# 1. 子搜索语法
-| where [search sourcetype=error | fields host] # 基本子搜索
-| append [search sourcetype=warn]              # 追加结果
-| join type=inner field1 
-    [search sourcetype=other | fields field1, field2] # 内连接
-
-# 2. 连接类型
-| join                      # 内连接(仅匹配项)
-| join type=left           # 左连接(保留左表)
-| join type=outer          # 外连接(保留所有)
-
-# 3. 结果合并
-| append                   # 追加结果
-| appendcols              # 追加列
-| appendpipe              # 追加管道结果
-```
-
-## 2. 数据处理命令
-
-```splunk
-# 1. 聚合命令
-| cluster showcount=true field=message    # 聚类分析
-| dedup field1, field2                   # 删除重复
-| eventstats                             # 事件级统计
-
-# 2. 数据转换
-| untable                  # 表格转行
-| xyseries                 # 生成坐标数据
-| makemv                   # 生成多值字段
-| mvcombine                # 合并多值字段
-
-# 3. 数据清洗
-| fillnull                 # 填充空值
-| filldown                 # 向下填充
-| nomv                     # 展开多值字段
-```
-
-## 3. 高级统计命令
-
-```splunk
-# 1. 相关性分析
-| correlate field1 field2   # 字段相关性
-| contingency field1 field2 # 列联表分析
-
-# 2. 趋势分析
-| predict field1           # 预测分析
-| trendline field1        # 趋势线
-| streamstats             # 流式统计
-
-# 3. 异常检测
-| outlier                 # 异常值检测
-| anomalies              # 异常模式检测
-| anomalousvalue         # 异常值识别
-```
-
-# 五、实时监控命令
-
-## 1. 实时搜索命令
-
-```splunk
-# 1. 实时监控
-| realtime                # 实时搜索
-| rt                      # 实时简写
-| metrics                 # 指标监控
-
-# 2. 告警设置
-| alert                   # 设置告警
-| sendalert              # 发送告警
-| savedsearch            # 保存搜索
-```
-
-## 2. 仪表板命令
-
-```splunk
-# 1. 可视化命令
-| chart                   # 图表显示
-| timechart              # 时间序列图
-| stats                  # 统计显示
-
-# 2. 格式化命令
-| eval _time=strftime(_time, "%Y-%m-%d %H:%M:%S")
-| fieldformat            # 字段格式化
-| highlight              # 高亮显示
-```
-
-# 六、高级应用场景
-
-## 1. 性能分析场景
-
-```splunk
-# 1. 响应时间分析
-sourcetype=access_logs 
-| eval response_time_ms = response_time * 1000
-| stats 
-    avg(response_time_ms) as avg_rt,
-    perc95(response_time_ms) as p95_rt,
-    perc99(response_time_ms) as p99_rt
-    by endpoint
-| where avg_rt > 500
-| sort -avg_rt
-
-# 2. 系统资源监控
-sourcetype=system_metrics
-| eval 
-    cpu_used = 100 - cpu_idle,
-    memory_used_gb = memory_used / 1024 / 1024 / 1024
-| timechart span=5m
-    avg(cpu_used) as cpu,
-    avg(memory_used_gb) as memory,
-    avg(disk_used_percent) as disk
-    by host
-
-# 3. 并发用户分析
-sourcetype=access_logs
-| bucket _time span=1m
-| stats dc(user_id) as concurrent_users by _time
-| timechart span=1m 
-    avg(concurrent_users) as avg_users
-    max(concurrent_users) as peak_users
-```
-
-## 2. 错误分析场景
-
-```splunk
-# 1. 错误分布分析
-sourcetype=error_logs
-| rex field=stack_trace "(?<error_type>[^:]+): (?<error_message>.*)"
-| stats 
-    count as error_count,
-    values(stack_trace) as stack_traces,
-    values(_time) as error_times
-    by error_type
-| sort -error_count
-
-# 2. 错误趋势分析
-sourcetype=error_logs
-| timechart span=1h 
-    count as error_count
-    by error_level
-| eval error_rate = round(error_count/total_requests * 100, 2)
-
-# 3. 关联错误分析
-sourcetype=error_logs
-| transaction request_id maxspan=5m
-| stats 
-    count as error_count,
-    values(error_message) as messages,
-    values(component) as components
-    by request_id
-| where error_count > 1
-```
-
-## 3. 安全分析场景
-
-```splunk
-# 1. 登录异常检测
-sourcetype=auth_logs
-| stats 
-    count as attempt_count,
-    dc(src_ip) as ip_count
-    by user
-| where attempt_count > 10
-| sort -attempt_count
-
-# 2. IP行为分析
-sourcetype=access_logs
-| stats 
-    count as request_count,
-    dc(uri_path) as unique_paths,
-    dc(user_agent) as unique_agents
-    by src_ip
-| where request_count > 1000
-| sort -request_count
-
-# 3. 敏感操作审计
-sourcetype=audit_logs action IN ("delete", "modify", "grant")
-| stats 
-    count as action_count,
-    values(target) as affected_resources
-    by user, action
-| sort -action_count
-```
-
-# 七、性能优化原理
-
-## 1. 搜索优化原理
-
-```splunk
-# 1. 索引优化
-index=main sourcetype=access_logs  # 使用索引
-NOT index=_*                      # 排除内部索引
-
-# 2. 时间优化
-earliest=-4h latest=now          # 限制时间范围
-_index_earliest=-4h              # 索引时间限制
-
-# 3. 字段优化
-host=webserver*                  # 使用前缀
-sourcetype IN (type1, type2)     # 使用IN语句
-```
-
-## 2. 性能优化技巧
-
-```splunk
-# 1. 数据模型优化
-| datamodel Model search         # 使用数据模型
-| tstats                        # 加速统计
-
-# 2. 缓存优化
-| sistats                       # 使用摘要索引
-| centrify                     # 集中式缓存
-
-# 3. 分布式优化
-| parallel                     # 并行处理
-| distribute                   # 分布式执行
-```
-
-# 八、最佳实践与原理解析
-
-## 1. 命令执行原理
-
-1. 搜索处理流程：
-   - 解析搜索语句
-   - 分发到索引器
-   - 合并结果
-   - 应用转换命令
-
-2. 数据流处理：
-   - 事件生成
-   - 字段提取
-   - 命令管道
-   - 结果呈现
-
-## 2. 优化建议
-
-1. 搜索优化：
-   - 使用精确的索引和sourcetype
-   - 合理的时间范围
-   - 避免使用通配符开头
-   - 使用字段而非全文搜索
-
-2. 命令优化：
-   - 先过滤后统计
-   - 使用适当的统计命令
-   - 避免复杂子搜索
-   - 合理使用缓存
-
-3. 资源使用：
-   - 控制并发搜索
-   - 监控资源消耗
-   - 使用摘要索引
-   - 优化数据模型
-
-## 3. 故障排查
-
-1. 常见问题：
-   - 搜索超时
-   - 内存不足
-   - 结果不准确
-   - 性能下降
-
-2. 解决方案：
-   - 优化搜索语句
-   - 增加资源配置
-   - 使用加速选项
-   - 建立监控告警
-
-这份完整的指南涵盖了Splunk的主要命令语法和使用原理。建议：
-
-1. 循序渐进学习
-2. 多进行实践
-3. 理解底层原理
-4. 注重性能优化
-5. 建立知识体系
-
-如需深入了解特定领域，可以进一步探讨。
+这个脚本会进行测试，保存数据到`test_data.json`，并生成响应时间和内存使用量的趋势图。请根据你的具体需求调整测试的轮数、功能点数量和测试的具体操作。
