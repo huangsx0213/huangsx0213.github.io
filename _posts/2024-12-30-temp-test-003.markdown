@@ -1,0 +1,221 @@
+---
+layout:     post
+title:      "Temp3"
+subtitle:   "「 Testing 」" 
+date:       2024-12-30 11:00:03
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+---
+
+
+
+# 前端性能测试
+
+下面是一个完整的方案和代码，用于使用Selenium和Python进行多轮测试，检测每个功能点的内存使用量和响应时间，并生成相应的趋势图：
+
+### 方案概述：
+
+1. **安装必要的库**：
+   ```bash
+   pip install selenium matplotlib
+   ```
+
+2. **准备环境**：
+   - 确保有适用于目标浏览器的WebDriver。
+   - 准备目标网站的URL和功能点对应的元素ID。
+
+3. **编写测试脚本**：
+   - 使用Selenium WebDriver模拟浏览器行为。
+   - 对每个功能点进行多轮测试，每轮测试包括：
+     - 导航到目标页面。
+     - 获取JavaScript内存使用量。
+     - 模拟用户操作，测量响应时间。
+   - 记录所有数据到JSON文件中。
+
+4. **数据分析与可视化**：
+   - 读取JSON文件中的数据。
+   - 使用`matplotlib`生成响应时间和内存使用量的趋势图。
+
+### 完整代码：
+
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+import json
+from matplotlib import pyplot as plt
+
+# 初始化WebDriver，这里使用Chrome作为示例
+driver = webdriver.Chrome(executable_path='/path/to/chromedriver')
+
+# 记录数据的列表
+data = []
+
+# 测试轮数
+rounds = 5
+
+def get_js_memory():
+    """获取当前页面的JavaScript内存使用量"""
+    js_memory = driver.execute_script("return window.performance.memory;")
+    if js_memory:
+        return js_memory.get('usedJSHeapSize', 0), js_memory.get('totalJSHeapSize', 0)
+    return None, None
+
+def test_function_point_1():
+    """测试功能点1的响应时间"""
+    try:
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function1"))
+        )
+        # 这里可以添加具体的操作，如点击按钮等
+        # element.click()
+        return "功能点1", True
+    except Exception as e:
+        print(f"Error in 功能点1: {e}")
+        return "功能点1", False
+
+def test_function_point_2():
+    """测试功能点2的响应时间"""
+    try:
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function2"))
+        )
+        # 这里可以添加具体的操作，如点击按钮等
+        # element.click()
+        return "功能点2", True
+    except Exception as e:
+        print(f"Error in 功能点2: {e}")
+        return "功能点2", False
+
+def test_function_point_3():
+    """测试功能点3的响应时间"""
+    try:
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function3"))
+        )
+        # 这里可以添加具体的操作，如点击按钮等
+        # element.click()
+        return "功能点3", True
+    except Exception as e:
+        print(f"Error in 功能点3: {e}")
+        return "功能点3", False
+
+# 功能点测试方法列表
+function_points = [test_function_point_1, test_function_point_2, test_function_point_3]
+
+# 进行测试
+for round_num in range(rounds):
+    for func_test in function_points:
+        # 导航到目标页面
+        driver.get('your_target_url')
+
+        # 获取JavaScript内存使用量
+        used_js_heap_size, total_js_heap_size = get_js_memory()
+        print(f"Round {round_num+1} - {func_test.__name__} - JS Memory: Used {used_js_heap_size}, Total {total_js_heap_size}")
+        
+        # 记录内存数据
+        data_point = {
+            "round": round_num+1,
+            "function_point": func_test.__name__,
+            "js_memory": {"used": used_js_heap_size, "total": total_js_heap_size},
+        }
+        
+        # 模拟用户操作，测量响应时间
+        start_time = time.time()
+        func_name, success = func_test()
+        end_time = time.time()
+        response_time = end_time - start_time if success else None
+        print(f"Round {round_num+1} - {func_name} - Response Time: {response_time} seconds")
+        data_point["response_time"] = response_time
+
+        # 将数据点添加到数据列表中
+        data.append(data_point)
+
+# 保存数据
+with open('test_data.json', 'w') as f:
+    json.dump(data, f)
+
+# 计算每个功能点的百分位数
+for func_test in function_points:
+    func_name = func_test.__name__
+    func_response_times = [d['response_time'] for d in data if d['function_point'] == func_name and d['response_time'] is not None]
+    if func_response_times:
+        print(f"{func_name} - 50th Percentile (Median) Response Time: {sorted(func_response_times)[len(func_response_times)//2]}")
+        print(f"{func_name} - 95th Percentile Response Time: {sorted(func_response_times)[int(len(func_response_times) * 0.95)]}")
+
+# 生成响应时间趋势图
+fig, axs = plt.subplots(len(function_points), 1, figsize=(10, 5 * len(function_points)))
+
+for i, func in enumerate(function_points):
+    func_data = [d for d in data if d['function_point'] == func.__name__ and d['response_time'] is not None]
+    rounds = [d['round'] for d in func_data]
+    response_times = [d['response_time'] for d in func_data]
+
+    if len(function_points) > 1:
+        ax = axs[i]
+    else:
+        ax = axs
+    
+    ax.plot(rounds, response_times, marker='o', linestyle='-', color='b', label='响应时间')
+    ax.set_title(f'{func.__name__} 响应时间趋势')
+    ax.set_xlabel('测试轮次')
+    ax.set_ylabel('响应时间 (秒)')
+    ax.legend()
+    ax.grid(True)
+
+plt.tight_layout()
+plt.savefig('response_time_trends.png')
+plt.show()
+
+# 生成内存使用量趋势图
+fig, axs = plt.subplots(len(function_points), 2, figsize=(20, 5 * len(function_points)))
+
+for i, func in enumerate(function_points):
+    func_data = [d for d in data if d['function_point'] == func.__name__]
+    
+    rounds = [d['round'] for d in func_data]
+    used_js_heap_size = [d['js_memory']['used'] / (1024 * 1024) for d in func_data]  # 转换为MB
+    total_js_heap_size = [d['js_memory']['total'] / (1024 * 1024) for d in func_data]  # 转换为MB
+
+    if len(function_points) > 1:
+        ax1, ax2 = axs[i]
+    else:
+        ax1, ax2 = axs[0]
+
+    # 绘制已使用的JS堆内存
+    ax1.plot(rounds, used_js_heap_size, marker='o', linestyle='-', color='b', label='已使用内存')
+    ax1.set_title(f'{func.__name__} - 已使用内存趋势')
+    ax1.set_xlabel('测试轮次')
+    ax1.set_ylabel('内存使用量 (MB)')
+    ax1.legend()
+    ax1.grid(True)
+
+    # 绘制总的JS堆内存
+    ax2.plot(rounds, total_js_heap_size, marker='o', linestyle='-', color='r', label='总内存')
+    ax2.set_title(f'{func.__name__} - 总内存趋势')
+    ax2.set_xlabel('测试轮次')
+    ax2.set_ylabel('内存使用量 (MB)')
+    ax2.legend()
+    ax2.grid(True)
+
+plt.tight_layout()
+plt.savefig('memory_usage_trends.png')
+plt.show()
+
+# 关闭浏览器
+driver.quit()
+```
+
+### 使用说明：
+
+1. **替换路径**：请将`/path/to/chromedriver`替换为你的WebDriver的实际路径。
+2. **目标URL**：在`driver.get('your_target_url')`中替换为你要测试的网页URL。
+3. **功能点元素ID**：根据实际情况修改`test_function_point_X`中的元素ID。
+4. **运行脚本**：确保所有必要的库已经安装，然后运行此脚本。
+
+这个脚本会进行测试，保存数据到`test_data.json`，并生成响应时间和内存使用量的趋势图。请根据你的具体需求调整测试的轮数、功能点数量和测试的具体操作。

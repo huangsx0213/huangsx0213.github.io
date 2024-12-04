@@ -1,0 +1,278 @@
+---
+layout:     post
+title:      "Temp2"
+subtitle:   "「 Testing 」" 
+date:       2024-12-30 11:00:02
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+---
+
+
+
+# 前端性能测试
+
+以下是基于以上讨论内容整理的完整解决方案，包含详细的功能描述、实现思路和完整代码。该方案支持以下功能：
+
+1. **功能点抽象**：
+   - 每个功能点都包含 `precondition`（前置条件）、`measure_operation`（核心测量操作）和 `postcondition`（后置条件）。
+   - 定义抽象基类 `TestFunctionBase`，具体功能点继承该基类并实现其方法。
+
+2. **JavaScript 内存测量**：
+   - 在每轮测试开始时，先测量页面初始的 JS 堆使用情况（`usedJSHeapSize` 和 `totalJSHeapSize`）。
+
+3. **测试管理类**：
+   - `WebPerformanceTester` 负责管理功能点注册、循环测试和测试结果记录。
+   - 测试数据包括功能点响应时间和初始 JS 内存使用量。
+
+4. **数据记录与扩展**：
+   - 测试数据保存为 JSON 文件，用于后续分析。
+   - 输出测试结果到控制台，便于实时查看。
+
+5. **扩展性**：
+   - 通过继承 `TestFunctionBase`，可以轻松实现新的功能点。
+   - 测试管理类提供了良好的结构化流程，便于维护和扩展。
+
+---
+
+### **完整代码**
+
+```python
+from abc import ABC, abstractmethod
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+import json
+
+
+class TestFunctionBase(ABC):
+    """
+    功能点抽象基类，每个功能点必须实现 precondition、measure_operation 和 postcondition。
+    """
+    def __init__(self, tester):
+        self.tester = tester
+
+    @abstractmethod
+    def precondition(self):
+        """计时前的操作"""
+        pass
+
+    @abstractmethod
+    def measure_operation(self):
+        """需要计时的核心操作"""
+        pass
+
+    @abstractmethod
+    def postcondition(self):
+        """计时后的操作"""
+        pass
+
+    def run(self):
+        """
+        执行功能点测试的完整流程：
+        1. 执行 precondition（不计时）。
+        2. 执行 measure_operation（计时）。
+        3. 执行 postcondition（不计时）。
+        """
+        try:
+            # Step 1: Precondition
+            self.precondition()
+
+            # Step 2: Measure Operation
+            start_time = time.time()
+            self.measure_operation()
+            end_time = time.time()
+            response_time = end_time - start_time
+
+            # Step 3: Postcondition
+            self.postcondition()
+
+            return response_time
+        except Exception as e:
+            print(f"Error in {self.__class__.__name__}: {e}")
+            return None
+
+
+class TestFunction1(TestFunctionBase):
+    def precondition(self):
+        """功能点1的前置条件：等待页面加载完成"""
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "precondition1"))
+        )
+        print(f"{self.__class__.__name__} - Precondition Completed")
+
+    def measure_operation(self):
+        """功能点1的核心操作：点击按钮并等待结果加载"""
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "function1"))
+        ).click()
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "result1"))
+        )
+        print(f"{self.__class__.__name__} - Measure Operation Completed")
+
+    def postcondition(self):
+        """功能点1的后置条件：检查结果是否正确"""
+        print(f"{self.__class__.__name__} - Postcondition Completed")
+
+
+class TestFunction2(TestFunctionBase):
+    def precondition(self):
+        """功能点2的前置条件：等待输入框加载完成"""
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "precondition2"))
+        )
+        print(f"{self.__class__.__name__} - Precondition Completed")
+
+    def measure_operation(self):
+        """功能点2的核心操作：输入文本并提交"""
+        input_field = WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function2"))
+        )
+        input_field.send_keys("测试文本")
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "submit2"))
+        ).click()
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "result2"))
+        )
+        print(f"{self.__class__.__name__} - Measure Operation Completed")
+
+    def postcondition(self):
+        """功能点2的后置条件：清理输入框"""
+        input_field = self.tester.driver.find_element(By.ID, "function2")
+        input_field.clear()
+        print(f"{self.__class__.__name__} - Postcondition Completed")
+
+
+class TestFunction3(TestFunctionBase):
+    def precondition(self):
+        """功能点3的前置条件：等待下拉菜单加载完成"""
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "precondition3"))
+        )
+        print(f"{self.__class__.__name__} - Precondition Completed")
+
+    def measure_operation(self):
+        """功能点3的核心操作：选择下拉选项"""
+        dropdown = WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function3"))
+        )
+        dropdown.click()
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//option[@value='option3']"))
+        ).click()
+        print(f"{self.__class__.__name__} - Measure Operation Completed")
+
+    def postcondition(self):
+        """功能点3的后置条件：验证是否跳转到正确的页面"""
+        print(f"{self.__class__.__name__} - Postcondition Completed")
+
+
+class WebPerformanceTester:
+    """
+    测试管理类：负责初始化 WebDriver，管理功能点注册与执行。
+    """
+    def __init__(self, driver_path, target_url, rounds=5):
+        self.driver = webdriver.Chrome(executable_path=driver_path)
+        self.target_url = target_url
+        self.rounds = rounds
+        self.data = []
+        self.function_points = []
+
+    def register_test_function(self, test_function):
+        """注册测试功能点"""
+        self.function_points.append(test_function)
+
+    def get_js_memory(self):
+        """获取当前页面的 JavaScript 内存使用量"""
+        try:
+            js_memory = self.driver.execute_script("return window.performance.memory;")
+            if js_memory:
+                return js_memory.get("usedJSHeapSize", 0), js_memory.get("totalJSHeapSize", 0)
+        except Exception as e:
+            print(f"Error in get_js_memory: {e}")
+        return None, None
+
+    def execute_tests(self):
+        """执行所有测试功能点，并在每轮开始时测量 JS 内存"""
+        for round_num in range(self.rounds):
+            # 每轮开始时测量 JS 内存
+            self.driver.get(self.target_url)
+            js_memory = self.get_js_memory()
+            if js_memory:
+                print(f"Round {round_num + 1} - Initial JS Memory: Used {js_memory[0]} Bytes, Total {js_memory[1]} Bytes")
+
+            for func in self.function_points:
+                # 执行功能点测试
+                response_time = func.run()
+                self.data.append({
+                    "round": round_num + 1,
+                    "function_point": func.__class__.__name__,
+                    "initial_js_memory": {"used": js_memory[0], "total": js_memory[1]},
+                    "response_time": response_time
+                })
+                print(f"Round {round_num + 1} - {func.__class__.__name__} - Response Time: {response_time} seconds")
+
+    def save_data(self, file_name="test_data.json"):
+        """保存测试数据"""
+        with open(file_name, "w") as f:
+            json.dump(self.data, f, indent=4)
+        print(f"Test data saved to {file_name}")
+
+    def quit_driver(self):
+        """关闭 WebDriver"""
+        self.driver.quit()
+
+
+# 示例使用
+if __name__ == "__main__":
+    tester = WebPerformanceTester(driver_path="/path/to/chromedriver", target_url="your_target_url", rounds=5)
+
+    # 注册功能点
+    tester.register_test_function(TestFunction1(tester))
+    tester.register_test_function(TestFunction2(tester))
+    tester.register_test_function(TestFunction3(tester))
+
+    # 执行测试
+    tester.execute_tests()
+
+    # 保存数据
+    tester.save_data()
+
+    # 关闭浏览器
+    tester.quit_driver()
+```
+
+---
+
+### **方案描述**
+
+1. **功能点抽象**：
+   - 每个功能点继承 `TestFunctionBase`，实现 `precondition`、`measure_operation` 和 `postcondition`。
+   - `run` 方法封装了完整的功能点测试流程。
+
+2. **JavaScript 内存测量**：
+   - 每轮测试开始时，通过 `get_js_memory` 方法记录初始 JS 堆内存使用情况。
+
+3. **测试管理类**：
+   - 管理功能点注册和测试执行。
+   - 记录每轮测试的响应时间和初始 JS 内存。
+
+4. **数据记录**：
+   - 测试数据保存为 JSON 文件，包含功能点、响应时间和初始 JS 内存。
+
+5. **扩展性**：
+   - 新增功能点只需继承 `TestFunctionBase` 并实现相关方法，无需修改核心测试逻辑。
+
+---
+
+### **输出结果**
+1. **控制台输出**：每轮初始 JS 内存和功能点响应时间。
+2. **数据文件**：`test_data.json`，记录测试结果。
+
+通过该方案，可以清晰地管理功能点测试流程，同时支持扩展和性能分析。
