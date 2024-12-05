@@ -202,7 +202,7 @@ class WebPerformanceTester:
         plt.grid()
         return self._save_fig_as_base64()
 
-def generate_response_time_statistics_table(self):
+    def generate_response_time_statistics_table(self):
     """Generate a response time statistics table as an image."""
     df = pd.DataFrame(self.response_time_data)
     
