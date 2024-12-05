@@ -201,6 +201,27 @@ class WebPerformanceTester:
         plt.grid()
         return self._save_fig_as_base64()
 
+    def generate_response_time_statistics_table(self):
+        """Generate a response time statistics table as an image."""
+        df = pd.DataFrame(self.response_time_data)
+        stats = df.groupby("function_point").agg({
+            "response_time": ["mean", "max", "min"]
+        }).reset_index()
+        stats.columns = ["Function Point", "Mean (s)", "Max (s)", "Min (s)"]
+
+        fig, ax = plt.subplots(figsize=(8, len(stats) * 0.8))
+        ax.axis("tight")
+        ax.axis("off")
+        table = plt.table(
+            cellText=stats.values,
+            colLabels=stats.columns,
+            cellLoc="center",
+            loc="center"
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
+        return self._save_fig_as_base64()
+
     def save_to_csv(self):
         if self.response_time_data:
             response_time_df = pd.DataFrame(self.response_time_data)
