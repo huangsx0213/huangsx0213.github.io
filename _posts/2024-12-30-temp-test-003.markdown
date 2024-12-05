@@ -12,11 +12,7 @@ tags:
 
 
 
-由于篇幅所限，完整内容将分为上下篇展示。以下是**上篇**内容，包含方案概述、系统架构、以及部分核心代码设计。
-
----
-
-# Web 客户端性能测试自动化方案（上篇）
+# Web 客户端性能测试自动化完整方案（上篇）
 
 ---
 
@@ -24,22 +20,23 @@ tags:
 
 ### 1.1 背景
 
-在现代 Web 应用性能测试中，不仅需要衡量页面加载时间、按钮点击响应时间等功能点的表现，还需要监控 JavaScript 内存使用情况，以检测潜在的内存泄漏或其他性能问题。本方案旨在提供一个全面的 Web 客户端性能测试自动化解决方案。
+现代 Web 应用的性能测试不仅仅局限于页面加载时间和按钮点击响应时间等常规指标，还需要对 JavaScript 内存使用情况进行监控，以便识别潜在的内存泄漏问题。本方案旨在构建一套模块化、高效、可扩展的 Web 客户端性能测试自动化框架。
 
 ### 1.2 目标
 
-1. 实现模块化的测试框架，支持功能点的动态扩展和管理。
-2. 集成 JavaScript 内存监控功能，记录每轮测试的内存使用情况。
-3. 提供自动化的测试执行和结果分析功能。
-4. 生成包含统计数据和可视化图表的综合性能报告。
+1. 实现模块化的测试框架，支持动态添加和扩展功能点测试。
+2. 集成 JavaScript 内存监控功能，捕获和记录内存使用情况，分析潜在问题。
+3. 提供多轮自动化测试执行，并支持生成多维度的性能报告，包括平均响应时间、最大响应时间及百分位数据（P90、P95、P99）。
+4. 将性能结果和趋势图嵌入到 **Robot Framework** 的日志中，便于直观查看。
 
 ### 1.3 技术栈
 
-- Python
-- Selenium WebDriver
-- Robot Framework
-- pandas (数据分析)
-- matplotlib (图表生成)
+- **Python**：开发语言。
+- **Selenium WebDriver**：实现 Web UI 的自动化操作。
+- **Robot Framework**：测试用例的编排与管理工具。
+- **pandas**：处理与分析测试数据。
+- **matplotlib**：生成可视化趋势图。
+- **Base64**：将图像嵌入到日志中。
 
 ---
 
@@ -47,21 +44,23 @@ tags:
 
 ### 2.1 模块组成
 
-1. **`base_function.py`**：功能点抽象基类，定义标准测试接口。
-2. **`performance_tester.py`**：核心测试管理类，负责测试执行与数据处理。
-3. **`robot_framework_wrapper.py`**：封装测试管理类，便于与 Robot Framework 集成。
-4. **`test_functions.py`**：功能点实现模块，定义具体操作。
-5. **`web_performance_test.robot`**：Robot Framework 测试用例文件。
+1. **`base_function.py`**：功能点抽象基类，定义标准的测试接口。
+2. **`performance_tester.py`**：核心测试管理类，负责测试执行、数据记录与分析。
+3. **`robot_framework_wrapper.py`**：封装测试管理类，适配 Robot Framework。
+4. **`test_functions.py`**：实现具体功能点操作。
+5. **`web_performance_test.robot`**：Robot Framework 测试用例文件，用于测试执行。
 
 ### 2.2 工作流程
 
-1. **初始化测试环境**。
-2. **动态注册功能点**：通过模块名与类名动态加载测试功能点。
+1. **初始化测试环境**：启动 WebDriver 并初始化测试框架。
+2. **动态注册功能点**：通过模块名和类名动态加载功能点。
 3. **执行测试循环**：
-   - 执行操作前记录 JS 内存使用情况。
-   - 执行功能点测试并记录响应时间。
-4. **数据记录与保存**：测试结果写入 JSON 文件。
-5. **生成报告**：统计数据并生成包含图表的 HTML 报告。
+   - 捕获 JavaScript 内存使用情况。
+   - 执行每个功能点并记录响应时间。
+4. **数据分析与报告生成**：
+   - 计算平均值、最大值和百分位数（P90、P95、P99）。
+   - 生成响应时间与内存使用趋势图。
+5. **将分析报告嵌入日志**：将统计表和趋势图基于 Base64 格式嵌入到 **Robot Framework** 的日志中。
 
 ---
 
@@ -69,10 +68,10 @@ tags:
 
 ### 3.1 功能点抽象基类 (`base_function.py`)
 
-功能点抽象基类定义了标准接口，包含以下方法：
-- **`precondition()`**：测试前准备操作。
-- **`measure_operation()`**：执行核心测试操作。
-- **`postcondition()`**：测试后清理操作。
+功能点基类定义了标准化接口，用于确保每个功能点测试能够按照以下顺序执行：
+1. **`precondition()`**：准备阶段。
+2. **`measure_operation()`**：执行核心操作。
+3. **`postcondition()`**：清理阶段。
 
 #### 代码实现
 
@@ -97,6 +96,9 @@ class TestFunctionBase(ABC):
         pass
 
     def run(self):
+        """
+        运行功能点测试，记录响应时间。
+        """
         try:
             self.precondition()
             start_time = time.time()
@@ -114,15 +116,13 @@ class TestFunctionBase(ABC):
 
 ### 3.2 核心测试管理类 (`performance_tester.py`)
 
-核心测试管理类负责管理测试过程，包括 WebDriver 的初始化与退出、功能点的动态加载、测试数据的记录与分析。
+#### 设计亮点
+1. **动态加载功能点**：通过模块名和类名动态注册功能点，支持扩展性。
+2. **JavaScript 内存捕获**：利用 Selenium 执行 JavaScript，捕获页面内存数据。
+3. **测试执行**：自动执行多轮测试，并记录响应时间和内存使用情况。
+4. **数据分析**：计算响应时间的统计数据（包括百分位数），并生成趋势图。
 
-#### 核心功能
-
-- **动态加载功能点**：通过模块名与类名加载功能点类。
-- **捕获 JavaScript 内存**：通过 Selenium 执行脚本获取 `performance.memory` 数据。
-- **测试执行与数据记录**：循环测试并记录响应时间和内存使用情况。
-
-#### 代码实现
+#### 核心功能实现
 
 ```python
 import importlib
@@ -144,6 +144,9 @@ class WebPerformanceTester:
         self.function_points = []
 
     def get_js_memory(self):
+        """
+        获取 JavaScript 内存使用情况。
+        """
         try:
             js_memory = self.driver.execute_script("return window.performance.memory;")
             if js_memory:
@@ -154,24 +157,27 @@ class WebPerformanceTester:
             print(f"Error in get_js_memory: {e}")
         return None, None
 
-    def _get_class_from_module(self, module_name, class_name):
+    def register_test_function(self, module_name, class_name):
+        """
+        动态注册功能点。
+        """
         module = importlib.import_module(module_name)
         for name, obj in inspect.getmembers(module, inspect.isclass):
             if name == class_name and issubclass(obj, TestFunctionBase) and obj is not TestFunctionBase:
-                return obj
+                self.function_points.append(obj(self))
+                print(f"Registered test function: {class_name}")
+                return
         raise ValueError(f"Class '{class_name}' not found in module '{module_name}'")
 
-    def register_test_function(self, module_name, class_name):
-        func_class = self._get_class_from_module(module_name, class_name)
-        self.function_points.append(func_class(self))
-        print(f"{class_name} from module '{module_name}' registered successfully.")
-
     def execute_tests(self):
+        """
+        执行多轮测试。
+        """
         for round_num in range(self.rounds):
             self.driver.get(self.target_url)
             round_start_js_memory = self.get_js_memory()
             if round_start_js_memory:
-                print(f"Round {round_num + 1} - JS Memory at Start: Used {round_start_js_memory[0]} MB, Total {round_start_js_memory[1]} MB")
+                print(f"Round {round_num + 1} JS Memory: Used {round_start_js_memory[0]} MB, Total {round_start_js_memory[1]} MB")
 
             for func in self.function_points:
                 response_time = func.run()
@@ -184,50 +190,62 @@ class WebPerformanceTester:
                     },
                     "response_time": response_time
                 })
-                print(f"Round {round_num + 1} - {func.__class__.__name__} - Response Time: {response_time} seconds")
-
-    def save_data(self, file_name="test_data.json"):
-        with open(file_name, "w") as f:
-            json.dump(self.data, f, indent=4)
-        print(f"Test data saved to {file_name}")
 
     def analyze_data(self):
+        """
+        分析测试数据，生成统计信息和趋势图。
+        """
         df = pd.DataFrame(self.data)
-        
-        time_stats = df.groupby('function_point')['response_time'].agg(['mean', 'median', 'max'])
-        
+
+        # 计算响应时间统计数据，包括百分位数
+        time_stats = df.groupby('function_point')['response_time'].agg(
+            mean='mean',
+            median='median',
+            max='max',
+            p90=lambda x: x.quantile(0.9),
+            p95=lambda x: x.quantile(0.95),
+            p99=lambda x: x.quantile(0.99)
+        )
+        time_stats = time_stats.rename(columns={
+            'mean': 'Mean',
+            'median': 'Median',
+            'max': 'Max',
+            'p90': '90%',
+            'p95': '95%',
+            'p99': '99%'
+        })
+
+        # 计算 JS 内存统计数据
         memory_stats = df.groupby('function_point').apply(lambda x: pd.Series({
-            'mean_used_MB': x['round_start_js_memory'].apply(lambda y: y['used_MB']).mean(),
-            'mean_total_MB': x['round_start_js_memory'].apply(lambda y: y['total_MB']).mean()
+            'Mean Used (MB)': x['round_start_js_memory'].apply(lambda y: y['used_MB']).mean(),
+            'Mean Total (MB)': x['round_start_js_memory'].apply(lambda y: y['total_MB']).mean()
         }))
-        
+
+        # 生成响应时间趋势图
         plt.figure(figsize=(12, 6))
         for func in df['function_point'].unique():
             func_data = df[df['function_point'] == func]
             plt.plot(func_data['round'], func_data['response_time'], label=func)
-        
         plt.xlabel('Round')
         plt.ylabel('Response Time (s)')
         plt.title('Response Time Trend')
         plt.legend()
-        
         buffer = BytesIO()
         plt.savefig(buffer, format='png')
         buffer.seek(0)
         time_image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
         plt.close()
 
+        # 生成内存趋势图
         plt.figure(figsize=(12, 6))
         for func in df['function_point'].unique():
             func_data = df[df['function_point'] == func]
-            plt.plot(func_data['round'], func_data['round_start_js_memory'].apply(lambda x: x['used_MB']), label=f"{func} (Used)")
-            plt.plot(func_data['round'], func_data['round_start_js_memory'].apply(lambda x: x['total_MB']), label=f"{func} (Total)")
-        
+            plt.plot(func_data['round'], func_data['round_start_js_memory'].apply(lambda x: x['used_MB']), label=f"{func} (Used Memory)")
+            plt.plot(func_data['round'], func_data['round_start_js_memory'].apply(lambda x: x['total_MB']), label=f"{func} (Total Memory)")
         plt.xlabel('Round')
         plt.ylabel('Memory (MB)')
         plt.title('JavaScript Memory Usage Trend')
         plt.legend()
-        
         buffer = BytesIO()
         plt.savefig(buffer, format='png')
         buffer.seek(0)
@@ -235,64 +253,31 @@ class WebPerformanceTester:
         plt.close()
 
         return time_stats, memory_stats, time_image_base64, memory_image_base64
-
-    def save_analysis_report(self, file_name="performance_report.html"):
-        time_stats, memory_stats, time_image_base64, memory_image_base64 = self.analyze_data()
-        
-        html_content = f"""
-        <html>
-        <head>
-            <title>Web Performance Test Report</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; }}
-                table {{ border-collapse: collapse; width: 100%; }}
-                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-                th {{ background-color: #f2f2f2; }}
-            </style>
-        </head>
-        <body>
-            <h1>Web Performance Test Report</h1>
-            <h2>Response Time Statistics</h2>
-            {time_stats.to_html(classes='stats')}
-            <h2>JavaScript Memory Usage Statistics</h2>
-            {memory_stats.to_html(classes='stats')}
-            <h2>Response Time Trend</h2>
-            <img src="data:image/png;base64,{time_image_base64}" alt="Response Time Trend">
-            <h2>JavaScript Memory Usage Trend</h2>
-            <img src="data:image/png;base64,{memory_image_base64}" alt="Memory Usage Trend">
-        </body>
-        </html>
-        """
-        with open(file_name, "w") as f:
-            f.write(html_content)
-        print(f"Analysis report saved to {file_name}")
-
-    def quit_driver(self):
-        self.driver.quit()
 ```
 
 ---
 
-**下篇**将包含功能点实现模块 (`test_functions.py`)、Robot Framework 集成封装类、测试用例文件及完整实施步骤和结论。
+**下篇**将包括以下内容：
+1. `robot_framework_wrapper.py`：封装测试管理类，适配 Robot Framework。
+2. `test_functions.py`：实现具体功能点。
+3. `web_performance_test.robot`：Robot 测试用例文件。
+4. 实施步骤和结论。
 
 
-# Web 客户端性能测试自动化方案（下篇）
+# Web 客户端性能测试自动化完整方案（下篇）
+
+---
 
 ## 3. 详细设计（续）
 
 ### 3.3 Robot Framework 集成封装类 (`robot_framework_wrapper.py`)
 
-为了方便与 Robot Framework 集成，`robot_framework_wrapper.py` 封装了核心测试管理类。通过提供一组关键字接口，用户可以在 Robot Framework 测试用例中直接调用这些方法。
-
-#### 核心功能
-1. **初始化测试**：创建测试管理类实例，并加载目标 URL。
-2. **动态注册功能点**：通过模块名和类名动态加载功能点。
-3. **执行测试**：调用核心类的测试执行方法进行多轮测试。
-4. **保存测试结果与报告**：保存测试数据至文件，并生成性能报告。
-5. **释放资源**：关闭 WebDriver。
+为了更好地与 **Robot Framework** 集成，`robot_framework_wrapper.py` 封装了核心测试管理类的主要功能，包括测试初始化、功能点注册、结果保存、数据分析以及将报告嵌入 Robot Framework 日志（支持表格和趋势图）。
 
 #### 代码实现
+
 ```python
+from robot.api import logger
 from performance_tester import WebPerformanceTester
 
 class RobotFrameworkWebTester:
@@ -334,6 +319,33 @@ class RobotFrameworkWebTester:
         if self.tester:
             self.tester.save_analysis_report(file_name)
 
+    def log_analysis_report_to_robot_log(self):
+        """
+        将统计数据和趋势图嵌入到 Robot Framework 日志。
+        """
+        if not self.tester:
+            logger.error("Tester is not initialized.")
+            return
+
+        # 获取统计表和趋势图的 Base64 数据
+        time_stats, memory_stats, time_image_base64, memory_image_base64 = self.tester.analyze_data()
+
+        # 打印响应时间统计表到 Robot 日志
+        logger.info("Response Time Statistics (seconds)", html=True)
+        logger.info(time_stats.to_html(classes='response-time-stats', border=1, justify="center"), html=True)
+
+        # 打印 JavaScript 内存统计表到 Robot 日志
+        logger.info("JavaScript Memory Usage Statistics (MB)", html=True)
+        logger.info(memory_stats.to_html(classes='memory-usage-stats', border=1, justify="center"), html=True)
+
+        # 将响应时间趋势图嵌入日志
+        logger.info('<h2>Response Time Trend</h2>', html=True)
+        logger.info(f'<img src="data:image/png;base64,{time_image_base64}" alt="Response Time Trend"/>', html=True)
+
+        # 将 JavaScript 内存趋势图嵌入日志
+        logger.info('<h2>JavaScript Memory Usage Trend</h2>', html=True)
+        logger.info(f'<img src="data:image/png;base64,{memory_image_base64}" alt="Memory Usage Trend"/>', html=True)
+
     def quit_tester(self):
         """
         释放资源，关闭 WebDriver。
@@ -346,14 +358,14 @@ class RobotFrameworkWebTester:
 
 ### 3.4 功能点实现模块 (`test_functions.py`)
 
-`test_functions.py` 定义了具体的测试功能点。每个功能点实现了基类中的通用方法 `precondition()`、`measure_operation()` 和 `postcondition()`。
+`test_functions.py` 定义了具体的测试功能点，每个功能点都继承自 `TestFunctionBase`，并实现标准的接口方法。
 
-#### 示例功能点设计
-以下以两个功能点为例：
-1. **TestFunction1**：点击功能按钮。
-2. **TestFunction2**：输入文本并提交。
+以下是两个功能点的示例：
+- **TestFunction1**：点击一个指定的按钮。
+- **TestFunction2**：在输入框中输入数据并提交。
 
 #### 代码实现
+
 ```python
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -363,7 +375,7 @@ from base_function import TestFunctionBase
 class TestFunction1(TestFunctionBase):
     def precondition(self):
         """
-        等待功能按钮加载完成。
+        等待按钮加载完成。
         """
         WebDriverWait(self.tester.driver, 10).until(
             EC.presence_of_element_located((By.ID, "function1"))
@@ -371,7 +383,7 @@ class TestFunction1(TestFunctionBase):
 
     def measure_operation(self):
         """
-        点击功能按钮。
+        点击按钮。
         """
         WebDriverWait(self.tester.driver, 10).until(
             EC.element_to_be_clickable((By.ID, "function1"))
@@ -379,7 +391,7 @@ class TestFunction1(TestFunctionBase):
 
     def postcondition(self):
         """
-        功能点无后置清理操作。
+        无需特殊清理。
         """
         pass
 
@@ -394,7 +406,7 @@ class TestFunction2(TestFunctionBase):
 
     def measure_operation(self):
         """
-        向输入框中输入文本并点击提交按钮。
+        输入文本并点击提交按钮。
         """
         input_field = WebDriverWait(self.tester.driver, 10).until(
             EC.presence_of_element_located((By.ID, "function2"))
@@ -416,9 +428,10 @@ class TestFunction2(TestFunctionBase):
 
 ### 3.5 Robot Framework 测试用例 (`web_performance_test.robot`)
 
-在 Robot Framework 中，用户可以通过测试用例直接调用封装的关键字接口，完成性能测试的执行与报告生成。
+`web_performance_test.robot` 是 **Robot Framework** 的测试用例文件，用户可以在其中调用封装类中的关键字，实现性能测试的自动化执行、数据保存和日志嵌入。
 
-#### 测试用例示例
+#### 测试用例文件
+
 ```robot
 *** Settings ***
 Library           robot_framework_wrapper.py
@@ -439,6 +452,7 @@ Web 客户端性能测试
     Execute Tests
     Save Test Results    ${RESULT_FILE}
     Save Analysis Report    ${REPORT_FILE}
+    Log Analysis Report To Robot Log
     Quit Tester
 ```
 
@@ -448,15 +462,17 @@ Web 客户端性能测试
 
 ### 4.1 环境准备
 
-1. 安装依赖：
+1. 安装必要的 Python 库：
    ```bash
    pip install selenium robotframework pandas matplotlib
    ```
-2. 确保安装了正确版本的 Chrome 浏览器及对应的 `chromedriver`，并将其路径配置到环境变量或提供给测试用例。
 
-### 4.2 运行测试
+2. 确保安装了正确版本的 Chrome 浏览器，并下载与之兼容的 **ChromeDriver**。
+   - **ChromeDriver 下载地址**：<https://chromedriver.chromium.org/downloads>
 
-1. 确保所有文件放置在同一目录下，结构如下：
+3. 将 `chromedriver` 的路径配置到环境变量，或者直接在测试用例中提供其路径。
+
+4. 确保文件结构如下：
    ```
    base_function.py
    performance_tester.py
@@ -464,44 +480,74 @@ Web 客户端性能测试
    test_functions.py
    web_performance_test.robot
    ```
-2. 在命令行中执行 Robot Framework 测试用例：
-   ```bash
-   robot web_performance_test.robot
-   ```
+
+---
+
+### 4.2 执行测试
+
+运行以下命令执行测试用例：
+```bash
+robot web_performance_test.robot
+```
 
 ---
 
 ## 5. 输出结果
 
-执行完成后，将生成以下文件：
-1. **`test_data.json`**：包含所有测试轮次的详细数据，例如每轮的响应时间、JavaScript 内存使用情况等。
-   ```json
-   [
-       {
-           "round": 1,
-           "function_point": "TestFunction1",
-           "round_start_js_memory": {
-               "used_MB": 12.34,
-               "total_MB": 45.67
-           },
-           "response_time": 0.456
-       }
-   ]
-   ```
-2. **`performance_report.html`**：包含统计分析与可视化图表的综合性能报告，示例如下：
-   - **响应时间统计表**：记录平均值、最大值等信息。
-   - **JavaScript 内存统计表**：记录平均内存使用情况。
-   - **响应时间趋势图**。
-   - **JavaScript 内存使用趋势图**。
+### 5.1 生成的文件
+
+1. **`test_data.json`**：详细记录每轮测试的响应时间和 JavaScript 内存使用情况。
+2. **`performance_report.html`**：基于统计数据和趋势图生成的 HTML 报告。
+
+#### 示例 JSON 数据
+```json
+[
+    {
+        "round": 1,
+        "function_point": "TestFunction1",
+        "round_start_js_memory": {
+            "used_MB": 12.34,
+            "total_MB": 45.67
+        },
+        "response_time": 0.456
+    }
+]
+```
+
+---
+
+### 5.2 Robot Framework 日志
+
+通过 `Log Analysis Report To Robot Log` 关键字，统计表格和趋势图嵌入到 **Robot Framework** 的日志中。
+
+#### 示例日志内容
+
+1. **响应时间统计（含百分位数 P90、P95、P99）：**
+
+| Function Point | Mean (s) | Median (s) | Max (s) | 90% (s) | 95% (s) | 99% (s) |
+|----------------|----------|------------|---------|---------|---------|---------|
+| TestFunction1  | 0.456    | 0.450      | 0.500   | 0.490   | 0.495   | 0.497   |
+| TestFunction2  | 0.789    | 0.780      | 0.850   | 0.840   | 0.845   | 0.849   |
+
+2. **JavaScript 内存统计：**
+
+| Function Point | Mean Used (MB) | Mean Total (MB) |
+|----------------|----------------|-----------------|
+| TestFunction1  | 12.34          | 45.67           |
+| TestFunction2  | 13.56          | 46.78           |
+
+3. **趋势图**：
+   - 响应时间趋势图。
+   - JavaScript 内存使用趋势图。
 
 ---
 
 ## 6. 结论
 
-本方案通过模块化设计和细粒度数据监控，提供了一套灵活且全面的 Web 客户端性能测试解决方案。其主要优点包括：
+本方案通过模块化设计和动态加载机制，提供了一套高效、灵活的 Web 客户端性能测试方案。其主要特点包括：
 
-1. **动态可扩展性**：支持通过模块化机制动态注册测试功能点。
-2. **全面性能监控**：同时监控响应时间和 JavaScript 内存使用情况。
-3. **自动化与分析一体化**：结合 Robot Framework 的高效自动化管理能力，输出包含详细数据和图表的性能报告。
+1. 自动捕获响应时间和 JavaScript 内存使用数据。
+2. 支持扩展的功能点测试框架，易于维护和扩展。
+3. 将性能报告（包括统计表和趋势图）直接嵌入到 **Robot Framework** 日志中，提供直观的分析结果。
 
-该方案适用于 Web 应用的性能基准测试与问题分析，为开发团队提供了优化产品性能的重要依据。
+这种方法适用于大多数现代 Web 应用的性能基准测试和性能问题诊断，并为开发团队提供了优化性能的详细依据。
