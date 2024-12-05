@@ -203,43 +203,43 @@ class WebPerformanceTester:
         return self._save_fig_as_base64()
 
     def generate_response_time_statistics_table(self):
-    """Generate a response time statistics table as an image."""
-    df = pd.DataFrame(self.response_time_data)
-    
-    # Calculate statistics: mean, max, min, median (p50), p90, p95, p99
-    stats = df.groupby("function_point").agg({
-        "response_time": [
-            lambda x: round(x.mean(), 2),    # Mean response time (rounded)
-            lambda x: round(x.max(), 2),     # Maximum response time (rounded)
-            lambda x: round(x.min(), 2),     # Minimum response time (rounded)
-            lambda x: round(x.median(), 2),  # Median (p50, rounded)
-            lambda x: round(x.quantile(0.9), 2),  # 90th percentile (rounded)
-            lambda x: round(x.quantile(0.95), 2), # 95th percentile (rounded)
-            lambda x: round(x.quantile(0.99), 2)  # 99th percentile (rounded)
-        ]
-    }).reset_index()
+        """Generate a response time statistics table as an image."""
+        df = pd.DataFrame(self.response_time_data)
+        
+        # Calculate statistics: mean, max, min, median (p50), p90, p95, p99
+        stats = df.groupby("function_point").agg({
+            "response_time": [
+                lambda x: round(x.mean(), 2),    # Mean response time (rounded)
+                lambda x: round(x.max(), 2),     # Maximum response time (rounded)
+                lambda x: round(x.min(), 2),     # Minimum response time (rounded)
+                lambda x: round(x.median(), 2),  # Median (p50, rounded)
+                lambda x: round(x.quantile(0.9), 2),  # 90th percentile (rounded)
+                lambda x: round(x.quantile(0.95), 2), # 95th percentile (rounded)
+                lambda x: round(x.quantile(0.99), 2)  # 99th percentile (rounded)
+            ]
+        }).reset_index()
 
-    # Rename columns for clarity
-    stats.columns = ["Function Point", "Mean (s)", "Max (s)", "Min (s)", 
-                     "Median (s)", "P90 (s)", "P95 (s)", "P99 (s)"]
+        # Rename columns for clarity
+        stats.columns = ["Function Point", "Mean (s)", "Max (s)", "Min (s)", 
+                         "Median (s)", "P90 (s)", "P95 (s)", "P99 (s)"]
 
-    # Create a Matplotlib figure for the table
-    fig, ax = plt.subplots(figsize=(10, len(stats) * 0.8))
-    ax.axis("tight")
-    ax.axis("off")
+        # Create a Matplotlib figure for the table
+        fig, ax = plt.subplots(figsize=(10, len(stats) * 0.8))
+        ax.axis("tight")
+        ax.axis("off")
 
-    # Create the table
-    table = plt.table(
-        cellText=stats.values,
-        colLabels=stats.columns,
-        cellLoc="center",
-        loc="center"
-    )
-    table.auto_set_font_size(False)
-    table.set_fontsize(8)
+        # Create the table
+        table = plt.table(
+            cellText=stats.values,
+            colLabels=stats.columns,
+            cellLoc="center",
+            loc="center"
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
 
-    # Convert the table to a Base64 image for embedding
-    return self._save_fig_as_base64()
+        # Convert the table to a Base64 image for embedding
+        return self._save_fig_as_base64()
 
     def save_to_csv(self):
         if self.response_time_data:
