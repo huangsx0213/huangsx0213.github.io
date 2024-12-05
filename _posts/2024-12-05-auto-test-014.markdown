@@ -2,7 +2,7 @@
 layout:     post
 title:      "Web Client-Side Performance Testing Automation Solution"
 subtitle:   "「 End to End Auto Testing 」" 
-date:       2024-15-05 12:00:00
+date:       2024-12-05 12:00:00
 author:     "Vick Huang"
 header-img: "img/bg-walle.jpg"
 catalog: true
