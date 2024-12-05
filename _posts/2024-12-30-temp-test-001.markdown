@@ -9,105 +9,510 @@ catalog: true
 tags:
     - Testing
 ---
+您提到的「内存趋势图与功能点无关」这一点是关键的优化方向，确实 JavaScript 内存使用的趋势应反映整个页面的内存变化情况，而不是按功能点区分。以下是优化后的完整方案，其中 JavaScript 内存趋势图聚焦页面整体的内存演变，而非按功能点分割。
 
+---
 
+# 优化后的 Web 客户端性能测试自动化方案（上篇）
 
-你的方法 `wait_for_js_framework_stability` 使用 Selenium 的 `WebDriverWait` 来等待 JavaScript 框架稳定。这是一个很好的实现方式，可以帮助确保所有异步操作完成后再进行后续的测试步骤。以下是对你方法的详细说明和完整示例。
+---
 
-## **方法解析**
+## 1. 方案概述
 
-### 1. **使用 `WebDriverWait`**
-- `WebDriverWait` 是 Selenium 提供的显式等待机制，可以等待某个条件成立。
-- `self.driver` 表示当前的 WebDriver 实例，`self.timeout` 是等待的最大时间。
-- `poll_frequency=0.1` 表示每 0.1 秒检查一次条件。
+### 1.1 背景
 
-### 2. **执行 JavaScript 脚本**
-- `script` 变量保存了要执行的 JavaScript 代码。
-- `wait.until(lambda driver: driver.execute_script(script))` 会不断执行这个脚本，直到返回值为 `True`，表示 JS 框架已经稳定。
+现代 Web 应用的性能测试需要兼顾页面响应时间和 JavaScript 内存使用情况。响应时间指标用于评估功能点性能，而内存使用情况则揭示潜在的内存泄漏风险。为了更科学地测试和分析性能，本方案优化了内存监控逻辑，使内存趋势图反映页面整体情况，而不再按功能点分割。
 
-## **完整示例**
+### 1.2 目标
 
-以下是一个完整的类示例，展示了如何使用这个方法来等待 JavaScript 框架的稳定状态：
+1. 利用模块化框架，实现功能点的动态加载和扩展。
+2. 记录和分析页面整体的 JavaScript 内存使用趋势。
+3. 提供详细的性能报告，包括响应时间的统计信息（含百分位数 P90、P95、P99）及页面整体内存趋势图。
+4. 将性能数据嵌入 **Robot Framework** 的日志中，便于分析和共享。
+
+---
+
+## 2. 系统架构
+
+### 2.1 模块组成
+
+1. **`base_function.py`**：抽象功能点基类，定义测试接口。
+2. **`performance_tester.py`**：核心测试管理类，负责测试执行、数据记录和分析。
+3. **`robot_framework_wrapper.py`**：封装核心类，便于与 **Robot Framework** 集成。
+4. **`test_functions.py`**：具体功能点实现。
+5. **`web_performance_test.robot`**：Robot Framework 测试用例文件。
+
+---
+
+### 2.2 工作流程
+
+1. **初始化测试环境**：启动 WebDriver 并加载测试页面。
+2. **动态注册功能点**：通过模块名和类名添加功能点。
+3. **执行测试循环**：
+   - **记录页面内存使用**：每轮测试开始时捕获页面整体的 JavaScript 内存使用情况。
+   - **执行功能点测试**：记录各功能点的响应时间。
+4. **生成测试数据**：保存响应时间和内存数据至 JSON 文件。
+5. **分析与可视化**：
+   - 计算响应时间的统计指标（平均值、最大值、P90、P95、P99）。
+   - 绘制页面整体的内存使用趋势图。
+6. **嵌入日志和生成报告**：将统计表和趋势图嵌入 **Robot Framework** 日志，并生成 HTML 报告。
+
+---
+
+## 3. 详细设计
+
+### 3.1 功能点抽象基类 (`base_function.py`)
+
+#### 代码实现
 
 ```python
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from abc import ABC, abstractmethod
+import time
 
-class JSFrameworkWaiter:
-    def __init__(self, driver, timeout=10):
-        self.driver = driver
-        self.timeout = timeout
+class TestFunctionBase(ABC):
+    def __init__(self, tester):
+        self.tester = tester
 
-    def wait_for_js_framework_stability(self):
-        wait = WebDriverWait(self.driver, self.timeout, poll_frequency=0.1)
-        # 将等待框架稳定的脚本定义为字符串
-        wait_for_js_framework_stability = """
-            function waitForFrameworkStability() {
-                function hasPendingAsyncOperation() {
-                    var xhrRequests = Array.from(document.querySelectorAll('xhr-request'));
-                    if (xhrRequests.some(isXhrRequestPending)) {
-                        return true;
-                    }
-                    
-                    var pendingTimers = Array.from(document.querySelectorAll('timer')).filter(isTimerPending);
-                    if (pendingTimers.length > 0) {
-                        return true;
-                    }
-                    
-                    var pendingAnimationFrame = Array.from(document.querySelectorAll('animation-frame')).some(isAnimationFramePending);
-                    if (pendingAnimationFrame) {
-                        return true;
-                    }
-                    
-                    return false;
-                }
+    @abstractmethod
+    def precondition(self):
+        pass
 
-                function isXhrRequestPending(xhrRequest) {
-                    return xhrRequest.readyState !== 4 || xhrRequest.status === 0;
-                }
+    @abstractmethod
+    def measure_operation(self):
+        pass
 
-                function isTimerPending(timer) {
-                    return timer.hasAttribute('data-pending');
-                }
+    @abstractmethod
+    def postcondition(self):
+        pass
 
-                function isAnimationFramePending(animationFrame) {
-                    return animationFrame.hasAttribute('data-pending');
-                }
-
-                return !hasPendingAsyncOperation();
-            }
-
-            // 返回等待框架稳定的结果
-            return waitForFrameworkStability();
+    def run(self):
         """
-        # 等待直到框架稳定
-        wait.until(lambda driver: driver.execute_script(wait_for_js_framework_stability))
-
-# 使用示例
-if __name__ == "__main__":
-    # 初始化 WebDriver
-    driver = webdriver.Chrome(service=Service("chromedriver"))
-    driver.get("https://your-js-app.com")
-
-    # 创建等待器实例
-    waiter = JSFrameworkWaiter(driver)
-
-    # 等待 JS 框架稳定
-    waiter.wait_for_js_framework_stability()
-
-    # 在框架稳定后进行其他操作，比如点击某个按钮
-    button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "myButton")))
-    button.click()
-
-    # 关闭浏览器
-    driver.quit()
+        运行功能点测试，记录响应时间。
+        """
+        try:
+            self.precondition()
+            start_time = time.time()
+            self.measure_operation()
+            end_time = time.time()
+            response_time = end_time - start_time
+            self.postcondition()
+            return response_time
+        except Exception as e:
+            print(f"Error in {self.__class__.__name__}: {e}")
+            return None
 ```
 
-## **注意事项**
-- 确保页面上存在 `xhr-request`、`timer` 和 `animation-frame` 的元素，或者根据实际情况修改检查逻辑。
-- 可以根据需要调整 `self.timeout` 的值，以适应不同页面的加载速度。
-- 在不同的框架或应用中，可能需要根据实际情况对 JavaScript 检查逻辑进行调整，以确保准确判断框架的稳定性。
+---
 
-通过这种方式，你可以有效地等待 JavaScript 框架的稳定，确保测试脚本在执行后续操作时不会遇到未加载完成的元素或数据。
+### 3.2 核心测试管理类 (`performance_tester.py`)
+
+#### 设计亮点
+
+1. **内存监控**：每轮测试前记录页面整体的内存使用情况，而不是按功能点区分。
+2. **趋势图优化**：绘制页面整体 JavaScript 内存的演变趋势。
+3. **数据分析**：提供响应时间的统计指标（含 P90、P95、P99）和页面内存使用的平均值。
+
+#### 核心代码实现
+
+```python
+import importlib
+import inspect
+import json
+from selenium import webdriver
+from base_function import TestFunctionBase
+import pandas as pd
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+
+class WebPerformanceTester:
+    def __init__(self, driver_path, target_url, rounds=5):
+        self.driver = webdriver.Chrome(executable_path=driver_path)
+        self.target_url = target_url
+        self.rounds = rounds
+        self.data = []
+        self.memory_usage = []  # 用于记录页面整体内存使用情况
+        self.function_points = []
+
+    def get_js_memory(self):
+        """
+        获取页面的 JavaScript 内存使用情况。
+        """
+        try:
+            js_memory = self.driver.execute_script("return window.performance.memory;")
+            if js_memory:
+                used_js_memory_mb = js_memory.get("usedJSHeapSize", 0) / (1024 * 1024)
+                total_js_memory_mb = js_memory.get("totalJSHeapSize", 0) / (1024 * 1024)
+                return round(used_js_memory_mb, 2), round(total_js_memory_mb, 2)
+        except Exception as e:
+            print(f"Error in get_js_memory: {e}")
+        return None, None
+
+    def register_test_function(self, module_name, class_name):
+        """
+        动态注册功能点。
+        """
+        module = importlib.import_module(module_name)
+        for name, obj in inspect.getmembers(module, inspect.isclass):
+            if name == class_name and issubclass(obj, TestFunctionBase) and obj is not TestFunctionBase:
+                self.function_points.append(obj(self))
+                print(f"Registered test function: {class_name}")
+                return
+        raise ValueError(f"Class '{class_name}' not found in module '{module_name}'")
+
+    def execute_tests(self):
+        """
+        执行多轮测试。
+        """
+        for round_num in range(self.rounds):
+            self.driver.get(self.target_url)
+            round_start_js_memory = self.get_js_memory()
+
+            # 记录页面整体内存使用情况
+            if round_start_js_memory:
+                self.memory_usage.append({
+                    "round": round_num + 1,
+                    "used_MB": round_start_js_memory[0],
+                    "total_MB": round_start_js_memory[1],
+                })
+                print(f"Round {round_num + 1} JS Memory: Used {round_start_js_memory[0]} MB, Total {round_start_js_memory[1]} MB")
+
+            # 执行所有功能点的测试
+            for func in self.function_points:
+                response_time = func.run()
+                self.data.append({
+                    "round": round_num + 1,
+                    "function_point": func.__class__.__name__,
+                    "response_time": response_time
+                })
+
+    def analyze_data(self):
+        """
+        分析测试数据，生成统计信息和趋势图。
+        """
+        # 转换响应时间为 DataFrame
+        df = pd.DataFrame(self.data)
+
+        # 计算响应时间统计数据，包括百分位数
+        time_stats = df.groupby('function_point')['response_time'].agg(
+            mean='mean',
+            median='median',
+            max='max',
+            p90=lambda x: x.quantile(0.9),
+            p95=lambda x: x.quantile(0.95),
+            p99=lambda x: x.quantile(0.99)
+        )
+        time_stats = time_stats.rename(columns={
+            'mean': 'Mean',
+            'median': 'Median',
+            'max': 'Max',
+            'p90': '90%',
+            'p95': '95%',
+            'p99': '99%'
+        })
+
+        # 转换内存使用数据为 DataFrame
+        memory_df = pd.DataFrame(self.memory_usage)
+
+        # 生成响应时间趋势图
+        plt.figure(figsize=(12, 6))
+        for func in df['function_point'].unique():
+            func_data = df[df['function_point'] == func]
+            plt.plot(func_data['round'], func_data['response_time'], label=func)
+        plt.xlabel('Round')
+        plt.ylabel('Response Time (s)')
+        plt.title('Response Time Trend')
+        plt.legend()
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png')
+        buffer.seek(0)
+        time_image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        plt.close()
+
+        # 生成 JavaScript 内存使用趋势图
+        plt.figure(figsize=(12, 6))
+        plt.plot(memory_df['round'], memory_df['used_MB'], label='Used Memory (MB)', color='blue')
+        plt.plot(memory_df['round'], memory_df['total_MB'], label='Total Memory (MB)', color='orange')
+        plt.xlabel('Round')
+        plt.ylabel('Memory (MB)')
+        plt.title('JavaScript Memory Usage Trend')
+        plt.legend()
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png')
+        buffer.seek(0)
+        memory_image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        plt.close()
+
+        return time_stats, memory_df, time_image_base64, memory_image_base64
+```
+
+---
+
+**下篇**将包括：
+1. `robot_framework_wrapper.py` 的实现。
+2. 功能点实现模块 (`test_functions.py`)。
+3. 测试用例文件 (`web_performance_test.robot`)。
+4. 实施步骤及优化后的效果总结。
+
+
+# 优化后的 Web 客户端性能测试自动化方案（下篇）
+
+---
+
+## 3. 详细设计（续）
+
+### 3.3 Robot Framework 集成封装类 (`robot_framework_wrapper.py`)
+
+为了适配 **Robot Framework**，通过关键字接口将 `WebPerformanceTester` 的功能封装，并新增了将内存使用的趋势图（页面整体）和响应时间统计表嵌入到日志的功能。
+
+#### 代码实现
+
+```python
+from robot.api import logger
+from performance_tester import WebPerformanceTester
+
+class RobotFrameworkWebTester:
+    def __init__(self):
+        self.tester = None
+
+    def initialize_tester(self, driver_path, target_url, rounds=5):
+        """
+        初始化测试管理类。
+        """
+        self.tester = WebPerformanceTester(driver_path, target_url, int(rounds))
+        print("WebPerformanceTester initialized.")
+
+    def register_test_function(self, module_name, class_name):
+        """
+        动态注册功能点。
+        """
+        if self.tester:
+            self.tester.register_test_function(module_name, class_name)
+
+    def execute_tests(self):
+        """
+        执行测试。
+        """
+        if self.tester:
+            self.tester.execute_tests()
+
+    def save_test_results(self, file_name="test_data.json"):
+        """
+        保存测试结果到 JSON 文件。
+        """
+        if self.tester:
+            self.tester.save_data(file_name)
+
+    def save_analysis_report(self, file_name="performance_report.html"):
+        """
+        保存性能报告到 HTML 文件。
+        """
+        if self.tester:
+            self.tester.save_analysis_report(file_name)
+
+    def log_analysis_report_to_robot_log(self):
+        """
+        将统计数据和趋势图嵌入到 Robot Framework 日志。
+        """
+        if not self.tester:
+            logger.error("Tester is not initialized.")
+            return
+
+        # 获取统计表和趋势图的 Base64 数据
+        time_stats, memory_df, time_image_base64, memory_image_base64 = self.tester.analyze_data()
+
+        # 打印响应时间统计表到 Robot 日志
+        logger.info("Response Time Statistics (seconds)", html=True)
+        logger.info(time_stats.to_html(classes='response-time-stats', border=1, justify="center"), html=True)
+
+        # 打印 JavaScript 内存使用趋势图表到 Robot 日志
+        logger.info('<h2>JavaScript Memory Usage Trend</h2>', html=True)
+        logger.info(f'<img src="data:image/png;base64,{memory_image_base64}" alt="Memory Usage Trend"/>', html=True)
+
+        # 打印响应时间趋势图到 Robot 日志
+        logger.info('<h2>Response Time Trend</h2>', html=True)
+        logger.info(f'<img src="data:image/png;base64,{time_image_base64}" alt="Response Time Trend"/>', html=True)
+
+    def quit_tester(self):
+        """
+        释放资源，关闭 WebDriver。
+        """
+        if self.tester:
+            self.tester.quit_driver()
+```
+
+---
+
+### 3.4 功能点实现模块 (`test_functions.py`)
+
+#### 功能点设计
+
+功能点模块实现了两个示例功能点：
+1. **TestFunction1**：点击指定的按钮。
+2. **TestFunction2**：在文本框中输入数据并提交。
+
+#### 代码实现
+
+```python
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from base_function import TestFunctionBase
+
+class TestFunction1(TestFunctionBase):
+    def precondition(self):
+        """
+        等待按钮加载完成。
+        """
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function1"))
+        )
+
+    def measure_operation(self):
+        """
+        点击按钮。
+        """
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "function1"))
+        ).click()
+
+    def postcondition(self):
+        """
+        无需特殊清理。
+        """
+        pass
+
+class TestFunction2(TestFunctionBase):
+    def precondition(self):
+        """
+        等待输入框加载完成。
+        """
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function2"))
+        )
+
+    def measure_operation(self):
+        """
+        输入文本并点击提交按钮。
+        """
+        input_field = WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function2"))
+        )
+        input_field.send_keys("测试文本")
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "submit2"))
+        ).click()
+
+    def postcondition(self):
+        """
+        清空输入框内容。
+        """
+        input_field = self.tester.driver.find_element(By.ID, "function2")
+        input_field.clear()
+```
+
+---
+
+### 3.5 Robot Framework 测试用例 (`web_performance_test.robot`)
+
+#### 测试用例文件
+
+在 **Robot Framework** 中调用封装的关键字，执行性能测试、保存结果和报告，并将分析结果嵌入测试日志。
+
+```robot
+*** Settings ***
+Library           robot_framework_wrapper.py
+
+*** Variables ***
+${CHROME_DRIVER_PATH}    /path/to/chromedriver
+${TARGET_URL}            https://example.com
+${ROUNDS}               5
+${RESULT_FILE}          test_data.json
+${REPORT_FILE}          performance_report.html
+${MODULE_NAME}          test_functions
+
+*** Test Cases ***
+Web 客户端性能测试
+    Initialize Tester    ${CHROME_DRIVER_PATH}    ${TARGET_URL}    ${ROUNDS}
+    Register Test Function    ${MODULE_NAME}    TestFunction1
+    Register Test Function    ${MODULE_NAME}    TestFunction2
+    Execute Tests
+    Save Test Results    ${RESULT_FILE}
+    Save Analysis Report    ${REPORT_FILE}
+    Log Analysis Report To Robot Log
+    Quit Tester
+```
+
+---
+
+## 4. 实施步骤
+
+### 4.1 环境准备
+
+1. 安装必要的 Python 库：
+   ```bash
+   pip install selenium robotframework pandas matplotlib
+   ```
+
+2. 下载与 Chrome 浏览器匹配的 **ChromeDriver**，并将其路径配置到环境变量或提供给测试用例。
+
+3. 确保以下文件结构：
+   ```
+   base_function.py
+   performance_tester.py
+   robot_framework_wrapper.py
+   test_functions.py
+   web_performance_test.robot
+   ```
+
+---
+
+### 4.2 运行测试
+
+在终端执行以下命令运行测试：
+```bash
+robot web_performance_test.robot
+```
+
+---
+
+## 5. 报告与日志
+
+### 5.1 输出文件
+
+1. **`test_data.json`**：详细记录响应时间和 JavaScript 内存数据。
+2. **`performance_report.html`**：包含统计表和趋势图的性能报告。
+
+---
+
+### 5.2 Robot Framework 日志示例
+
+在 **Robot Framework** 的日志中，您将看到以下内容：
+
+#### 响应时间统计表：
+
+| Function Point | Mean (s) | Median (s) | Max (s) | 90% (s) | 95% (s) | 99% (s) |
+|----------------|----------|------------|---------|---------|---------|---------|
+| TestFunction1  | 0.456    | 0.450      | 0.500   | 0.490   | 0.495   | 0.497   |
+| TestFunction2  | 0.789    | 0.780      | 0.850   | 0.840   | 0.845   | 0.849   |
+
+#### JavaScript 内存使用趋势图：
+
+显示整体页面的内存使用趋势：
+- **使用内存 (Used Memory)**：蓝色曲线。
+- **总内存 (Total Memory)**：橙色曲线。
+
+#### 响应时间趋势图：
+
+显示不同功能点的响应时间随轮次的变化。
+
+---
+
+## 6. 优化点总结
+
+1. **内存趋势图聚焦整体页面**：优化内存监控逻辑，仅记录页面整体的 JavaScript 内存变化，而不是按功能点区分。
+2. **多维度响应时间统计**：新增 P90、P95、P99 百分位数，便于分析异常情况。
+3. **日志可视化**：将统计表和趋势图嵌入 **Robot Framework** 日志，提升分析效率。
+4. **模块化设计**：支持功能点的动态扩展和复用。
+
+此方案适用于复杂 Web 应用的性能验证和内存泄漏检测，为开发团队提供全面的性能优化依据。
