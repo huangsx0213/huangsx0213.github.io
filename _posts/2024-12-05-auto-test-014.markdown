@@ -31,6 +31,7 @@ In modern web application development, performance testing is crucial for ensuri
 | Objective                           | Description                                                   |
 |-------------------------------------|---------------------------------------------------------------|
 | **Modular Design**                  | Allow dynamic extensions of test points for scalability.      |
+| **Response Time**               | Captures and analyzes response times,including P90, P95, P99   |
 | **Memory Monitoring**               | Capture and monitor JavaScript memory usage per test cycle.   |
 | **Comprehensive Reporting**         | Generate visualized reports (charts, tables) and save results.|
 | **Data Persistence**                | Save all performance data to CSV files for further analysis.  |
