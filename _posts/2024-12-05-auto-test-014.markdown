@@ -1,0 +1,307 @@
+---
+layout:     post
+title:      "Web Client-Side Performance Testing Automation Solution"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2024-15-05 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+# Web Client-Side Performance Testing Automation Solution
+
+---
+
+## Overview
+
+### 1. Background
+
+Two critical metrics for evaluating the performance of Web applications are response time and JavaScript memory usage. This solution builds a modular automation testing framework that supports functional testing, monitors overall page memory usage, and generates response time statistics and memory usage trend charts.
+
+---
+
+### 2. Objectives
+
+1. Test the response time of functional points.
+2. Monitor overall JavaScript memory usage of the page (track  **Used Memory (MB)**).
+3. Automatically generate performance reports, including statistical data and trend charts.
+4. Embed performance results into **Robot Framework** logs.
+
+---
+
+### 3. File Structure
+
+```
+project/
+│
+├── base_function.py             # Functional point base class
+├── performance_tester.py        # Core performance testing manager
+├── robot_framework_wrapper.py   # Robot Framework wrapper
+├── test_functions.py            # Functional point implementation module
+├── web_performance_test.robot   # Test case file
+```
+
+---
+
+## Full Code
+
+### 1. Functional Point Base Class (`base_function.py`)
+
+```python
+from abc import ABC, abstractmethod
+import time
+
+class TestFunctionBase(ABC):
+    def __init__(self, tester):
+        self.tester = tester
+
+    @abstractmethod
+    def precondition(self):
+        # Define any preconditions for the functional point
+        pass
+
+    @abstractmethod
+    def measure_operation(self):
+        # Define the operation to measure
+        pass
+
+    @abstractmethod
+    def postcondition(self):
+        # Define any postconditions or cleanup steps
+        pass
+
+    def run(self):
+        # Run the functional test and measure response time
+        try:
+            self.precondition()
+            start_time = time.time()
+            self.measure_operation()
+            end_time = time.time()
+            response_time = round(end_time - start_time, 2)  
+            self.postcondition()
+            return response_time
+        except Exception as e:
+            print(f"Error in {self.__class__.__name__}: {e}")
+            return None
+```
+
+---
+
+### 2. Core Testing Manager (`performance_tester.py`)
+
+```python
+import importlib
+import inspect
+from selenium import webdriver
+from base_function import TestFunctionBase
+import pandas as pd
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+
+class WebPerformanceTester:
+    def __init__(self, driver_path, target_url, rounds=5):
+        # Initialize the WebDriver and test parameters
+        self.driver = webdriver.Chrome(executable_path=driver_path)
+        self.target_url = target_url
+        self.rounds = rounds
+        self.response_times = []  # Store response time data
+        self.memory_usage = []  # Store memory usage data
+
+    def get_js_memory(self):
+        """
+        Retrieve JavaScript memory usage; only track Used Memory (MB).
+        """
+        try:
+            js_memory = self.driver.execute_script("return window.performance.memory;")
+            if js_memory:
+                used_js_memory_mb = js_memory.get("usedJSHeapSize", 0) / (1024 * 1024)
+                return round(used_js_memory_mb, 2)
+        except Exception as e:
+            print(f"Error in get_js_memory: {e}")
+        return None
+
+    def register_test_function(self, module_name, class_name):
+        """
+        Dynamically register a test function.
+        """
+        module = importlib.import_module(module_name)
+        for name, obj in inspect.getmembers(module, inspect.isclass):
+            if name == class_name and issubclass(obj, TestFunctionBase) and obj is not TestFunctionBase:
+                self.response_times.append(obj(self))  # Register the function in response_times
+                print(f"Registered test function: {class_name}")
+                return
+        raise ValueError(f"Class '{class_name}' not found in module '{module_name}'")
+
+    def execute_tests(self):
+        """
+        Execute multiple rounds of testing.
+        """
+        for round_num in range(self.rounds):
+            self.driver.get(self.target_url)
+            round_memory = self.get_js_memory()  # Track memory for each round
+            if round_memory is not None:
+                self.memory_usage.append({
+                    "round": round_num + 1,
+                    "used_MB": round_memory
+                })
+            # Execute all registered functional points
+            for func in self.response_times:
+                response_time = func.run()
+                self.response_times.append({
+                    "round": round_num + 1,
+                    "function_point": func.__class__.__name__,
+                    "response_time": response_time
+                })
+
+    def analyze_data(self):
+        """
+        Analyze data and generate statistical information and memory usage trends.
+        """
+        # Convert response time data to DataFrame
+        df = pd.DataFrame(self.response_times)
+        time_stats = df.groupby('function_point')['response_time'].agg(
+            mean=lambda x: round(x.mean(), 2),
+            median=lambda x: round(x.median(), 2),
+            max=lambda x: round(x.max(), 2),
+            p90=lambda x: round(x.quantile(0.9), 2),
+            p95=lambda x: round(x.quantile(0.95), 2),
+            p99=lambda x: round(x.quantile(0.99), 2)
+        )
+
+        # Convert memory data to DataFrame
+        memory_df = pd.DataFrame(self.memory_usage)
+
+        # Plot memory usage trend (Used Memory only)
+        plt.figure(figsize=(12, 6))
+        plt.plot(memory_df['round'], memory_df['used_MB'], label='Used Memory (MB)', color='blue')
+        plt.xlabel('Round')
+        plt.ylabel('Memory (MB)')
+        plt.title('JavaScript Memory Usage Trend')
+        plt.legend()
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png')
+        buffer.seek(0)
+        memory_image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        plt.close()
+
+        return time_stats, memory_image_base64
+```
+
+---
+
+### 3. Functional Point Example (`test_functions.py`)
+
+```python
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from base_function import TestFunctionBase
+
+class TestFunction1(TestFunctionBase):
+    def precondition(self):
+        # Wait for the button to load
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "function1"))
+        )
+
+    def measure_operation(self):
+        # Click the button
+        WebDriverWait(self.tester.driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "function1"))
+        ).click()
+
+    def postcondition(self):
+        # No special cleanup required
+        pass
+```
+
+---
+
+### 4. Robot Framework Wrapper (`robot_framework_wrapper.py`)
+
+```python
+from robot.api import logger
+from performance_tester import WebPerformanceTester
+
+class RobotFrameworkWebTester:
+    def __init__(self):
+        self.tester = None
+
+    def initialize_tester(self, driver_path, target_url, rounds=5):
+        # Initialize the performance tester
+        self.tester = WebPerformanceTester(driver_path, target_url, int(rounds))
+
+    def register_test_function(self, module_name, class_name):
+        if self.tester:
+            self.tester.register_test_function(module_name, class_name)
+
+    def execute_tests(self):
+        if self.tester:
+            self.tester.execute_tests()
+
+    def log_analysis_report_to_robot_log(self):
+        # Log statistics and memory usage trends to the Robot Framework log
+        time_stats, memory_image_base64 = self.tester.analyze_data()
+        logger.info("Response Time Statistics", html=True)
+        logger.info(time_stats.to_html(classes='stats'), html=True)
+        logger.info('<h2>Memory Usage Trend</h2>', html=True)
+        logger.info(f'<img src="data:image/png;base64,{memory_image_base64}" alt="Memory Usage"/>', html=True)
+
+    def quit_tester(self):
+        if self.tester:
+            self.tester.quit_driver()
+```
+
+---
+
+### 5. Test Case (`web_performance_test.robot`)
+
+```robot
+*** Settings ***
+Library           robot_framework_wrapper.py
+
+*** Variables ***
+${CHROME_DRIVER_PATH}    /path/to/chromedriver
+${TARGET_URL}            https://example.com
+${ROUNDS}               5
+
+*** Test Cases ***
+Web Client-Side Performance Test
+    Initialize Tester    ${CHROME_DRIVER_PATH}    ${TARGET_URL}    ${ROUNDS}
+    Register Test Function    test_functions    TestFunction1
+    Execute Tests
+    Log Analysis Report To Robot Log
+    Quit Tester
+```
+
+---
+
+## Usage Steps
+
+1. Install dependencies:
+   ```bash
+   pip install selenium robotframework pandas matplotlib
+   ```
+
+2. Make sure **ChromeDriver** is installed and matches your Chrome browser version. Update the path in `${CHROME_DRIVER_PATH}`.
+
+3. Run the test:
+   ```bash
+   robot web_performance_test.robot
+   ```
+
+---
+
+## Output Results
+
+1. **Robot Framework Log**:
+   - Outputs response time statistics (rounded to 2 decimal places, including P90, P95, P99).
+   - Embeds memory usage trend (only Used Memory in MB).
+
+2. **Visualized Reports**:
+   - Includes memory usage trends and response time statistics.
