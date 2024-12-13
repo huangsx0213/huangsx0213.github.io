@@ -88,6 +88,12 @@
 │   │   ├── e2e/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_robot_generator_py">e2e_robot_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e___init___py">__init__.py</a>
+│   │   ├── performance/
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_performance_test_loader_py">performance_test_loader.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_robot_web_performace_tester_py">robot_web_performace_tester.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_performance_robot_generator_py">web_performance_robot_generator.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_performance_tester_py">web_performance_tester.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance___init___py">__init__.py</a>
 │   │   ├── robot/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_dashboard_generator_py">robot_dashboard_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_report_data_py">robot_report_data.py</a>
@@ -605,7 +611,7 @@ This comprehensive guide provides a complete overview of the automated testing f
 active_environment: DEV
 # Path to the excel file containing the test cases.
 test_cases_path: 'test_cases/api_test_cases.xlsx'
-clear_saved_fields_after_test: true
+clear_saved_fields_after_test: false
 # List of Test Case IDs to run.
 # Specify one or more Test Case IDs here.
 # If this list is empty, all test cases will be run.
@@ -673,7 +679,7 @@ root:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\saved_fields.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre></pre>
+    <pre>formated_timestamp: 2017-03-28T09:54:36.000Z</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_test_config_yaml">
@@ -1776,7 +1782,8 @@ class TemplateRenderer:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\variable_generator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import random
+    <pre>import logging
+import random
 import string
 import uuid
 import datetime
@@ -1795,7 +1802,7 @@ class VariableGenerator:
             'formated_timestamp': VariableGenerator._generate_formated_timestamp,
             'bic': VariableGenerator._generate_bic
         }
-        return handlers.get(field_name, VariableGenerator._generate_error_handling)()
+        return handlers.get(field_name, VariableGenerator._generate_default_value)()
 
     @staticmethod
     def _generate_uuid4() -&gt; str:
@@ -1828,8 +1835,9 @@ class VariableGenerator:
         return ''.join(random.choices(string.ascii_uppercase, k=8))
 
     @staticmethod
-    def _generate_error_handling() -&gt; str:
-        raise ValueError(f"VariableGenerator: No handler registered for field.")
+    def _generate_default_value() -&gt; str:
+        logging.error("VariableGenerator: No handler registered for this field.")
+        return 'not support this dynamic field.'
 </pre>
 </div>
 
@@ -2309,6 +2317,591 @@ class E2ERobotCasesGenerator:
             raise
 
 </pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance___init___py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\__init__.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre></pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_performance_test_loader_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\performance_test_loader.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import json
+import logging
+import pandas as pd
+import os
+from typing import Dict, List
+
+
+class PerformanceTestLoader:
+    _instances = {}
+
+    def __new__(cls, excel_path, test_config):
+        key = (excel_path, id(test_config))  # Use a tuple of excel_path and test_config id as the key
+        if key not in cls._instances:
+            instance = super().__new__(cls)
+            instance.__init__(excel_path, test_config)
+            cls._instances[key] = instance
+        return cls._instances[key]
+
+    def __init__(self, excel_path, test_config):
+        if hasattr(self, 'initialized'):
+            return
+        self.excel_path = excel_path
+        self.test_config = test_config
+        self.data = self._load_excel_data()
+        self._validate_data()
+        self.initialized = True
+
+    def _load_excel_data(self) -&gt; Dict[str, pd.DataFrame]:
+        sheets = ['Locators', 'PageModules', 'TestCases', 'TestSteps', 'TestData', 'WebEnvironments', 'CustomActions']
+        return {sheet: pd.read_excel(self.excel_path, sheet_name=sheet).fillna("") for sheet in sheets}
+
+    def _validate_data(self):
+        self._validate_test_cases()
+        self._validate_test_steps()
+        self._validate_page_objects()
+        self._validate_test_data()
+        self._validate_web_environments()
+        self._validate_custom_actions()
+
+    def _validate_test_cases(self):
+        test_cases = self.get_data_by_sheet_name('TestCases')
+        test_steps = self.get_data_by_sheet_name('TestSteps')
+
+        case_ids_in_steps = set(test_steps['Case ID'].unique())
+        for _, row in test_cases.iterrows():
+            case_id = row['Case ID']
+            if case_id not in case_ids_in_steps:
+                logging.error(f"WebTestLoader: Case ID '{case_id}' does not have any steps defined in the TestSteps sheet.")
+
+    def _validate_test_steps(self):
+        test_steps = self.get_data_by_sheet_name('TestSteps')
+        page_modules = self.get_data_by_sheet_name('PageModules')
+
+        page_module_combinations = set(zip(page_modules[page_modules['Run'] == 'Y']['Page Name'],
+                                           page_modules[page_modules['Run'] == 'Y']['Module Name']))
+        for _, row in test_steps[test_steps['Run'] == 'Y'].iterrows():
+            if (row['Page Name'], row['Module Name']) not in page_module_combinations and row['Module Name'] != 'API':
+                logging.error(
+                    f"WebTestLoader: Invalid Page Name '{row['Page Name']}' and Module Name '{row['Module Name']}' combination in TestSteps for Case ID '{row['Case ID']}'.")
+            self._validate_parameters(row)
+
+    def _validate_parameters(self, step_row):
+        page_modules = self.get_data_by_sheet_name('PageModules')
+        test_data = self.get_data_by_sheet_name('TestData')
+
+        module_params = page_modules[(page_modules['Page Name'] == step_row['Page Name']) &amp;
+                                     (page_modules['Module Name'] == step_row['Module Name'])]['Parameter Name'].tolist()
+        module_params = [param for param in module_params if param]
+
+        if module_params:
+            expected_params = set()
+            for param in module_params:
+                expected_params.update(param.split(','))
+
+            case_data = test_data[test_data['Case ID'] == step_row['Case ID']]
+            for param in expected_params:
+                if param not in case_data['Parameter Name'].values:
+                    logging.error(f"No data provided for parameter '{param}' in TestData for Case ID '{step_row['Case ID']}'")
+
+    def _validate_page_objects(self):
+        page_objects = self.get_data_by_sheet_name('PageModules')
+        locators = self.get_data_by_sheet_name('Locators')
+
+        locator_map = set(zip(locators['Page Name'], locators['Element Name']))
+        for _, row in page_objects[page_objects['Run'] == 'Y'].iterrows():
+            if row['Element Name'] and (row['Page Name'], row['Element Name']) not in locator_map:
+                logging.error(f"WebTestLoader: Element '{row['Element Name']}' on page '{row['Page Name']}' not found in Locators sheet.")
+
+    def _validate_test_data(self):
+        test_data = self.get_data_by_sheet_name('TestData')
+        test_steps = self.get_data_by_sheet_name('TestSteps')
+
+        case_ids_in_steps = set(test_steps['Case ID'].unique())
+        for _, row in test_data.iterrows():
+            if row['Case ID'] not in case_ids_in_steps:
+                logging.error(f"WebTestLoader: Test data for Case ID '{row['Case ID']}' does not have corresponding test steps.")
+
+    def _validate_web_environments(self):
+        web_environments = self.get_data_by_sheet_name('WebEnvironments')
+
+        if web_environments.empty:
+            logging.error("WebTestLoader: WebEnvironments sheet is empty or does not exist.")
+            return
+
+        required_columns = ['Environment', 'Browser', 'IsRemote', 'RemoteURL', 'ChromePath', 'ChromeDriverPath', 'EdgePath', 'EdgeDriverPath', 'BrowserOptions']
+        missing_columns = set(required_columns) - set(web_environments.columns)
+        if missing_columns:
+            logging.error(f"WebTestLoader: Missing required columns in WebEnvironments sheet: {', '.join(missing_columns)}")
+            return
+
+        # Check if active_environment exists in WebEnvironments
+        active_environment = self.test_config.get('active_environment')
+        if active_environment and active_environment not in web_environments['Environment'].values:
+            logging.error(f"WebTestLoader: Active environment '{active_environment}' specified in config file does not exist in WebEnvironments sheet.")
+
+        for index, row in web_environments.iterrows():
+            if self.test_config.get('active_environment') != row['Environment']:
+                continue
+            if pd.isna(row['Environment']) or row['Environment'] == '':
+                logging.error(f"WebTestLoader: Empty Environment name in row {index + 2}")
+
+            if row['Browser'].lower() not in ['chrome', 'edge']:
+                logging.error(f"WebTestLoader: Invalid Browser '{row['Browser']}' in row {index + 2}. Must be 'chrome' or 'edge'.")
+
+            if not isinstance(row['IsRemote'], bool):
+                logging.error(f"WebTestLoader: IsRemote must be a boolean value in row {index + 2}")
+
+            if row['IsRemote']:
+                if pd.isna(row['RemoteURL']) or row['RemoteURL'] == '':
+                    logging.error(f"WebTestLoader: RemoteURL is required when IsRemote is True in row {index + 2}")
+            else:
+                if row['Browser'].lower() == 'chrome':
+                    for path_column in ['ChromePath', 'ChromeDriverPath']:
+                        if pd.isna(row[path_column]) or row[path_column] == '':
+                            logging.error(f"WebTestLoader: {path_column} is required when IsRemote is False and Browser is Chrome in row {index + 2}")
+                        elif not os.path.exists(row[path_column]):
+                            logging.warning(f"WebTestLoader: {path_column} '{row[path_column]}' does not exist in row {index + 2}")
+                elif row['Browser'].lower() == 'edge':
+                    for path_column in ['EdgePath', 'EdgeDriverPath']:
+                        if pd.isna(row[path_column]) or row[path_column] == '':
+                            logging.error(f"WebTestLoader: {path_column} is required when IsRemote is False and Browser is Edge in row {index + 2}")
+                        elif not os.path.exists(row[path_column]):
+                            logging.warning(f"WebTestLoader: {path_column} '{row[path_column]}' does not exist in row {index + 2}")
+
+            try:
+                if not pd.isna(row['BrowserOptions']) and row['BrowserOptions'] != '':
+                    json.loads(row['BrowserOptions'])
+            except json.JSONDecodeError:
+                logging.error(f"WebTestLoader: Invalid JSON in BrowserOptions in row {index + 2}")
+
+        logging.info("WebTestLoader: WebEnvironments data validation completed.")
+
+    def _validate_custom_actions(self):
+        custom_actions = self.get_data_by_sheet_name('CustomActions')
+        if custom_actions.empty:
+            logging.warning("WebTestLoader: CustomActions sheet is empty.")
+            return
+
+        required_columns = ['Action Name', 'Python Code']
+        missing_columns = set(required_columns) - set(custom_actions.columns)
+        if missing_columns:
+            logging.error(f"WebTestLoader: Missing required columns in CustomActions sheet: {', '.join(missing_columns)}")
+            return
+
+        for index, row in custom_actions.iterrows():
+            if pd.isna(row['Action Name']) or row['Action Name'] == '':
+                logging.error(f"WebTestLoader: Empty Action Name in CustomActions row {index + 2}")
+            if pd.isna(row['Python Code']) or row['Python Code'] == '':
+                logging.error(f"WebTestLoader: Empty Python Code for web_element_actions '{row['Action Name']}' in CustomActions row {index + 2}")
+
+    def get_data_by_sheet_name(self, sheet_name: str) -&gt; pd.DataFrame:
+        return self.data.get(sheet_name, pd.DataFrame())
+
+    def filter_cases(self, tcid_list: List[str] = None, tags: List[str] = None) -&gt; pd.DataFrame:
+        test_cases = self.get_test_cases()
+
+        if tcid_list:
+            test_cases = test_cases[test_cases['Case ID'].isin(tcid_list)]
+
+        if tags:
+            test_cases = test_cases[test_cases['Tags'].apply(lambda x: any(tag in str(x).split(',') for tag in tags))]
+
+        test_cases = test_cases[test_cases['Run'] == 'Y']
+
+        return test_cases
+
+    def get_test_cases(self) -&gt; pd.DataFrame:
+        return self.get_data_by_sheet_name('TestCases')
+
+    def get_test_steps(self, case_id: str) -&gt; pd.DataFrame:
+        test_steps = self.get_data_by_sheet_name('TestSteps')
+        result = test_steps[(test_steps['Case ID'] == case_id) &amp; (test_steps['Run'] == 'Y')]
+        if result.empty:
+            logging.warning(f"WebTestLoader: No test steps found for case ID: {case_id}")
+        return result
+
+    def get_test_data(self, case_id: str) -&gt; List[Dict]:
+        test_data = self.get_data_by_sheet_name('TestData')
+        case_data = test_data[test_data['Case ID'] == case_id]
+
+        test_steps = self.get_test_steps(case_id)
+        non_api_steps = test_steps[test_steps['Module Name'] != 'API']
+
+        if case_data.empty and not non_api_steps.empty:
+            logging.warning(f"WebTestLoader: No test data found for case ID: {case_id}")
+
+        grouped_data = case_data.groupby('Data Set')
+
+        data_sets = []
+        for _, group in grouped_data:
+            data_set = {}
+            for _, row in group.iterrows():
+                value = self._parse_value(row['Value'], row['Data Type'])
+                data_set[row['Parameter Name']] = value
+            data_sets.append(data_set)
+
+        return data_sets
+
+    def _parse_value(self, value: str, data_type: str):
+        if data_type.lower() == 'json':
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                logging.error(f"Invalid JSON string: {value}")
+                return value
+        elif data_type.lower() == 'integer':
+            try:
+                return int(value)
+            except ValueError:
+                logging.error(f"Invalid integer value: {value}")
+                return value
+        elif data_type.lower() == 'float':
+            try:
+                return float(value)
+            except ValueError:
+                logging.error(f"Invalid float value: {value}")
+                return value
+        elif data_type.lower() == 'boolean':
+            return value.lower() in ('true', 'yes', '1', 'on')
+        else:
+            return value
+
+    def get_page_objects(self) -&gt; pd.DataFrame:
+        page_objects = self.get_data_by_sheet_name('PageModules')
+        return page_objects[page_objects['Run'] == 'Y']
+
+    def get_locators(self) -&gt; pd.DataFrame:
+        return self.get_data_by_sheet_name('Locators')
+
+    def get_web_environments(self) -&gt; pd.DataFrame:
+        return self.get_data_by_sheet_name('WebEnvironments')
+
+    def get_custom_actions(self) -&gt; Dict[str, str]:
+        custom_actions_df = self.get_data_by_sheet_name('CustomActions')
+        return dict(zip(custom_actions_df['Action Name'], custom_actions_df['Python Code']))
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_robot_web_performace_tester_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\robot_web_performace_tester.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from robot.api import logger
+from libraries.web.performance_tester import WebPerformanceTester
+
+class RobotFrameworkWebTester:
+    def __init__(self):
+        self.tester = None
+
+    def initialize_tester(self, test_config_path=None, test_cases_path=None):
+        """Initialize the performance tester."""
+        self.tester = WebPerformanceTester(test_config_path, test_cases_path)
+        logger.info("Performance tester initialized successfully.")
+
+    def execute_tests(self):
+        """Execute performance tests."""
+        if not self.tester:
+            raise ValueError("Tester is not initialized.")
+        self.tester.execute_tests()
+
+    def generate_reports(self):
+        """Generate performance reports."""
+        if not self.tester:
+            raise ValueError("Tester is not initialized.")
+        self.tester.generate_reports()
+
+    def save_to_csv(self):
+        """Save test data to CSV files."""
+        if not self.tester:
+            raise ValueError("Tester is not initialized.")
+        self.tester.save_to_csv()
+
+    def close_tester(self):
+        """Close the tester and release resources."""
+        if self.tester:
+            self.tester.close()
+            logger.info("Tester closed successfully.")</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_performance_robot_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\web_performance_robot_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import os
+from robot.api import TestSuite
+from libraries.common.config_manager import ConfigManager
+from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.web.web_test_loader import WebTestLoader
+
+class WebPerformanceRobotCasesGenerator:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
+        self.project_root = PROJECT_ROOT
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'web_test_config.yaml')
+        self.test_cases_path = test_cases_path or os.path.join(self.project_root, 'test_cases', 'web_performance_test_cases.xlsx')
+
+        self._load_configuration()
+        self._initialize_components()
+
+    def _load_configuration(self):
+        self.test_config = ConfigManager.load_yaml(self.test_config_path)
+
+    def _initialize_components(self):
+        self.web_test_loader = WebTestLoader(self.test_cases_path, self.test_config)
+
+    def create_test_suite(self):
+        # Create main test suite
+        self.robot_suite = TestSuite('Web Performance TestSuite')
+        self._import_required_libraries()</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_performance_tester_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\web_performance_tester.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import os
+import json
+import time
+import pandas as pd
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+
+from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.common.config_manager import ConfigManager
+from libraries.web.web_test_loader import WebTestLoader
+from libraries.web.webdriver_factory import WebDriverFactory
+from libraries.web.web_actions import WebElementActions
+
+
+class WebPerformanceTester:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
+        self.project_root = PROJECT_ROOT
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'web_test_config.yaml')
+        self.test_cases_path = test_cases_path or os.path.join(self.project_root, 'test_cases', 'web_performance_test_cases.xlsx')
+
+        self._web_actions_instance = None
+        self._driver = None
+        self.rounds = 5  # Default value, can be overridden in config
+        self.response_time_data = []
+        self.memory_usage_data = []
+
+        self._load_configuration()
+        self._initialize_components()
+
+    def _load_configuration(self):
+        self.test_config = ConfigManager.load_yaml(self.test_config_path)
+        self.web_test_loader = WebTestLoader(self.test_cases_path, self.test_config)
+        self.env_config = self._load_environment_config()
+        self.main_config = self._load_main_config()
+        self.rounds = self.main_config.get('Rounds', self.rounds)
+        self.target_url = self.main_config.get('Target URL')
+
+    def _load_main_config(self):
+        main_config_df = self.web_test_loader.get_data_by_sheet_name('Main Configuration')
+        return dict(zip(main_config_df['Configuration Item'], main_config_df['Value']))
+
+    def _load_environment_config(self):
+        environments = self.web_test_loader.get_web_environments()
+        active_env = self.main_config['Active Environment']
+        env_config = environments[environments['Environment'] == active_env].iloc[0].to_dict()
+        env_config['BrowserOptions'] = json.loads(env_config['BrowserOptions'])
+
+        return {
+            'environments': {
+                active_env: {
+                    'browser': env_config['Browser'],
+                    'is_remote': env_config['IsRemote'],
+                    'remote_url': env_config['RemoteURL'],
+                    'chrome_path': env_config['ChromePath'],
+                    'chrome_driver_path': env_config['ChromeDriverPath'],
+                    'edge_path': env_config['EdgePath'],
+                    'edge_driver_path': env_config['EdgeDriverPath'],
+                    'browser_options': env_config['BrowserOptions']
+                }
+            }
+        }
+
+    def _initialize_components(self):
+        self.test_functions = self._load_test_functions()
+        self.function_details = self._load_function_details()
+        self.reporting_config = self._load_reporting_config()
+
+    def _load_test_functions(self):
+        return self.web_test_loader.get_data_by_sheet_name('Test Functions')
+
+    def _load_function_details(self):
+        return self.web_test_loader.get_data_by_sheet_name('Function Details')
+
+    def _load_reporting_config(self):
+        return self.web_test_loader.get_data_by_sheet_name('Reporting Configuration')
+
+    @property
+    def driver(self):
+        if self._driver is None:
+            active_env_config = self.env_config['environments'][self.main_config['Active Environment']]
+            self._driver = WebDriverFactory.create_driver(active_env_config)
+        return self._driver
+
+    @property
+    def web_actions(self):
+        if self._web_actions_instance is None:
+            self._web_actions_instance = WebElementActions(self.driver)
+        return self._web_actions_instance
+
+    def get_js_memory(self):
+        try:
+            js_memory = self.driver.execute_script("return window.performance.memory;")
+            if js_memory:
+                used_js_memory_mb = js_memory.get("usedJSHeapSize", 0) / (1024 * 1024)
+                return round(used_js_memory_mb, 2)
+        except Exception as e:
+            print(f"Error in get_js_memory: {e}")
+        return None
+
+    def execute_tests(self):
+        for round_num in range(self.rounds):
+            self.driver.get(self.target_url)
+            memory_usage = self.get_js_memory()
+            if memory_usage is not None:
+                self.memory_usage_data.append({"round": round_num + 1, "used_MB": memory_usage})
+
+            for _, test_function in self.test_functions.iterrows():
+                if test_function['Run'] == 'Y':
+                    start_time = time.time()
+                    self._execute_test_function(test_function)
+                    end_time = time.time()
+                    response_time = round(end_time - start_time, 2)
+                    self.response_time_data.append({
+                        "round": round_num + 1,
+                        "function_point": test_function['Function Name'],
+                        "response_time": response_time
+                    })
+
+    def _execute_test_function(self, test_function):
+        function_details = self.function_details[self.function_details['Function Name'] == test_function['Function Name']]
+        for _, step in function_details.iterrows():
+            self._execute_step(step)
+
+    def _execute_step(self, step):
+        action_name = step['Action Type'].lower()
+        if hasattr(self.web_actions, action_name):
+            action = getattr(self.web_actions, action_name)
+            locator = (getattr(By, step['Locator Type']), step['Locator Value'])
+            action(locator, step.get('Input Value'))
+        else:
+            raise ValueError(f"Unknown action type: {step['Action Type']}")
+
+    def generate_memory_usage_chart(self):
+        df = pd.DataFrame(self.memory_usage_data)
+        plt.figure(figsize=(10, 6))
+        plt.plot(df["round"], df["used_MB"], marker="o", label="Used Memory (MB)", color="blue")
+        plt.title("JavaScript Memory Usage Trend")
+        plt.xlabel("Round")
+        plt.ylabel("Memory (MB)")
+        plt.grid()
+        plt.legend()
+        return self._save_fig_as_base64()
+
+    def generate_response_time_statistics_chart(self):
+        df = pd.DataFrame(self.response_time_data)
+        stats = df.groupby("function_point").agg({"response_time": ["mean", "max"]})
+        stats.columns = ["Mean", "Max"]
+        stats.reset_index(inplace=True)
+
+        stats.plot(kind="bar", x="function_point", figsize=(10, 6), colormap="coolwarm")
+        plt.title("Response Time Statistics")
+        plt.xlabel("Function Point")
+        plt.ylabel("Time (s)")
+        plt.grid(axis="y")
+        plt.xticks(rotation=45)
+        return self._save_fig_as_base64()
+
+    def generate_response_time_trend_chart(self):
+        df = pd.DataFrame(self.response_time_data)
+        plt.figure(figsize=(10, 6))
+        for func in df["function_point"].unique():
+            func_data = df[df["function_point"] == func]
+            plt.plot(func_data["round"], func_data["response_time"], marker="o", label=func)
+
+        plt.title("Response Time Trend")
+        plt.xlabel("Round")
+        plt.ylabel("Response Time (s)")
+        plt.legend(title="Function Points")
+        plt.grid()
+        return self._save_fig_as_base64()
+
+    def generate_response_time_statistics_table(self):
+        df = pd.DataFrame(self.response_time_data)
+        stats = df.groupby("function_point").agg({
+            "response_time": [
+                lambda x: round(x.mean(), 2),
+                lambda x: round(x.max(), 2),
+                lambda x: round(x.min(), 2),
+                lambda x: round(x.median(), 2),
+                lambda x: round(x.quantile(0.9), 2),
+                lambda x: round(x.quantile(0.95), 2),
+                lambda x: round(x.quantile(0.99), 2)
+            ]
+        }).reset_index()
+
+        stats.columns = ["Function Point", "Mean (s)", "Max (s)", "Min (s)",
+                         "Median (s)", "P90 (s)", "P95 (s)", "P99 (s)"]
+
+        fig, ax = plt.subplots(figsize=(10, len(stats) * 0.8))
+        ax.axis("tight")
+        ax.axis("off")
+        table = plt.table(cellText=stats.values, colLabels=stats.columns, cellLoc="center", loc="center")
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
+        return self._save_fig_as_base64()
+
+    def save_to_csv(self):
+        if self.response_time_data:
+            response_time_df = pd.DataFrame(self.response_time_data)
+            response_time_df.to_csv("response_time_data.csv", index=False)
+            print("Response time data saved to 'response_time_data.csv'.")
+
+        if self.memory_usage_data:
+            memory_usage_df = pd.DataFrame(self.memory_usage_data)
+            memory_usage_df.to_csv("memory_usage_data.csv", index=False)
+            print("Memory usage data saved to 'memory_usage_data.csv'.")
+
+    def _save_fig_as_base64(self):
+        buf = BytesIO()
+        plt.savefig(buf, format="png", bbox_inches="tight")
+        buf.seek(0)
+        base64_image = base64.b64encode(buf.getvalue()).decode("utf-8")
+        plt.close()
+        return base64_image
+
+    def generate_reports(self):
+        for _, report_config in self.reporting_config.iterrows():
+            if report_config['Generate (Yes/No)'] == 'Yes':
+                report_type = report_config['Report Type']
+                if report_type == 'Memory Usage Trend Chart':
+                    chart = self.generate_memory_usage_chart()
+                elif report_type == 'Response Time Statistics Chart':
+                    chart = self.generate_response_time_statistics_chart()
+                elif report_type == 'Response Time Trend Chart':
+                    chart = self.generate_response_time_trend_chart()
+                elif report_type == 'Response Time Statistics Table':
+                    chart = self.generate_response_time_statistics_table()
+
+                print(f'&lt;h2&gt;{report_type}&lt;/h2&gt;')
+                print(f'&lt;img src="data:image/png;base64,{chart}" alt="{report_type}"/&gt;')
+
+    def close(self):
+        if self._driver:
+            self._driver.quit()
+            self._driver = None</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot___init___py">
@@ -4747,7 +5340,7 @@ if __name__ == "__main__":
     elif args.e2e:
         suite_to_run = create_e2e_suite()
     else:
-        suite_to_run = create_e2e_suite()
+        suite_to_run = create_api_suite()
 
     run_test_suite(suite_to_run)
 </pre>
@@ -5273,7 +5866,7 @@ if __name__ == "__main__":
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 50800.0
+        "CNY": 50200.0
     },
     "transactions": {
         "USD": {
@@ -5313,14 +5906,14 @@ if __name__ == "__main__":
             }
         },
         "CNY": {
-            "2024-11-30": {
+            "2024-12-13": {
                 "inbound": {
-                    "count": 2,
-                    "total_amount": 200.0
+                    "count": 7,
+                    "total_amount": 700.0
                 },
                 "outbound": {
-                    "count": 18,
-                    "total_amount": 1800.0
+                    "count": 4,
+                    "total_amount": 400.0
                 }
             }
         }
