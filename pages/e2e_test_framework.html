@@ -679,7 +679,7 @@ root:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\saved_fields.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>formated_timestamp: 2017-03-28T09:54:36.000Z</pre>
+    <pre>MyToken: vt9EoVlxRKGWWMwx6iJoaGQQLlvAE4zXwuOTfeXKHZFaqO9US2iudZ5B5-BtFFS_3t3mrFKLj2oPo5aEw2rQ0wudQo9b6JRbB4LV0LbzQMrbWFA-EXfhMg==</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_test_config_yaml">
@@ -1422,36 +1422,36 @@ class HeadersGenerator:
         try:
             if isinstance(value, str):
                 # Replace {{...}}
-                value = re.sub(r'\{\{\s*([^}]+?)\s*\}\}', lambda m: str(saved_fields.get(m.group(1), VariableGenerator.generate_dynamic_value(m.group(1)))), value,
+                value = re.sub(r'\{\{\s*([^}]+?)\s*\}\}', lambda m: self._get_placeholder_value(m.group(1), saved_fields, testcase), value,
                                flags=re.DOTALL | re.MULTILINE)
-
-                # Logging
-                for match in re.findall(r'\{\{\s*([^}]+?)\s*\}\}', value):
-                    if match in saved_fields:
-                        logging.info(f"{self.__class__.__name__}:Replaced {{{{{match}}}}} with saved field '{saved_fields[match]}' for test case '{testcase['TCID']}'")
-                    else:
-                        dynamic_value = VariableGenerator.generate_dynamic_value(match)
-                        logging.info(f"{self.__class__.__name__}:Replaced {{{{{match}}}}} with dynamic value '{dynamic_value}' for test case '{testcase['TCID']}'")
 
                 # Replace ${...}
                 value = re.sub(r'\$\{([^}]+)\}', lambda m: str(builtin_lib.get_variable_value('${' + m.group(1) + '}')), value, flags=re.DOTALL | re.MULTILINE)
 
-                # Logging
+                # Logging for ${...} replacements
                 for match in re.findall(r'\$\{([^}]+)\}', value):
                     replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
                     logging.info(f"{self.__class__.__name__}:Replaced ${{{match}}} with variable value '{replacement_value}' for test case '{testcase['TCID']}'")
 
             return value
-        except (ValueError, KeyError) as e:
-            logging.error(
-                f"{self.__class__.__name__}:Error replacing placeholders in headers file '{headers_filename}' for test case '{testcase['TCID']}': {str(e)}"
-            )
-            raise
         except Exception as e:
             logging.error(
                 f"{self.__class__.__name__}:Unexpected error replacing placeholders in headers file '{headers_filename}' for test case '{testcase['TCID']}': {str(e)}"
             )
             raise
+
+    def _get_placeholder_value(self, placeholder: str, saved_fields: Dict[str, Any], testcase: Dict[str, Any]) -&gt; str:
+        if placeholder in saved_fields:
+            value = str(saved_fields[placeholder])
+            logging.info(f"{self.__class__.__name__}:Replaced {{{{{placeholder}}}}} with saved field '{value}' for test case '{testcase['TCID']}'")
+        else:
+            try:
+                value = str(VariableGenerator.generate_dynamic_value(placeholder))
+                logging.info(f"{self.__class__.__name__}:Replaced {{{{{placeholder}}}}} with dynamic value '{value}' for test case '{testcase['TCID']}'")
+            except Exception as e:
+                logging.warning(f"{self.__class__.__name__}:Failed to generate dynamic value for {{{{{placeholder}}}}} in test case '{testcase['TCID']}': {str(e)}")
+                value = f"{{{{UNKNOWN_PLACEHOLDER_{placeholder}}}}}"
+        return value
 </pre>
 </div>
 
@@ -1782,8 +1782,7 @@ class TemplateRenderer:
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\variable_generator.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import logging
-import random
+    <pre>import random
 import string
 import uuid
 import datetime
@@ -1802,7 +1801,7 @@ class VariableGenerator:
             'formated_timestamp': VariableGenerator._generate_formated_timestamp,
             'bic': VariableGenerator._generate_bic
         }
-        return handlers.get(field_name, VariableGenerator._generate_default_value)()
+        return handlers.get(field_name, VariableGenerator._generate_error_handling)()
 
     @staticmethod
     def _generate_uuid4() -&gt; str:
@@ -1835,9 +1834,8 @@ class VariableGenerator:
         return ''.join(random.choices(string.ascii_uppercase, k=8))
 
     @staticmethod
-    def _generate_default_value() -&gt; str:
-        logging.error("VariableGenerator: No handler registered for this field.")
-        return 'not support this dynamic field.'
+    def _generate_error_handling() -&gt; str:
+        raise ValueError(f"VariableGenerator: No handler registered for this field.")
 </pre>
 </div>
 
@@ -5866,7 +5864,7 @@ if __name__ == "__main__":
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 50200.0
+        "CNY": 50400.0
     },
     "transactions": {
         "USD": {
@@ -5906,14 +5904,14 @@ if __name__ == "__main__":
             }
         },
         "CNY": {
-            "2024-12-13": {
+            "2024-12-14": {
                 "inbound": {
-                    "count": 7,
-                    "total_amount": 700.0
-                },
-                "outbound": {
                     "count": 4,
                     "total_amount": 400.0
+                },
+                "outbound": {
+                    "count": 2,
+                    "total_amount": 200.0
                 }
             }
         }
