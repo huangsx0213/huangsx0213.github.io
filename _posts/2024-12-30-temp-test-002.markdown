@@ -11,268 +11,249 @@ tags:
 ---
 
 
-
-# 前端性能测试
-
-以下是基于以上讨论内容整理的完整解决方案，包含详细的功能描述、实现思路和完整代码。该方案支持以下功能：
-
-1. **功能点抽象**：
-   - 每个功能点都包含 `precondition`（前置条件）、`measure_operation`（核心测量操作）和 `postcondition`（后置条件）。
-   - 定义抽象基类 `TestFunctionBase`，具体功能点继承该基类并实现其方法。
-
-2. **JavaScript 内存测量**：
-   - 在每轮测试开始时，先测量页面初始的 JS 堆使用情况（`usedJSHeapSize` 和 `totalJSHeapSize`）。
-
-3. **测试管理类**：
-   - `WebPerformanceTester` 负责管理功能点注册、循环测试和测试结果记录。
-   - 测试数据包括功能点响应时间和初始 JS 内存使用量。
-
-4. **数据记录与扩展**：
-   - 测试数据保存为 JSON 文件，用于后续分析。
-   - 输出测试结果到控制台，便于实时查看。
-
-5. **扩展性**：
-   - 通过继承 `TestFunctionBase`，可以轻松实现新的功能点。
-   - 测试管理类提供了良好的结构化流程，便于维护和扩展。
-
----
-
-### **完整代码**
+下面是完整的代码实现，包括数据库接口、各数据库的具体实现以及一个使用示例：
 
 ```python
+from typing import List, Dict, Any
 from abc import ABC, abstractmethod
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import time
-import json
+import cx_Oracle
+import mysql.connector
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-
-class TestFunctionBase(ABC):
-    """
-    功能点抽象基类，每个功能点必须实现 precondition、measure_operation 和 postcondition。
-    """
-    def __init__(self, tester):
-        self.tester = tester
-
+class Database(ABC):
     @abstractmethod
-    def precondition(self):
-        """计时前的操作"""
+    def connect(self, **kwargs) -> None:
         pass
 
     @abstractmethod
-    def measure_operation(self):
-        """需要计时的核心操作"""
+    def disconnect(self) -> None:
         pass
 
     @abstractmethod
-    def postcondition(self):
-        """计时后的操作"""
+    def execute_query(self, query: str, fields: List[str] = None) -> List[Dict]:
         pass
 
-    def run(self):
-        """
-        执行功能点测试的完整流程：
-        1. 执行 precondition（不计时）。
-        2. 执行 measure_operation（计时）。
-        3. 执行 postcondition（不计时）。
-        """
-        try:
-            # Step 1: Precondition
-            self.precondition()
+    @abstractmethod
+    def update(self, table: str, values: Dict, where: str = None) -> bool:
+        pass
 
-            # Step 2: Measure Operation
-            start_time = time.time()
-            self.measure_operation()
-            end_time = time.time()
-            response_time = end_time - start_time
+    @abstractmethod
+    def insert(self, table: str, data: List[Dict]) -> int:
+        pass
 
-            # Step 3: Postcondition
-            self.postcondition()
+class OracleDatabase(Database):
+    def __init__(self):
+        self.connection = None
 
-            return response_time
-        except Exception as e:
-            print(f"Error in {self.__class__.__name__}: {e}")
-            return None
+    def connect(self, user: str, password: str, host: str, port: int, service_name: str):
+        self.dsn = cx_Oracle.makedsn(host, port, service_name=service_name)
+        self.connection = cx_Oracle.connect(user=user, password=password, dsn=self.dsn)
 
+    def disconnect(self):
+        if self.connection:
+            self.connection.close()
+            self.connection = None
 
-class TestFunction1(TestFunctionBase):
-    def precondition(self):
-        """功能点1的前置条件：等待页面加载完成"""
-        WebDriverWait(self.tester.driver, 10).until(
-            EC.presence_of_element_located((By.ID, "precondition1"))
+    def execute_query(self, query: str, fields: List[str] = None) -> List[Dict]:
+        with self.connection.cursor() as cursor:
+            cursor.execute(query)
+            if fields:
+                return [{field: row[fields.index(field)] for field in fields} for row in cursor]
+            else:
+                return [dict(zip([desc[0] for desc in cursor.description], row)) for row in cursor.fetchall()]
+
+    def update(self, table: str, values: Dict, where: str = None) -> bool:
+        update_clause = ", ".join([f"{key} = :{key}" for key in values.keys()])
+        query = f"UPDATE {table} SET {update_clause}"
+        if where:
+            query += f" WHERE {where}"
+        
+        with self.connection.cursor() as cursor:
+            try:
+                cursor.execute(query, values)
+                self.connection.commit()
+                return True
+            except cx_Oracle.Error:
+                self.connection.rollback()
+                return False
+
+    def insert(self, table: str, data: List[Dict]) -> int:
+        if not data:
+            return 0
+
+        columns = ', '.join(data[0].keys())
+        placeholders = ', '.join([':' + key for key in data[0].keys()])
+        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+
+        with self.connection.cursor() as cursor:
+            try:
+                cursor.executemany(query, [row for row in data])
+                self.connection.commit()
+                return cursor.rowcount
+            except cx_Oracle.Error:
+                self.connection.rollback()
+                return 0
+
+class MySQLDatabase(Database):
+    def __init__(self):
+        self.connection = None
+
+    def connect(self, user: str, password: str, host: str, port: int, database: str):
+        self.connection = mysql.connector.connect(
+            user=user, password=password, host=host, port=port, database=database
         )
-        print(f"{self.__class__.__name__} - Precondition Completed")
 
-    def measure_operation(self):
-        """功能点1的核心操作：点击按钮并等待结果加载"""
-        WebDriverWait(self.tester.driver, 10).until(
-            EC.element_to_be_clickable((By.ID, "function1"))
-        ).click()
-        WebDriverWait(self.tester.driver, 10).until(
-            EC.presence_of_element_located((By.ID, "result1"))
+    def disconnect(self):
+        if self.connection:
+            self.connection.close()
+            self.connection = None
+
+    def execute_query(self, query: str, fields: List[str] = None) -> List[Dict]:
+        with self.connection.cursor(dictionary=True) as cursor:
+            cursor.execute(query)
+            if fields:
+                return [{field: row[field] for field in fields if field in row} for row in cursor.fetchall()]
+            else:
+                return cursor.fetchall()
+
+    def update(self, table: str, values: Dict, where: str = None) -> bool:
+        update_clause = ", ".join([f"{key} = %({key})s" for key in values.keys()])
+        query = f"UPDATE {table} SET {update_clause}"
+        if where:
+            query += f" WHERE {where}"
+        
+        with self.connection.cursor() as cursor:
+            try:
+                cursor.execute(query, values)
+                self.connection.commit()
+                return True
+            except mysql.connector.Error as err:
+                self.connection.rollback()
+                print(f"Error: {err}")
+                return False
+
+    def insert(self, table: str, data: List[Dict]) -> int:
+        if not data:
+            return 0
+
+        columns = ', '.join(data[0].keys())
+        placeholders = ', '.join(['%(' + key + ')s' for key in data[0].keys()])
+        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+
+        with self.connection.cursor() as cursor:
+            try:
+                cursor.executemany(query, data)
+                self.connection.commit()
+                return cursor.rowcount
+            except mysql.connector.Error as err:
+                self.connection.rollback()
+                print(f"Error: {err}")
+                return 0
+
+class PostgreSQLDatabase(Database):
+    def __init__(self):
+        self.connection = None
+
+    def connect(self, user: str, password: str, host: str, port: int, database: str):
+        self.connection = psycopg2.connect(
+            user=user, password=password, host=host, port=port, database=database
         )
-        print(f"{self.__class__.__name__} - Measure Operation Completed")
 
-    def postcondition(self):
-        """功能点1的后置条件：检查结果是否正确"""
-        print(f"{self.__class__.__name__} - Postcondition Completed")
+    def disconnect(self):
+        if self.connection:
+            self.connection.close()
+            self.connection = None
 
+    def execute_query(self, query: str, fields: List[str] = None) -> List[Dict]:
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(query)
+            if fields:
+                return [dict((k, row[k]) for k in fields if k in row) for row in cursor.fetchall()]
+            else:
+                return cursor.fetchall()
 
-class TestFunction2(TestFunctionBase):
-    def precondition(self):
-        """功能点2的前置条件：等待输入框加载完成"""
-        WebDriverWait(self.tester.driver, 10).until(
-            EC.presence_of_element_located((By.ID, "precondition2"))
-        )
-        print(f"{self.__class__.__name__} - Precondition Completed")
+    def update(self, table: str, values: Dict, where: str = None) -> bool:
+        update_clause = ", ".join([f"{key} = %({key})s" for key in values.keys()])
+        query = f"UPDATE {table} SET {update_clause}"
+        if where:
+            query += f" WHERE {where}"
+        
+        with self.connection.cursor() as cursor:
+            try:
+                cursor.execute(query, values)
+                self.connection.commit()
+                return True
+            except psycopg2.Error as err:
+                self.connection.rollback()
+                print(f"Error: {err}")
+                return False
 
-    def measure_operation(self):
-        """功能点2的核心操作：输入文本并提交"""
-        input_field = WebDriverWait(self.tester.driver, 10).until(
-            EC.presence_of_element_located((By.ID, "function2"))
-        )
-        input_field.send_keys("测试文本")
-        WebDriverWait(self.tester.driver, 10).until(
-            EC.element_to_be_clickable((By.ID, "submit2"))
-        ).click()
-        WebDriverWait(self.tester.driver, 10).until(
-            EC.presence_of_element_located((By.ID, "result2"))
-        )
-        print(f"{self.__class__.__name__} - Measure Operation Completed")
+    def insert(self, table: str, data: List[Dict]) -> int:
+        if not data:
+            return 0
 
-    def postcondition(self):
-        """功能点2的后置条件：清理输入框"""
-        input_field = self.tester.driver.find_element(By.ID, "function2")
-        input_field.clear()
-        print(f"{self.__class__.__name__} - Postcondition Completed")
+        columns = ', '.join(data[0].keys())
+        placeholders = ', '.join(['%(' + key + ')s' for key in data[0].keys()])
+        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
 
+        with self.connection.cursor() as cursor:
+            try:
+                cursor.executemany(query, data)
+                self.connection.commit()
+                return cursor.rowcount
+            except psycopg2.Error as err:
+                self.connection.rollback()
+                print(f"Error: {err}")
+                return 0
 
-class TestFunction3(TestFunctionBase):
-    def precondition(self):
-        """功能点3的前置条件：等待下拉菜单加载完成"""
-        WebDriverWait(self.tester.driver, 10).until(
-            EC.presence_of_element_located((By.ID, "precondition3"))
-        )
-        print(f"{self.__class__.__name__} - Precondition Completed")
+def use_database(db_type: str, **kwargs):
+    if db_type == 'oracle':
+        db = OracleDatabase()
+    elif db_type == 'mysql':
+        db = MySQLDatabase()
+    elif db_type == 'postgresql':
+        db = PostgreSQLDatabase()
+    else:
+        raise ValueError("Unsupported database type")
 
-    def measure_operation(self):
-        """功能点3的核心操作：选择下拉选项"""
-        dropdown = WebDriverWait(self.tester.driver, 10).until(
-            EC.presence_of_element_located((By.ID, "function3"))
-        )
-        dropdown.click()
-        WebDriverWait(self.tester.driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//option[@value='option3']"))
-        ).click()
-        print(f"{self.__class__.__name__} - Measure Operation Completed")
+    db.connect(**kwargs)
+    
+    try:
+        # 执行一些数据库操作
+        results = db.execute_query("SELECT * FROM some_table LIMIT 5")
+        for row in results:
+            print(row)
 
-    def postcondition(self):
-        """功能点3的后置条件：验证是否跳转到正确的页面"""
-        print(f"{self.__class__.__name__} - Postcondition Completed")
+        # 执行更新操作
+        update_result = db.update('some_table', {'column1': 'new_value'}, 'id = 1')
+        print(f"Update result: {'Success' if update_result else 'Failed'}")
 
+        # 执行批量插入
+        data = [{'column1': 'value1', 'column2': 1}, {'column1': 'value2', 'column2': 2}]
+        inserted_rows = db.insert('some_table', data)
+        print(f"Rows inserted: {inserted_rows}")
 
-class WebPerformanceTester:
-    """
-    测试管理类：负责初始化 WebDriver，管理功能点注册与执行。
-    """
-    def __init__(self, driver_path, target_url, rounds=5):
-        self.driver = webdriver.Chrome(executable_path=driver_path)
-        self.target_url = target_url
-        self.rounds = rounds
-        self.data = []
-        self.function_points = []
+    finally:
+        db.disconnect()
 
-    def register_test_function(self, test_function):
-        """注册测试功能点"""
-        self.function_points.append(test_function)
-
-    def get_js_memory(self):
-        """获取当前页面的 JavaScript 内存使用量"""
-        try:
-            js_memory = self.driver.execute_script("return window.performance.memory;")
-            if js_memory:
-                return js_memory.get("usedJSHeapSize", 0), js_memory.get("totalJSHeapSize", 0)
-        except Exception as e:
-            print(f"Error in get_js_memory: {e}")
-        return None, None
-
-    def execute_tests(self):
-        """执行所有测试功能点，并在每轮开始时测量 JS 内存"""
-        for round_num in range(self.rounds):
-            # 每轮开始时测量 JS 内存
-            self.driver.get(self.target_url)
-            js_memory = self.get_js_memory()
-            if js_memory:
-                print(f"Round {round_num + 1} - Initial JS Memory: Used {js_memory[0]} Bytes, Total {js_memory[1]} Bytes")
-
-            for func in self.function_points:
-                # 执行功能点测试
-                response_time = func.run()
-                self.data.append({
-                    "round": round_num + 1,
-                    "function_point": func.__class__.__name__,
-                    "initial_js_memory": {"used": js_memory[0], "total": js_memory[1]},
-                    "response_time": response_time
-                })
-                print(f"Round {round_num + 1} - {func.__class__.__name__} - Response Time: {response_time} seconds")
-
-    def save_data(self, file_name="test_data.json"):
-        """保存测试数据"""
-        with open(file_name, "w") as f:
-            json.dump(self.data, f, indent=4)
-        print(f"Test data saved to {file_name}")
-
-    def quit_driver(self):
-        """关闭 WebDriver"""
-        self.driver.quit()
-
-
-# 示例使用
+# 使用示例
 if __name__ == "__main__":
-    tester = WebPerformanceTester(driver_path="/path/to/chromedriver", target_url="your_target_url", rounds=5)
+    # Oracle 示例
+    use_database('oracle', user='your_user', password='your_password', host='your_host', port=1521, service_name='your_service_name')
 
-    # 注册功能点
-    tester.register_test_function(TestFunction1(tester))
-    tester.register_test_function(TestFunction2(tester))
-    tester.register_test_function(TestFunction3(tester))
+    # MySQL 示例
+    use_database('mysql', user='your_user', password='your_password', host='your_host', port=3306, database='your_database')
 
-    # 执行测试
-    tester.execute_tests()
-
-    # 保存数据
-    tester.save_data()
-
-    # 关闭浏览器
-    tester.quit_driver()
+    # PostgreSQL 示例
+    use_database('postgresql', user='your_user', password='your_password', host='your_host', port=5432, database='your_database')
 ```
 
----
+这个实现包括了Oracle、MySQL和PostgreSQL的数据库操作接口和具体实现。请注意：
 
-### **方案描述**
+- **替换数据库连接信息**：在实际使用时，请将`your_user`, `your_password`, `your_host`, `your_port`, `your_service_name` 或 `your_database` 替换为实际的数据库连接信息。
+- **错误处理**：每个数据库的实现都包含了基本的错误处理逻辑，但你可能需要根据实际需求进行更详细的错误处理。
+- **事务管理**：在`update`和`insert`方法中，我们手动管理事务，使用`commit`来提交更改，使用`rollback`来回滚在发生错误时的事务。
+- **字段处理**：`execute_query`方法中，我们使用了字段过滤来返回指定的字段。如果不指定字段，方法会返回所有字段的数据。
 
-1. **功能点抽象**：
-   - 每个功能点继承 `TestFunctionBase`，实现 `precondition`、`measure_operation` 和 `postcondition`。
-   - `run` 方法封装了完整的功能点测试流程。
-
-2. **JavaScript 内存测量**：
-   - 每轮测试开始时，通过 `get_js_memory` 方法记录初始 JS 堆内存使用情况。
-
-3. **测试管理类**：
-   - 管理功能点注册和测试执行。
-   - 记录每轮测试的响应时间和初始 JS 内存。
-
-4. **数据记录**：
-   - 测试数据保存为 JSON 文件，包含功能点、响应时间和初始 JS 内存。
-
-5. **扩展性**：
-   - 新增功能点只需继承 `TestFunctionBase` 并实现相关方法，无需修改核心测试逻辑。
-
----
-
-### **输出结果**
-1. **控制台输出**：每轮初始 JS 内存和功能点响应时间。
-2. **数据文件**：`test_data.json`，记录测试结果。
-
-通过该方案，可以清晰地管理功能点测试流程，同时支持扩展和性能分析。
+此外，MySQL和PostgreSQL的`update`和`insert`方法的参数化查询方式有所不同，使用了`%s`和`%(key)s`来防止SQL注入。记得根据你的需求和数据库的实际结构来调整SQL查询。
