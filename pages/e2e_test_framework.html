@@ -64,6 +64,7 @@
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_e2e_test_config_yaml">e2e_test_config.yaml</a>
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_logging_config_yaml">logging_config.yaml</a>
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_saved_fields_yaml">saved_fields.yaml</a>
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_pt_config_yaml">web_pt_config.yaml</a>
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_test_config_yaml">web_test_config.yaml</a>
 │   ├── libraries/
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries___init___py">__init__.py</a>
@@ -81,6 +82,8 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api___init___py">__init__.py</a>
 │   │   ├── common/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_config_manager_py">config_manager.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_db_py">db.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_db_validator_py">db_validator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_gen_temp_default_py">gen_temp_default.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_log_manager_py">log_manager.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_utility_helpers_py">utility_helpers.py</a>
@@ -89,10 +92,11 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_robot_generator_py">e2e_robot_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e___init___py">__init__.py</a>
 │   │   ├── performance/
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_performance_test_loader_py">performance_test_loader.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_robot_web_performace_tester_py">robot_web_performace_tester.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_performance_robot_generator_py">web_performance_robot_generator.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_performance_tester_py">web_performance_tester.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_pt_py">web_pt.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_pt_loader_py">web_pt_loader.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_pt_reporter_py">web_pt_reporter.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_pt_robot_generator_py">web_pt_robot_generator.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_pt_robot_keyword_py">web_pt_robot_keyword.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance___init___py">__init__.py</a>
 │   │   ├── robot/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_dashboard_generator_py">robot_dashboard_generator.py</a>
@@ -622,6 +626,24 @@ tc_id_list:
 # Only test cases which contain any of these tags will be run.
 # If this list is empty, all test cases will be run.
 tags:
+
+database:
+  DEV:
+    type: postgresql  # or oracle
+    user: vhuang1
+    password: Apj.com1
+    host: 10.191.111.77
+    port: 5432
+    database: postgres
+  UAT:
+    type: oracle
+    user: uat_user
+    password: uat_password
+    host: uat_host
+    port: 1521
+    service_name: uat_service_name
+    min_connections: 1
+    max_connections: 10
 </pre>
 </div>
 
@@ -680,6 +702,25 @@ root:
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>MyToken: vt9EoVlxRKGWWMwx6iJoaGQQLlvAE4zXwuOTfeXKHZFaqO9US2iudZ5B5-BtFFS_3t3mrFKLj2oPo5aEw2rQ0wudQo9b6JRbB4LV0LbzQMrbWFA-EXfhMg==</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_pt_config_yaml">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\configs\web_pt_config.yaml</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>active_environment: SIT
+test_cases_path : test_cases/web_pt_cases.xlsx
+# List of Test Case IDs to run.
+# Specify one or more Test Case IDs here.
+# If this list is empty, all test cases will be run.
+tc_id_list:
+
+# List of tags to filter test cases.
+# Only test cases which contain any of these tags will be run.
+# If this list is empty, all test cases will be run.
+tags:
+
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_configs_web_test_config_yaml">
@@ -894,6 +935,7 @@ from time import sleep
 from typing import Dict, List
 import pandas as pd
 from libraries.common.config_manager import ConfigManager
+from libraries.common.db_validator import DBValidator
 from libraries.common.utility_helpers import PROJECT_ROOT
 from libraries.api.request_sender import RequestSender
 from libraries.api.body_generator import BodyGenerator
@@ -903,6 +945,8 @@ from libraries.api.response_handler import ResponseValidator, ResponseFieldSaver
 from libraries.api.api_test_loader import APITestLoader
 from robot.libraries.BuiltIn import BuiltIn
 from robot.api.deco import keyword, library
+from robot.api import logger
+from libraries.common.log_manager import ColorLogger
 
 builtin_lib = BuiltIn()
 
@@ -925,10 +969,13 @@ class APITestKeywords:
         default_test_cases_path: str = os.path.join('test_cases', 'api_test_cases.xlsx')
         self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
 
-    def _load_endpoints(self):
-
-        endpoints = self.api_test_loader.get_endpoints()
         self.active_environment = self.test_config['active_environment']
+        self.db_config = self.test_config.get('database', {}).get(self.active_environment, {})
+        if not self.db_config:
+            raise ValueError(f"No database configuration for environment: {self.active_environment}")
+
+    def _load_endpoints(self):
+        endpoints = self.api_test_loader.get_endpoints()
         self.endpoints = {}
         for _, row in endpoints[endpoints['Environment'] == self.active_environment].iterrows():
             self.endpoints[row['Endpoint']] = {
@@ -944,6 +991,9 @@ class APITestKeywords:
         self.headers_generator: HeadersGenerator = HeadersGenerator(self.api_test_loader)
         self.api_response_asserter: ResponseValidator = ResponseValidator()
         self.response_field_saver: ResponseFieldSaver = ResponseFieldSaver()
+        self.db_validator = DBValidator()
+
+
     @keyword
     def api_sanity_check(self) -&gt; None:
         skip_on_sanity_check_failure = BuiltIn().get_variable_value('${skip_on_sanity_check_failure}', default=False)
@@ -951,6 +1001,7 @@ class APITestKeywords:
             BuiltIn().skip("Skipping current test as sanity check failed.")
         else:
             logging.info(f"{self.__class__.__name__}: Sanity check succeeded, continuing with the test.")
+
     @keyword
     def clear_saved_fields(self):
         if self.test_config.get('clear_saved_fields_after_test', False):
@@ -988,11 +1039,12 @@ class APITestKeywords:
             if check_with_tcids:
                 pre_check_responses = self._execute_check_with_cases(check_with_tcids)
                 response, execution_time = self._execute_single_test_case(test_case)
+                logging.info("============================================")
                 post_check_responses = self._execute_check_with_cases(check_with_tcids)
                 self._validate_dynamic_checks(test_case, pre_check_responses, post_check_responses)
             else:
                 response, execution_time = self._execute_single_test_case(test_case)
-
+            logger.info(ColorLogger.success(f"{self.__class__.__name__}: Test case [ {test_case_id} ]: PASS."), html=True)
             logging.info(f"{self.__class__.__name__}: Finished execution of test case {test_case_id}")
             logging.info("============================================")
 
@@ -1006,12 +1058,24 @@ class APITestKeywords:
         logging.info(f"{self.__class__.__name__}: Time taken to execute test case {test_case['TCID']}: {execution_time:.2f} seconds")
         self.api_response_asserter.validate_response(test_case['Exp Result'], response)
         self.response_field_saver.save_fields_to_robot_variables(response, test_case)
+        self.validate_data_base(test_case)
         wait = float(test_case['Wait']) if test_case['Wait'] != '' else 0
         if wait &gt; 0:
             sleep(wait)
             logging.info(f"{self.__class__.__name__}: Waiting for results of {test_case['TCID']} in {wait} seconds.")
-        logging.info("============================================")
+
         return response, execution_time
+
+    def validate_data_base(self, test_case):
+        try:
+            if 'DB.' in test_case['Exp Result']:
+                self.db_validator.setup_database(self.db_config)
+                for line in test_case['Exp Result'].splitlines():
+                    if line.strip().startswith('DB.'):
+                        self.db_validator.validate_database_value(line.strip())
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Failed to validate database: {str(e)}")
+            raise e
 
     def _extract_check_with_tcids(self, test_case):
         conditions = test_case['Conditions']
@@ -1523,16 +1587,15 @@ class RequestSender:
 import json
 import re
 from typing import Any, Union, Tuple
-
 from jsonpath_ng import parse
 import xmltodict
 from requests import Response
 from robot.libraries.BuiltIn import BuiltIn
-
+from robot.api import logger
+from libraries.common.log_manager import ColorLogger
 from libraries.common.utility_helpers import UtilityHelpers
 
 builtin_lib = BuiltIn()
-
 
 class ResponseHandler:
     def get_content_and_format(self, response: Union[str, Response]) -&gt; Tuple[str, str]:
@@ -1583,7 +1646,6 @@ class ResponseHandler:
         else:
             raise ValueError(f"{self.__class__.__name__}: No match found for JSONPath: {json_path}")
 
-
 class ResponseValidator(ResponseHandler):
     def validate_response(self, expected_results: str, actual_response: Union[str, Response]) -&gt; None:
         response_content, response_format = self.get_content_and_format(actual_response)
@@ -1602,43 +1664,48 @@ class ResponseValidator(ResponseHandler):
 
         if assertion_errors:
             raise AssertionError(f"{self.__class__.__name__}: Assertions failed:\n" + "\n".join(assertion_errors))
+        logging.info(f"{self.__class__.__name__}: All assertions passed successfully.")
+        # logger.info(ColorLogger.info(f"{self.__class__.__name__}: All assertions passed successfully."), html=True)
 
     def validate_response_dynamic(self, test_case: dict, pre_check_responses: dict, post_check_responses: dict) -&gt; None:
         exp_results = test_case['Exp Result'].splitlines()
         for exp_result in exp_results:
             dynamic_checks = re.findall(r'(\w+)\.(\$[.\[\]\w]+)=([+-]\d+)', exp_result)
-            static_checks = re.findall(r'@(\w+)\.(\$[.\[\]\w]+)=(.+)', exp_result)
+            pre_post_checks = re.findall(r'(\w+)\.(precheck|postcheck)\.(\$[.\[\]\w]+)=(.+)', exp_result)
 
             if dynamic_checks:
-                logging.info(f"{self.__class__.__name__}: Expected dynamic result: {exp_result}")
-                for check in dynamic_checks:
-                    tcid, json_path, expected_value = check
-                    pre_value = self._extract_value_from_response(pre_check_responses[tcid], json_path)
-                    post_value = self._extract_value_from_response(post_check_responses[tcid], json_path)
+                self._handle_dynamic_checks(dynamic_checks, pre_check_responses, post_check_responses)
+            elif pre_post_checks:
+                self._handle_pre_post_checks(pre_post_checks, pre_check_responses, post_check_responses)
+        logging.info(f"{self.__class__.__name__}: All dynamic and pre/post checks passed successfully.")
+        # logger.info(ColorLogger.info(f"{self.__class__.__name__}: All dynamic and pre/post checks passed successfully."), html=True)
 
-                    actual_value = round(float(post_value) - float(pre_value), 2)
+    def _handle_dynamic_checks(self, checks, pre_check_responses, post_check_responses):
+        for tcid, json_path, expected_value in checks:
+            pre_value = self._extract_value_from_response(pre_check_responses[tcid], json_path)
+            post_value = self._extract_value_from_response(post_check_responses[tcid], json_path)
 
-                    logging.info(f"{self.__class__.__name__}: Actual diff: {actual_value}, Expected diff: {round(float(expected_value), 2)}")
+            actual_value = round(float(post_value) - float(pre_value), 2)
 
-                    if not self._compare_diff(actual_value, expected_value):
-                        raise AssertionError(
-                            f"{self.__class__.__name__}: Dynamic check failed for {tcid}.{json_path}. Expected diff: {expected_value}, Actual diff: {actual_value}")
+            logging.info(f"{self.__class__.__name__}: Actual diff: {actual_value}, Expected diff: {round(float(expected_value), 2)}")
 
-            elif static_checks:
-                logging.info(f"{self.__class__.__name__}: Expected static result: {exp_result}")
-                for check in static_checks:
-                    tcid, json_path, expected_value = check
-                    post_value = self._extract_value_from_response(post_check_responses[tcid], json_path)
+            if not self._compare_diff(actual_value, expected_value):
+                raise AssertionError(
+                    f"{self.__class__.__name__}: Dynamic check failed for {tcid}.{json_path}. Expected diff: {expected_value}, Actual diff: {actual_value}")
 
-                    logging.info(f"{self.__class__.__name__}: Actual value: {post_value}, Expected value: {expected_value}")
-
-                    if str(post_value) != str(expected_value.strip()):
-                        raise AssertionError(f"{self.__class__.__name__}: Static check failed for {tcid}.{json_path}. Expected: {expected_value}, Actual: {post_value}")
-
+    def _handle_pre_post_checks(self, checks, pre_check_responses, post_check_responses):
+        for tcid, check_type, json_path, expected_value in checks:
+            if check_type == 'precheck':
+                actual_value = self._extract_value_from_response(pre_check_responses[tcid], json_path)
+            elif check_type == 'postcheck':
+                actual_value = self._extract_value_from_response(post_check_responses[tcid], json_path)
             else:
-                logging.warning(f"{self.__class__.__name__}: Unrecognized expected result format: {exp_result}")
+                raise ValueError(f"{self.__class__.__name__}: Invalid check type: {check_type}")
 
-        logging.info(f"{self.__class__.__name__}: All dynamic and static checks passed successfully.")
+            logging.info(f"{self.__class__.__name__}: {check_type.capitalize()} - Actual value: {actual_value}, Expected value: {expected_value}")
+
+            if str(actual_value) != str(expected_value.strip()):
+                raise AssertionError(f"{self.__class__.__name__}: {check_type.capitalize()} failed for {tcid}.{json_path}. Expected: {expected_value}, Actual: {actual_value}")
 
     def _assert_line(self, line: str, response_content: str, response_format: str) -&gt; None:
         key, expected_value = map(str.strip, line.split('=', 1))
@@ -1665,7 +1732,6 @@ class ResponseValidator(ResponseHandler):
         else:
             raise ValueError(f"{self.__class__.__name__}: Unsupported operator in expected diff: {expected_operator}")
 
-
 class ResponseFieldSaver(ResponseHandler):
     def save_fields_to_robot_variables(self, response: Union[str, Response], test_case: dict) -&gt; None:
         response_content, response_format = self.get_content_and_format(response)
@@ -1675,11 +1741,11 @@ class ResponseFieldSaver(ResponseHandler):
             try:
                 value = self._extract_value_from_response(response_content, field)
                 field_name = f'{test_case["TCID"]}.{field.strip()}'
-                logging.info(f"{self.__class__.__name__}: Setting global variable {field_name} to {value}.")
+                # logging.info(f"{self.__class__.__name__}: Setting global variable {field_name} to {value}.")
+                logger.info(ColorLogger.info(f"{self.__class__.__name__}: Setting global variable {field_name} to {value}."), html=True)
                 BuiltIn().set_global_variable(f'${{{field_name}}}', value)
             except Exception as e:
-                logging.error(f"{self.__class__.__name__}: Failed to process field '{field}': {e}")
-</pre>
+                logging.error(f"{self.__class__.__name__}: Failed to process field '{field}': {e}")</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_saved_fields_manager_py">
@@ -1898,6 +1964,340 @@ class ConfigManager:
 </pre>
 </div>
 
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_db_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\db.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from typing import List, Dict, Any, Optional, Type
+from abc import ABC, abstractmethod
+import cx_Oracle
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from psycopg2.pool import ThreadedConnectionPool
+from contextlib import contextmanager
+
+
+class DatabaseError(Exception):
+    """Custom exception for database operations"""
+    pass
+
+
+class Database(ABC):
+    @abstractmethod
+    def connect(self, **kwargs) -&gt; None:
+        pass
+
+    @abstractmethod
+    def disconnect(self) -&gt; None:
+        pass
+
+    @abstractmethod
+    def execute_query(self, table: str, fields: Optional[List[str]] = None, where: Optional[str] = None) -&gt; List[Dict]:
+        pass
+
+    @abstractmethod
+    def update(self, table: str, values: Dict, where: Optional[str] = None) -&gt; bool:
+        pass
+
+    @abstractmethod
+    def insert(self, table: str, data: List[Dict]) -&gt; int:
+        pass
+
+    @contextmanager
+    def transaction(self):
+        """Context manager for handling transactions"""
+        try:
+            yield
+            self.connection.commit()
+        except Exception as e:
+            self.connection.rollback()
+            raise DatabaseError(f"Transaction failed: {str(e)}")
+
+
+class OracleDatabase(Database):
+    def __init__(self):
+        self.pool = None
+        self.connection = None
+
+    def connect(self, user: str, password: str, host: str, port: int, service_name: str, min_connections: int = 1, max_connections: int = 10):
+        try:
+            dsn = cx_Oracle.makedsn(host, port, service_name=service_name)
+            self.pool = cx_Oracle.SessionPool(user, password, dsn, min=min_connections, max=max_connections, increment=1, threaded=True)
+        except cx_Oracle.Error as e:
+            raise DatabaseError(f"Failed to create connection pool for Oracle: {str(e)}")
+
+    def _get_connection(self):
+        if not self.pool:
+            raise DatabaseError("Connection pool not initialized")
+        try:
+            return self.pool.acquire()
+        except cx_Oracle.Error as e:
+            raise DatabaseError(f"Failed to acquire connection from pool: {str(e)}")
+
+    def _release_connection(self):
+        if self.connection:
+            self.pool.release(self.connection)
+            self.connection = None
+
+    def disconnect(self):
+        if self.pool:
+            try:
+                self.pool.close()
+            finally:
+                self.pool = None
+
+    def execute_query(self, table: str, fields: Optional[List[str]] = None, where: Optional[str] = None) -&gt; List[Dict]:
+        if fields:
+            field_str = ', '.join(fields)
+        else:
+            field_str = '*'
+
+        query = f"SELECT {field_str} FROM {table}"
+        if where:
+            query += f" WHERE {where}"
+
+        connection = self._get_connection()
+        try:
+            with connection.cursor() as cursor:
+                try:
+                    cursor.execute(query)
+                    if fields:
+                        return [{field: row[fields.index(field)] for field in fields} for row in cursor]
+                    else:
+                        return [dict(zip([desc[0].lower() for desc in cursor.description], row))
+                                for row in cursor.fetchall()]
+                except cx_Oracle.Error as e:
+                    raise DatabaseError(f"Query execution failed: {str(e)}")
+        finally:
+            self._release_connection()
+
+    def update(self, table: str, values: Dict, where: Optional[str] = None) -&gt; bool:
+        update_clause = ", ".join([f"{key} = :{key}" for key in values.keys()])
+        query = f"UPDATE {table} SET {update_clause}"
+        if where:
+            query += f" WHERE {where}"
+
+        connection = self._get_connection()
+        try:
+            with connection.cursor() as cursor:
+                try:
+                    cursor.execute(query, values)
+                    connection.commit()
+                    return True
+                except cx_Oracle.Error as e:
+                    connection.rollback()
+                    raise DatabaseError(f"Update failed: {str(e)}")
+        finally:
+            self._release_connection()
+
+    def insert(self, table: str, data: List[Dict]) -&gt; int:
+        if not data:
+            return 0
+
+        columns = ', '.join(data[0].keys())
+        placeholders = ', '.join([':' + key for key in data[0].keys()])
+        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+
+        connection = self._get_connection()
+        try:
+            with connection.cursor() as cursor:
+                try:
+                    cursor.executemany(query, data)
+                    connection.commit()
+                    return cursor.rowcount
+                except cx_Oracle.Error as e:
+                    connection.rollback()
+                    raise DatabaseError(f"Insert failed: {str(e)}")
+        finally:
+            self._release_connection()
+
+
+class PostgreSQLDatabase(Database):
+    def __init__(self):
+        self.pool = None
+        self.connection = None
+
+    def connect(self, user: str, password: str, host: str, port: int, database: str, minconn: int = 1, maxconn: int = 10):
+        try:
+            self.pool = ThreadedConnectionPool(minconn, maxconn,
+                                                             user=user, password=password,
+                                                             host=host, port=port, database=database)
+        except psycopg2.Error as e:
+            raise DatabaseError(f"Failed to create connection pool for PostgreSQL: {str(e)}")
+
+    def _get_connection(self):
+        if not self.pool:
+            raise DatabaseError("Connection pool not initialized")
+        try:
+            return self.pool.getconn()
+        except psycopg2.Error as e:
+            raise DatabaseError(f"Failed to acquire connection from pool: {str(e)}")
+
+    def _release_connection(self, connection):
+        if connection:
+            self.pool.putconn(connection)
+
+    def disconnect(self):
+        if self.pool:
+            try:
+                self.pool.closeall()
+            except psycopg2.Error:
+                pass  # Ignore if already closed or if there's an error during close
+
+    def execute_query(self, table: str, fields: Optional[List[str]] = None, where: Optional[str] = None) -&gt; List[Dict]:
+        if fields:
+            field_str = ', '.join(fields)
+        else:
+            field_str = '*'
+
+        query = f"SELECT {field_str} FROM {table}"
+        if where:
+            query += f" WHERE {where}"
+
+        connection = self._get_connection()
+        try:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                try:
+                    cursor.execute(query)
+                    if fields:
+                        return [dict((k, row[k]) for k in fields if k in row)
+                                for row in cursor.fetchall()]
+                    return cursor.fetchall()
+                except psycopg2.Error as e:
+                    raise DatabaseError(f"Query execution failed: {str(e)}")
+        finally:
+            self._release_connection(connection)
+
+    def update(self, table: str, values: Dict, where: Optional[str] = None) -&gt; bool:
+        update_clause = ", ".join([f"{key} = %({key})s" for key in values.keys()])
+        query = f"UPDATE {table} SET {update_clause}"
+        if where:
+            query += f" WHERE {where}"
+
+        connection = self._get_connection()
+        try:
+            with connection.cursor() as cursor:
+                try:
+                    cursor.execute(query, values)
+                    connection.commit()
+                    return True
+                except psycopg2.Error as e:
+                    connection.rollback()
+                    raise DatabaseError(f"Update failed: {str(e)}")
+        finally:
+            self._release_connection(connection)
+
+    def insert(self, table: str, data: List[Dict]) -&gt; int:
+        if not data:
+            return 0
+
+        columns = ', '.join(data[0].keys())
+        placeholders = ', '.join(['%(' + key + ')s' for key in data[0].keys()])
+        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+
+        connection = self._get_connection()
+        try:
+            with connection.cursor() as cursor:
+                try:
+                    cursor.executemany(query, data)
+                    connection.commit()
+                    return cursor.rowcount
+                except psycopg2.Error as e:
+                    connection.rollback()
+                    raise DatabaseError(f"Insert failed: {str(e)}")
+        finally:
+            self._release_connection(connection)
+
+
+def get_database(db_type: str) -&gt; Type[Database]:
+    """Factory function to get the appropriate database class"""
+    databases = {
+        'oracle': OracleDatabase,
+        'postgresql': PostgreSQLDatabase
+    }
+    if db_type.lower() not in databases:
+        raise ValueError(f"Unsupported database type: {db_type}")
+    return databases[db_type.lower()]
+
+
+def create_database(db_type: str, **kwargs) -&gt; Database:
+    """Factory function to create and connect to a database"""
+    DatabaseClass = get_database(db_type)
+    db = DatabaseClass()
+    db.connect(**kwargs)
+    return db</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_db_validator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\db_validator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+import re
+from libraries.common.db import create_database
+from robot.libraries.BuiltIn import BuiltIn
+
+builtin_lib = BuiltIn()
+
+
+class DBValidator:
+    def __init__(self):
+        self.db = None
+
+    def setup_database(self, db_config):
+        db_type = db_config['type'].lower()
+        db_config.pop('type')
+        self.db = create_database(db_type, **db_config)
+
+    def validate_database_value(self, db_clause):
+        if not self.db:
+            raise ValueError("Database connection is not configured.")
+
+        # Parse the format DB.TableName.FieldName[FilterFieldName=FilterValue;AnotherField=AnotherValue]=ExpectedValue
+        pattern = r'^DB\.(?P&lt;Table&gt;\w+)\.(?P&lt;Field&gt;\w+)\s*\[(?P&lt;Filters&gt;[^\]]+)\]\s*=\s*(?P&lt;ExpectedValue&gt;.+)$'
+
+        match = re.match(pattern, db_clause)
+        if not match:
+            raise ValueError(f"Invalid format for validate_database_value: {db_clause}")
+
+        # Extract components using named groups
+        table_name = match.group('Table')
+        field_name = match.group('Field')
+        filters = match.group('Filters')
+        expected_value = match.group('ExpectedValue').strip()
+
+        # Check if there's a filter part and process it
+        if filters:
+            filter_conditions = filters.split(';')
+            where_clauses = []
+            for condition in filter_conditions:
+                filter_field, filter_value = condition.split('=')
+                where_clauses.append(f"{filter_field} = '{filter_value}'")
+            where_clause = ' AND '.join(where_clauses)
+        else:
+            where_clause = None
+
+        # Query the database
+        result = self.db.execute_query(table_name, fields=[field_name], where=where_clause)
+
+        if not result:
+            if where_clause:
+                raise AssertionError(f"No data found for {field_name} in {table_name} where {where_clause}")
+            else:
+                raise AssertionError(f"No data found for {field_name} in {table_name}")
+
+        actual_value = result[0][field_name]
+
+        if actual_value != expected_value:
+            raise AssertionError(f"Database value mismatch. Expected {expected_value} but got {actual_value} for {field_name} in {table_name}")
+
+        logging.info(f"{self.__class__.__name__}: Database value matched for {field_name} in {table_name}. Expected: {expected_value}, Actual: {actual_value}")
+        logging.info(f"{self.__class__.__name__}: {db_clause} passed.")
+
+
+</pre>
+</div>
+
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_gen_temp_default_py">
     <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\gen_temp_default.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -2017,10 +2417,23 @@ class Logger:
         return self.logger
 
 
+class ColorLogger:
+    @staticmethod
+    def success(message):
+        return f'&lt;span style="background-color: #90EE90; padding: 2px 5px; border-radius: 3px;"&gt;{message}&lt;/span&gt;'
+
+    @staticmethod
+    def error(message):
+        return f'&lt;span style="background-color: #FFB6C1; padding: 2px 5px; border-radius: 3px;"&gt;{message}&lt;/span&gt;'
+
+    @staticmethod
+    def info(message):
+        return f'&lt;span style="background-color: #B8E2F2; padding: 2px 5px; border-radius: 3px;"&gt;{message}&lt;/span&gt;'
+
 logger_instance = Logger()
 logger = logger_instance.get_logger()
 
-__all__ = ['logger', 'logger_instance']
+__all__ = ['logger', 'logger_instance', 'ColorLogger']
 </pre>
 </div>
 
@@ -2341,8 +2754,234 @@ class E2ERobotCasesGenerator:
     <pre></pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_performance_test_loader_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\performance_test_loader.py</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_pt_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\web_pt.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+import os
+import json
+import time
+from typing import Dict, Tuple
+from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.common.config_manager import ConfigManager
+from libraries.performance.web_pt_loader import PerformanceTestLoader
+from libraries.web.webdriver_factory import WebDriverFactory
+from libraries.web.web_actions import WebElementActions
+from libraries.performance.web_pt_reporter import WebPerformanceReporter
+
+class WebPerformanceTester:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
+        self.project_root = PROJECT_ROOT
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'web_pt_config.yaml')
+        self.test_cases_path = test_cases_path or os.path.join(self.project_root, 'test_cases', 'web_pt_cases.xlsx')
+
+        self._web_actions_instance = None
+        self._driver = None
+        self.current_case_id = None
+        self.response_time_data = []
+        self.memory_usage_data = []
+
+        self._load_configuration()
+        self._initialize_components()
+
+    def _load_configuration(self):
+        self.test_config = ConfigManager.load_yaml(self.test_config_path)
+        self.performance_test_loader = PerformanceTestLoader(self.test_cases_path, self.test_config)
+        self.env_config = self._load_environment_config()
+        self.main_config = self._load_main_config()
+
+    def _load_main_config(self):
+        web_environments = self.performance_test_loader.get_web_environments()
+        active_env = self.test_config['active_environment']
+        env_config = web_environments[web_environments['Environment'] == active_env].iloc[0].to_dict()
+        return {
+            'Target URL': env_config['TargetURL'],
+            'Rounds': env_config['Rounds'],
+            'Log Details': env_config['LogDetails']
+        }
+
+    def _load_environment_config(self):
+        web_environments = self.performance_test_loader.get_web_environments()
+        active_env = self.test_config['active_environment']
+        env_config = web_environments[web_environments['Environment'] == active_env].iloc[0].to_dict()
+        env_config['BrowserOptions'] = json.loads(env_config['BrowserOptions'])
+
+        return {
+            'environments': {
+                active_env: {
+                    'browser': env_config['Browser'],
+                    'is_remote': env_config['IsRemote'],
+                    'remote_url': env_config['RemoteURL'],
+                    'chrome_path': env_config['ChromePath'],
+                    'chrome_driver_path': env_config['ChromeDriverPath'],
+                    'edge_path': env_config['EdgePath'],
+                    'edge_driver_path': env_config['EdgeDriverPath'],
+                    'browser_options': env_config['BrowserOptions']
+                }
+            }
+        }
+
+    def _initialize_components(self):
+        self.test_cases = self.performance_test_loader.get_test_cases()
+        self.test_functions = self.performance_test_loader.get_test_functions()
+        self.sub_functions = self.performance_test_loader.get_sub_functions()
+        self.locators = self.performance_test_loader.get_locators()
+        self.page_elements = self._load_page_elements()
+        self.custom_actions = self.performance_test_loader.get_custom_actions()
+
+    @property
+    def driver(self):
+        if self._driver is None:
+            active_env_config = self.env_config['environments'][self.test_config['active_environment']]
+            self._driver = WebDriverFactory.create_driver(active_env_config)
+        return self._driver
+
+    @property
+    def web_actions(self):
+        if self._web_actions_instance is None:
+            self._web_actions_instance = WebElementActions(self.driver)
+        return self._web_actions_instance
+
+    def get_js_memory(self):
+        try:
+            js_memory = self.driver.execute_script("return window.performance.memory;")
+            if js_memory:
+                used_js_memory_mb = js_memory.get("usedJSHeapSize", 0) / (1024 * 1024)
+                return round(used_js_memory_mb, 2)
+        except Exception as e:
+            logging.error(f"Error in get_js_memory: {e}")
+        return None
+
+    def execute_single_test(self, case_id: str):
+        case_name = self.test_cases[self.test_cases['Case ID'] == case_id]['Name'].iloc[0]
+        logging.info(f"Executing test case: {case_id} - {case_name}")
+
+
+        try:
+            rounds = int(self.main_config['Rounds'])
+            target_url = self.main_config['Target URL']
+
+            test_case = self.test_cases[self.test_cases['Case ID'] == case_id].iloc[0]
+            if test_case['Run'] != 'Y':
+                logging.warning(f"Test case {case_id} is not marked to run.")
+                return
+
+            case_functions = self.test_functions[self.test_functions['Case ID'] == case_id].sort_values('Execution Order')
+
+            for round_num in range(rounds):
+                self.driver.get(target_url)
+                memory_usage = self.get_js_memory()
+                if memory_usage is not None:
+                    self.memory_usage_data.append({"round": round_num + 1, "case_id": case_id, "used_MB": memory_usage})
+
+                for _, function in case_functions.iterrows():
+                    function_name = function['Function Name']
+                    self._execute_test_function(round_num, function_name, case_id)
+        finally:
+            logging.info(f"Finished executing test case: {case_id} - {case_name}")
+
+    def _execute_test_function(self, round_num, function_name, case_id):
+        function_steps = self.test_functions[self.test_functions['Function Name'] == function_name].iloc[0]
+
+        precondition_steps = self.sub_functions[self.sub_functions['Sub Function Name'] == function_steps['Precondition subFunction']].sort_values('Step Order')
+        operation_steps = self.sub_functions[self.sub_functions['Sub Function Name'] == function_steps['Operation subFunction']].sort_values('Step Order')
+        postcondition_steps = self.sub_functions[self.sub_functions['Sub Function Name'] == function_steps['Postcondition subFunction']].sort_values('Step Order')
+
+        for _, step in precondition_steps.iterrows():
+            self._execute_step(step)
+        start_time = time.time()
+        for _, step in operation_steps.iterrows():
+            self._execute_step(step)
+        end_time = time.time()
+        response_time = round(end_time - start_time, 2)
+        self.response_time_data.append({
+            "round": round_num + 1,
+            "case_id": case_id,
+            "function_name": function_name,
+            "response_time": response_time
+        })
+        for _, step in postcondition_steps.iterrows():
+            self._execute_step(step)
+
+    def _execute_step(self, step):
+        action_name = step['Action'].lower()
+        page = step['Page']
+        element = step['Element']
+        input_value = step['Input Value (if applicable)']
+        locator = self.page_elements[page][element] if element else None
+
+        logging.info(
+            f"{self.__class__.__name__}: Executing action:[{action_name}] on page:[{page}]"
+            + (f" element:[{element}]" if element else "")
+            + (f" with input:[{input_value}]" if input_value else "")
+        )
+        self.change_log_level = self.main_config['Log Details']
+        if self.change_log_level != 'Y':
+            # Temporarily set the logging level to WARNING
+            logger = logging.getLogger()
+            original_level = logger.level
+            logger.setLevel(logging.WARNING)
+
+        try:
+            if hasattr(self.web_actions, action_name):
+                action = getattr(self.web_actions, action_name)
+                if locator is not None:
+                    if input_value:
+                        action(locator, input_value)
+                    else:
+                        action(locator)
+                else:
+                    if input_value:
+                        action(input_value)
+                    else:
+                        action()
+            else:
+                raise ValueError(f"Unknown action type: {step['Action']}")
+            logging.info("="*100)
+        finally:
+
+            # Restore the original logging level after execution
+            if self.change_log_level != 'Y':
+                logger.setLevel(original_level)
+
+    def _load_page_elements(self) -&gt; Dict[str, Dict[str, Tuple[str, str]]]:
+        elements = {}
+        for _, row in self.locators.iterrows():
+            elements.setdefault(row['Page'], {})[row['Element']] = (row['Locator Type'], row['Locator Value'])
+        return elements
+
+    def generate_reports(self, case_id: str = None):
+        if case_id is None:
+            case_id = self.current_case_id
+
+        # Get the case name from the test cases
+        case_name = self.test_cases[self.test_cases['Case ID'] == case_id]['Name'].iloc[0]
+
+        filtered_response_time_data = [data for data in self.response_time_data if data['case_id'] == case_id]
+        filtered_memory_usage_data = [data for data in self.memory_usage_data if data['case_id'] == case_id]
+
+        reporter = WebPerformanceReporter(filtered_response_time_data, filtered_memory_usage_data)
+
+        return {
+            'memory_chart': reporter.generate_memory_usage_chart(case_id, case_name),
+            'response_time_stats_chart': reporter.generate_response_time_statistics_chart(case_id, case_name),
+            'response_time_trend_chart': reporter.generate_response_time_trend_chart(case_id, case_name),
+            'response_time_table': reporter.generate_response_time_statistics_table(case_id, case_name)
+        }
+
+    def save_to_csv(self):
+        reporter = WebPerformanceReporter(self.response_time_data, self.memory_usage_data)
+        reporter.save_to_csv()
+
+    def close(self):
+        if self._driver:
+            self._driver.quit()
+            self._driver = None</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_pt_loader_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\web_pt_loader.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import json
@@ -2350,7 +2989,6 @@ import logging
 import pandas as pd
 import os
 from typing import Dict, List
-
 
 class PerformanceTestLoader:
     _instances = {}
@@ -2373,223 +3011,164 @@ class PerformanceTestLoader:
         self.initialized = True
 
     def _load_excel_data(self) -&gt; Dict[str, pd.DataFrame]:
-        sheets = ['Locators', 'PageModules', 'TestCases', 'TestSteps', 'TestData', 'WebEnvironments', 'CustomActions']
+        sheets = [
+            'TestCases', 'TestFunctions', 'SubFunctions', 'Locators', 'WebEnvironments', 'CustomActions'
+        ]
         return {sheet: pd.read_excel(self.excel_path, sheet_name=sheet).fillna("") for sheet in sheets}
 
     def _validate_data(self):
         self._validate_test_cases()
-        self._validate_test_steps()
-        self._validate_page_objects()
-        self._validate_test_data()
+        self._validate_test_functions()
+        self._validate_sub_functions()
+        self._validate_locators()
         self._validate_web_environments()
         self._validate_custom_actions()
 
     def _validate_test_cases(self):
         test_cases = self.get_data_by_sheet_name('TestCases')
-        test_steps = self.get_data_by_sheet_name('TestSteps')
+        required_columns = ['Case ID', 'Description', 'Run']
+        missing_columns = set(required_columns) - set(test_cases.columns)
+        if missing_columns:
+            logging.error(f"PerformanceTestLoader: Missing required columns in TestCases sheet: {', '.join(missing_columns)}")
 
-        case_ids_in_steps = set(test_steps['Case ID'].unique())
-        for _, row in test_cases.iterrows():
-            case_id = row['Case ID']
-            if case_id not in case_ids_in_steps:
-                logging.error(f"WebTestLoader: Case ID '{case_id}' does not have any steps defined in the TestSteps sheet.")
+        for index, row in test_cases.iterrows():
+            if pd.isna(row['Case ID']) or row['Case ID'] == '':
+                logging.error(f"PerformanceTestLoader: Empty Case ID in TestCases row {index + 2}")
+            if row['Run'] not in ['Y', 'N']:
+                logging.error(f"PerformanceTestLoader: Invalid Run value in TestCases row {index + 2}. Must be 'Y' or 'N'")
 
-    def _validate_test_steps(self):
-        test_steps = self.get_data_by_sheet_name('TestSteps')
-        page_modules = self.get_data_by_sheet_name('PageModules')
+    def _validate_test_functions(self):
+        test_functions = self.get_data_by_sheet_name('TestFunctions')
+        required_columns = ['Case ID', 'Execution Order', 'Function Name', 'Precondition subFunction', 'Operation subFunction', 'Postcondition subFunction', 'Description']
+        missing_columns = set(required_columns) - set(test_functions.columns)
+        if missing_columns:
+            logging.error(f"PerformanceTestLoader: Missing required columns in TestFunctions sheet: {', '.join(missing_columns)}")
 
-        page_module_combinations = set(zip(page_modules[page_modules['Run'] == 'Y']['Page Name'],
-                                           page_modules[page_modules['Run'] == 'Y']['Module Name']))
-        for _, row in test_steps[test_steps['Run'] == 'Y'].iterrows():
-            if (row['Page Name'], row['Module Name']) not in page_module_combinations and row['Module Name'] != 'API':
-                logging.error(
-                    f"WebTestLoader: Invalid Page Name '{row['Page Name']}' and Module Name '{row['Module Name']}' combination in TestSteps for Case ID '{row['Case ID']}'.")
-            self._validate_parameters(row)
+        for index, row in test_functions.iterrows():
+            if pd.isna(row['Case ID']) or row['Case ID'] == '':
+                logging.error(f"PerformanceTestLoader: Empty Case ID in TestFunctions row {index + 2}")
+            if pd.isna(row['Function Name']) or row['Function Name'] == '':
+                logging.error(f"PerformanceTestLoader: Empty Function Name in TestFunctions row {index + 2}")
 
-    def _validate_parameters(self, step_row):
-        page_modules = self.get_data_by_sheet_name('PageModules')
-        test_data = self.get_data_by_sheet_name('TestData')
+    def _validate_sub_functions(self):
+        sub_functions = self.get_data_by_sheet_name('SubFunctions')
+        required_columns = ['Sub Function Name', 'Step Order', 'Page', 'Element', 'Action', 'Input Value (if applicable)', 'Description']
+        missing_columns = set(required_columns) - set(sub_functions.columns)
+        if missing_columns:
+            logging.error(f"PerformanceTestLoader: Missing required columns in SubFunctions sheet: {', '.join(missing_columns)}")
 
-        module_params = page_modules[(page_modules['Page Name'] == step_row['Page Name']) &amp;
-                                     (page_modules['Module Name'] == step_row['Module Name'])]['Parameter Name'].tolist()
-        module_params = [param for param in module_params if param]
+        for index, row in sub_functions.iterrows():
+            if pd.isna(row['Sub Function Name']) or row['Sub Function Name'] == '':
+                logging.error(f"PerformanceTestLoader: Empty Sub Function Name in SubFunctions row {index + 2}")
 
-        if module_params:
-            expected_params = set()
-            for param in module_params:
-                expected_params.update(param.split(','))
-
-            case_data = test_data[test_data['Case ID'] == step_row['Case ID']]
-            for param in expected_params:
-                if param not in case_data['Parameter Name'].values:
-                    logging.error(f"No data provided for parameter '{param}' in TestData for Case ID '{step_row['Case ID']}'")
-
-    def _validate_page_objects(self):
-        page_objects = self.get_data_by_sheet_name('PageModules')
+    def _validate_locators(self):
         locators = self.get_data_by_sheet_name('Locators')
+        required_columns = ['Page', 'Element', 'Locator Type', 'Locator Value', 'Description']
+        missing_columns = set(required_columns) - set(locators.columns)
+        if missing_columns:
+            logging.error(f"PerformanceTestLoader: Missing required columns in Locators sheet: {', '.join(missing_columns)}")
 
-        locator_map = set(zip(locators['Page Name'], locators['Element Name']))
-        for _, row in page_objects[page_objects['Run'] == 'Y'].iterrows():
-            if row['Element Name'] and (row['Page Name'], row['Element Name']) not in locator_map:
-                logging.error(f"WebTestLoader: Element '{row['Element Name']}' on page '{row['Page Name']}' not found in Locators sheet.")
-
-    def _validate_test_data(self):
-        test_data = self.get_data_by_sheet_name('TestData')
-        test_steps = self.get_data_by_sheet_name('TestSteps')
-
-        case_ids_in_steps = set(test_steps['Case ID'].unique())
-        for _, row in test_data.iterrows():
-            if row['Case ID'] not in case_ids_in_steps:
-                logging.error(f"WebTestLoader: Test data for Case ID '{row['Case ID']}' does not have corresponding test steps.")
+        for index, row in locators.iterrows():
+            if pd.isna(row['Page']) or row['Page'] == '':
+                logging.error(f"PerformanceTestLoader: Empty Page in Locators row {index + 2}")
+            if pd.isna(row['Element']) or row['Element'] == '':
+                logging.error(f"PerformanceTestLoader: Empty Element in Locators row {index + 2}")
+            if row['Locator Type'] not in ['id', 'name', 'xpath', 'css', 'class', 'tag', 'link_text', 'partial_link_text']:
+                logging.error(f"PerformanceTestLoader: Invalid Locator Type '{row['Locator Type']}' in Locators row {index + 2}")
 
     def _validate_web_environments(self):
         web_environments = self.get_data_by_sheet_name('WebEnvironments')
 
         if web_environments.empty:
-            logging.error("WebTestLoader: WebEnvironments sheet is empty or does not exist.")
+            logging.error("PerformanceTestLoader: WebEnvironments sheet is empty or does not exist.")
             return
 
-        required_columns = ['Environment', 'Browser', 'IsRemote', 'RemoteURL', 'ChromePath', 'ChromeDriverPath', 'EdgePath', 'EdgeDriverPath', 'BrowserOptions']
+        required_columns = ['Environment', 'TargetURL', 'Rounds', 'LogDetails', 'Browser', 'IsRemote', 'RemoteURL', 'ChromePath', 'ChromeDriverPath', 'EdgePath', 'EdgeDriverPath',
+                            'BrowserOptions']
         missing_columns = set(required_columns) - set(web_environments.columns)
         if missing_columns:
-            logging.error(f"WebTestLoader: Missing required columns in WebEnvironments sheet: {', '.join(missing_columns)}")
+            logging.error(f"PerformanceTestLoader: Missing required columns in WebEnvironments sheet: {', '.join(missing_columns)}")
             return
 
         # Check if active_environment exists in WebEnvironments
         active_environment = self.test_config.get('active_environment')
         if active_environment and active_environment not in web_environments['Environment'].values:
-            logging.error(f"WebTestLoader: Active environment '{active_environment}' specified in config file does not exist in WebEnvironments sheet.")
+            logging.error(f"PerformanceTestLoader: Active environment '{active_environment}' specified in config file does not exist in WebEnvironments sheet.")
 
         for index, row in web_environments.iterrows():
             if self.test_config.get('active_environment') != row['Environment']:
                 continue
             if pd.isna(row['Environment']) or row['Environment'] == '':
-                logging.error(f"WebTestLoader: Empty Environment name in row {index + 2}")
+                logging.error(f"PerformanceTestLoader: Empty Environment name in WebEnvironments row {index + 2}")
+
+            if pd.isna(row['TargetURL']) or row['TargetURL'] == '':
+                logging.error(f"PerformanceTestLoader: TargetURL cannot be empty in WebEnvironments row {index + 2}")
+
+            if pd.isna(row['Rounds']) or row['Rounds'] == '':
+                logging.error(f"PerformanceTestLoader: Rounds cannot be empty in WebEnvironments row {index + 2}")
+            else:
+                try:
+                    rounds = int(row['Rounds'])
+                    if rounds &lt;= 0:
+                        logging.error(f"PerformanceTestLoader: Rounds must be a positive integer in WebEnvironments row {index + 2}")
+                except ValueError:
+                    logging.error(f"PerformanceTestLoader: Rounds must be a valid integer in WebEnvironments row {index + 2}")
 
             if row['Browser'].lower() not in ['chrome', 'edge']:
-                logging.error(f"WebTestLoader: Invalid Browser '{row['Browser']}' in row {index + 2}. Must be 'chrome' or 'edge'.")
+                logging.error(f"PerformanceTestLoader: Invalid Browser '{row['Browser']}' in WebEnvironments row {index + 2}. Must be 'chrome' or 'edge'.")
 
             if not isinstance(row['IsRemote'], bool):
-                logging.error(f"WebTestLoader: IsRemote must be a boolean value in row {index + 2}")
+                logging.error(f"PerformanceTestLoader: IsRemote must be a boolean value in WebEnvironments row {index + 2}")
 
             if row['IsRemote']:
                 if pd.isna(row['RemoteURL']) or row['RemoteURL'] == '':
-                    logging.error(f"WebTestLoader: RemoteURL is required when IsRemote is True in row {index + 2}")
+                    logging.error(f"PerformanceTestLoader: RemoteURL is required when IsRemote is True in WebEnvironments row {index + 2}")
             else:
                 if row['Browser'].lower() == 'chrome':
                     for path_column in ['ChromePath', 'ChromeDriverPath']:
                         if pd.isna(row[path_column]) or row[path_column] == '':
-                            logging.error(f"WebTestLoader: {path_column} is required when IsRemote is False and Browser is Chrome in row {index + 2}")
+                            logging.error(f"PerformanceTestLoader: {path_column} is required when IsRemote is False and Browser is Chrome in WebEnvironments row {index + 2}")
                         elif not os.path.exists(row[path_column]):
-                            logging.warning(f"WebTestLoader: {path_column} '{row[path_column]}' does not exist in row {index + 2}")
+                            logging.warning(f"PerformanceTestLoader: {path_column} '{row[path_column]}' does not exist in WebEnvironments row {index + 2}")
                 elif row['Browser'].lower() == 'edge':
                     for path_column in ['EdgePath', 'EdgeDriverPath']:
                         if pd.isna(row[path_column]) or row[path_column] == '':
-                            logging.error(f"WebTestLoader: {path_column} is required when IsRemote is False and Browser is Edge in row {index + 2}")
+                            logging.error(f"PerformanceTestLoader: {path_column} is required when IsRemote is False and Browser is Edge in WebEnvironments row {index + 2}")
                         elif not os.path.exists(row[path_column]):
-                            logging.warning(f"WebTestLoader: {path_column} '{row[path_column]}' does not exist in row {index + 2}")
+                            logging.warning(f"PerformanceTestLoader: {path_column} '{row[path_column]}' does not exist in WebEnvironments row {index + 2}")
 
             try:
                 if not pd.isna(row['BrowserOptions']) and row['BrowserOptions'] != '':
                     json.loads(row['BrowserOptions'])
             except json.JSONDecodeError:
-                logging.error(f"WebTestLoader: Invalid JSON in BrowserOptions in row {index + 2}")
+                logging.error(f"PerformanceTestLoader: Invalid JSON in BrowserOptions in WebEnvironments row {index + 2}")
 
-        logging.info("WebTestLoader: WebEnvironments data validation completed.")
+        logging.info("PerformanceTestLoader: WebEnvironments data validation completed.")
 
     def _validate_custom_actions(self):
         custom_actions = self.get_data_by_sheet_name('CustomActions')
-        if custom_actions.empty:
-            logging.warning("WebTestLoader: CustomActions sheet is empty.")
-            return
-
-        required_columns = ['Action Name', 'Python Code']
+        required_columns = ['Action Name', 'Description', 'Python Code']
         missing_columns = set(required_columns) - set(custom_actions.columns)
         if missing_columns:
-            logging.error(f"WebTestLoader: Missing required columns in CustomActions sheet: {', '.join(missing_columns)}")
-            return
+            logging.error(f"PerformanceTestLoader: Missing required columns in CustomActions sheet: {', '.join(missing_columns)}")
 
         for index, row in custom_actions.iterrows():
             if pd.isna(row['Action Name']) or row['Action Name'] == '':
-                logging.error(f"WebTestLoader: Empty Action Name in CustomActions row {index + 2}")
+                logging.error(f"PerformanceTestLoader: Empty Action Name in CustomActions row {index + 2}")
             if pd.isna(row['Python Code']) or row['Python Code'] == '':
-                logging.error(f"WebTestLoader: Empty Python Code for web_element_actions '{row['Action Name']}' in CustomActions row {index + 2}")
+                logging.error(f"PerformanceTestLoader: Empty Python Code for Action '{row['Action Name']}' in CustomActions row {index + 2}")
 
     def get_data_by_sheet_name(self, sheet_name: str) -&gt; pd.DataFrame:
         return self.data.get(sheet_name, pd.DataFrame())
 
-    def filter_cases(self, tcid_list: List[str] = None, tags: List[str] = None) -&gt; pd.DataFrame:
-        test_cases = self.get_test_cases()
-
-        if tcid_list:
-            test_cases = test_cases[test_cases['Case ID'].isin(tcid_list)]
-
-        if tags:
-            test_cases = test_cases[test_cases['Tags'].apply(lambda x: any(tag in str(x).split(',') for tag in tags))]
-
-        test_cases = test_cases[test_cases['Run'] == 'Y']
-
-        return test_cases
-
     def get_test_cases(self) -&gt; pd.DataFrame:
         return self.get_data_by_sheet_name('TestCases')
 
-    def get_test_steps(self, case_id: str) -&gt; pd.DataFrame:
-        test_steps = self.get_data_by_sheet_name('TestSteps')
-        result = test_steps[(test_steps['Case ID'] == case_id) &amp; (test_steps['Run'] == 'Y')]
-        if result.empty:
-            logging.warning(f"WebTestLoader: No test steps found for case ID: {case_id}")
-        return result
+    def get_test_functions(self) -&gt; pd.DataFrame:
+        return self.get_data_by_sheet_name('TestFunctions')
 
-    def get_test_data(self, case_id: str) -&gt; List[Dict]:
-        test_data = self.get_data_by_sheet_name('TestData')
-        case_data = test_data[test_data['Case ID'] == case_id]
-
-        test_steps = self.get_test_steps(case_id)
-        non_api_steps = test_steps[test_steps['Module Name'] != 'API']
-
-        if case_data.empty and not non_api_steps.empty:
-            logging.warning(f"WebTestLoader: No test data found for case ID: {case_id}")
-
-        grouped_data = case_data.groupby('Data Set')
-
-        data_sets = []
-        for _, group in grouped_data:
-            data_set = {}
-            for _, row in group.iterrows():
-                value = self._parse_value(row['Value'], row['Data Type'])
-                data_set[row['Parameter Name']] = value
-            data_sets.append(data_set)
-
-        return data_sets
-
-    def _parse_value(self, value: str, data_type: str):
-        if data_type.lower() == 'json':
-            try:
-                return json.loads(value)
-            except json.JSONDecodeError:
-                logging.error(f"Invalid JSON string: {value}")
-                return value
-        elif data_type.lower() == 'integer':
-            try:
-                return int(value)
-            except ValueError:
-                logging.error(f"Invalid integer value: {value}")
-                return value
-        elif data_type.lower() == 'float':
-            try:
-                return float(value)
-            except ValueError:
-                logging.error(f"Invalid float value: {value}")
-                return value
-        elif data_type.lower() == 'boolean':
-            return value.lower() in ('true', 'yes', '1', 'on')
-        else:
-            return value
-
-    def get_page_objects(self) -&gt; pd.DataFrame:
-        page_objects = self.get_data_by_sheet_name('PageModules')
-        return page_objects[page_objects['Run'] == 'Y']
+    def get_sub_functions(self) -&gt; pd.DataFrame:
+        return self.get_data_by_sheet_name('SubFunctions')
 
     def get_locators(self) -&gt; pd.DataFrame:
         return self.get_data_by_sheet_name('Locators')
@@ -2597,265 +3176,72 @@ class PerformanceTestLoader:
     def get_web_environments(self) -&gt; pd.DataFrame:
         return self.get_data_by_sheet_name('WebEnvironments')
 
-    def get_custom_actions(self) -&gt; Dict[str, str]:
-        custom_actions_df = self.get_data_by_sheet_name('CustomActions')
-        return dict(zip(custom_actions_df['Action Name'], custom_actions_df['Python Code']))
+    def get_custom_actions(self) -&gt; pd.DataFrame:
+        return self.get_data_by_sheet_name('CustomActions')
 </pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_robot_web_performace_tester_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\robot_web_performace_tester.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from robot.api import logger
-from libraries.web.performance_tester import WebPerformanceTester
-
-class RobotFrameworkWebTester:
-    def __init__(self):
-        self.tester = None
-
-    def initialize_tester(self, test_config_path=None, test_cases_path=None):
-        """Initialize the performance tester."""
-        self.tester = WebPerformanceTester(test_config_path, test_cases_path)
-        logger.info("Performance tester initialized successfully.")
-
-    def execute_tests(self):
-        """Execute performance tests."""
-        if not self.tester:
-            raise ValueError("Tester is not initialized.")
-        self.tester.execute_tests()
-
-    def generate_reports(self):
-        """Generate performance reports."""
-        if not self.tester:
-            raise ValueError("Tester is not initialized.")
-        self.tester.generate_reports()
-
-    def save_to_csv(self):
-        """Save test data to CSV files."""
-        if not self.tester:
-            raise ValueError("Tester is not initialized.")
-        self.tester.save_to_csv()
-
-    def close_tester(self):
-        """Close the tester and release resources."""
-        if self.tester:
-            self.tester.close()
-            logger.info("Tester closed successfully.")</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_performance_robot_generator_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\web_performance_robot_generator.py</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_pt_reporter_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\web_pt_reporter.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
-from robot.api import TestSuite
-from libraries.common.config_manager import ConfigManager
-from libraries.common.utility_helpers import PROJECT_ROOT
-from libraries.web.web_test_loader import WebTestLoader
 
-class WebPerformanceRobotCasesGenerator:
-    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
-        self.project_root = PROJECT_ROOT
-        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'web_test_config.yaml')
-        self.test_cases_path = test_cases_path or os.path.join(self.project_root, 'test_cases', 'web_performance_test_cases.xlsx')
-
-        self._load_configuration()
-        self._initialize_components()
-
-    def _load_configuration(self):
-        self.test_config = ConfigManager.load_yaml(self.test_config_path)
-
-    def _initialize_components(self):
-        self.web_test_loader = WebTestLoader(self.test_cases_path, self.test_config)
-
-    def create_test_suite(self):
-        # Create main test suite
-        self.robot_suite = TestSuite('Web Performance TestSuite')
-        self._import_required_libraries()</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_performance_tester_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\web_performance_tester.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import os
-import json
-import time
 import pandas as pd
 import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-
+import logging
 from libraries.common.utility_helpers import PROJECT_ROOT
-from libraries.common.config_manager import ConfigManager
-from libraries.web.web_test_loader import WebTestLoader
-from libraries.web.webdriver_factory import WebDriverFactory
-from libraries.web.web_actions import WebElementActions
 
 
-class WebPerformanceTester:
-    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
-        self.project_root = PROJECT_ROOT
-        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'web_test_config.yaml')
-        self.test_cases_path = test_cases_path or os.path.join(self.project_root, 'test_cases', 'web_performance_test_cases.xlsx')
+class WebPerformanceReporter:
+    def __init__(self, response_time_data, memory_usage_data):
+        self.response_time_data = response_time_data
+        self.memory_usage_data = memory_usage_data
 
-        self._web_actions_instance = None
-        self._driver = None
-        self.rounds = 5  # Default value, can be overridden in config
-        self.response_time_data = []
-        self.memory_usage_data = []
-
-        self._load_configuration()
-        self._initialize_components()
-
-    def _load_configuration(self):
-        self.test_config = ConfigManager.load_yaml(self.test_config_path)
-        self.web_test_loader = WebTestLoader(self.test_cases_path, self.test_config)
-        self.env_config = self._load_environment_config()
-        self.main_config = self._load_main_config()
-        self.rounds = self.main_config.get('Rounds', self.rounds)
-        self.target_url = self.main_config.get('Target URL')
-
-    def _load_main_config(self):
-        main_config_df = self.web_test_loader.get_data_by_sheet_name('Main Configuration')
-        return dict(zip(main_config_df['Configuration Item'], main_config_df['Value']))
-
-    def _load_environment_config(self):
-        environments = self.web_test_loader.get_web_environments()
-        active_env = self.main_config['Active Environment']
-        env_config = environments[environments['Environment'] == active_env].iloc[0].to_dict()
-        env_config['BrowserOptions'] = json.loads(env_config['BrowserOptions'])
-
-        return {
-            'environments': {
-                active_env: {
-                    'browser': env_config['Browser'],
-                    'is_remote': env_config['IsRemote'],
-                    'remote_url': env_config['RemoteURL'],
-                    'chrome_path': env_config['ChromePath'],
-                    'chrome_driver_path': env_config['ChromeDriverPath'],
-                    'edge_path': env_config['EdgePath'],
-                    'edge_driver_path': env_config['EdgeDriverPath'],
-                    'browser_options': env_config['BrowserOptions']
-                }
-            }
-        }
-
-    def _initialize_components(self):
-        self.test_functions = self._load_test_functions()
-        self.function_details = self._load_function_details()
-        self.reporting_config = self._load_reporting_config()
-
-    def _load_test_functions(self):
-        return self.web_test_loader.get_data_by_sheet_name('Test Functions')
-
-    def _load_function_details(self):
-        return self.web_test_loader.get_data_by_sheet_name('Function Details')
-
-    def _load_reporting_config(self):
-        return self.web_test_loader.get_data_by_sheet_name('Reporting Configuration')
-
-    @property
-    def driver(self):
-        if self._driver is None:
-            active_env_config = self.env_config['environments'][self.main_config['Active Environment']]
-            self._driver = WebDriverFactory.create_driver(active_env_config)
-        return self._driver
-
-    @property
-    def web_actions(self):
-        if self._web_actions_instance is None:
-            self._web_actions_instance = WebElementActions(self.driver)
-        return self._web_actions_instance
-
-    def get_js_memory(self):
-        try:
-            js_memory = self.driver.execute_script("return window.performance.memory;")
-            if js_memory:
-                used_js_memory_mb = js_memory.get("usedJSHeapSize", 0) / (1024 * 1024)
-                return round(used_js_memory_mb, 2)
-        except Exception as e:
-            print(f"Error in get_js_memory: {e}")
-        return None
-
-    def execute_tests(self):
-        for round_num in range(self.rounds):
-            self.driver.get(self.target_url)
-            memory_usage = self.get_js_memory()
-            if memory_usage is not None:
-                self.memory_usage_data.append({"round": round_num + 1, "used_MB": memory_usage})
-
-            for _, test_function in self.test_functions.iterrows():
-                if test_function['Run'] == 'Y':
-                    start_time = time.time()
-                    self._execute_test_function(test_function)
-                    end_time = time.time()
-                    response_time = round(end_time - start_time, 2)
-                    self.response_time_data.append({
-                        "round": round_num + 1,
-                        "function_point": test_function['Function Name'],
-                        "response_time": response_time
-                    })
-
-    def _execute_test_function(self, test_function):
-        function_details = self.function_details[self.function_details['Function Name'] == test_function['Function Name']]
-        for _, step in function_details.iterrows():
-            self._execute_step(step)
-
-    def _execute_step(self, step):
-        action_name = step['Action Type'].lower()
-        if hasattr(self.web_actions, action_name):
-            action = getattr(self.web_actions, action_name)
-            locator = (getattr(By, step['Locator Type']), step['Locator Value'])
-            action(locator, step.get('Input Value'))
-        else:
-            raise ValueError(f"Unknown action type: {step['Action Type']}")
-
-    def generate_memory_usage_chart(self):
+    def generate_memory_usage_chart(self, case_id, case_name):
         df = pd.DataFrame(self.memory_usage_data)
         plt.figure(figsize=(10, 6))
         plt.plot(df["round"], df["used_MB"], marker="o", label="Used Memory (MB)", color="blue")
-        plt.title("JavaScript Memory Usage Trend")
+        plt.title(f"JavaScript Memory Usage Trend - Case ID: {case_id}, Case Name: {case_name}")
         plt.xlabel("Round")
         plt.ylabel("Memory (MB)")
         plt.grid()
         plt.legend()
         return self._save_fig_as_base64()
 
-    def generate_response_time_statistics_chart(self):
+    def generate_response_time_statistics_chart(self, case_id, case_name):
         df = pd.DataFrame(self.response_time_data)
-        stats = df.groupby("function_point").agg({"response_time": ["mean", "max"]})
+        stats = df.groupby("function_name").agg({"response_time": ["mean", "max"]})
         stats.columns = ["Mean", "Max"]
         stats.reset_index(inplace=True)
 
-        stats.plot(kind="bar", x="function_point", figsize=(10, 6), colormap="coolwarm")
-        plt.title("Response Time Statistics")
-        plt.xlabel("Function Point")
+        stats.plot(kind="bar", x="function_name", figsize=(10, 6), colormap="coolwarm")
+        plt.title(f"Response Time Statistics - Case ID: {case_id}, Case Name: {case_name}")
+        plt.xlabel("Function Name")
         plt.ylabel("Time (s)")
         plt.grid(axis="y")
         plt.xticks(rotation=45)
         return self._save_fig_as_base64()
 
-    def generate_response_time_trend_chart(self):
+    def generate_response_time_trend_chart(self, case_id, case_name):
         df = pd.DataFrame(self.response_time_data)
         plt.figure(figsize=(10, 6))
-        for func in df["function_point"].unique():
-            func_data = df[df["function_point"] == func]
+        for func in df["function_name"].unique():
+            func_data = df[df["function_name"] == func]
             plt.plot(func_data["round"], func_data["response_time"], marker="o", label=func)
 
-        plt.title("Response Time Trend")
+        plt.title(f"Response Time Trend - Case ID: {case_id}, Case Name: {case_name}")
         plt.xlabel("Round")
         plt.ylabel("Response Time (s)")
         plt.legend(title="Function Points")
         plt.grid()
         return self._save_fig_as_base64()
 
-    def generate_response_time_statistics_table(self):
+    def generate_response_time_statistics_table(self, case_id, case_name):
         df = pd.DataFrame(self.response_time_data)
-        stats = df.groupby("function_point").agg({
+        stats = df.groupby("function_name").agg({
             "response_time": [
                 lambda x: round(x.mean(), 2),
                 lambda x: round(x.max(), 2),
@@ -2867,27 +3253,33 @@ class WebPerformanceTester:
             ]
         }).reset_index()
 
-        stats.columns = ["Function Point", "Mean (s)", "Max (s)", "Min (s)",
+        stats.columns = ["Function Name", "Mean (s)", "Max (s)", "Min (s)",
                          "Median (s)", "P90 (s)", "P95 (s)", "P99 (s)"]
 
-        fig, ax = plt.subplots(figsize=(10, len(stats) * 0.8))
+        fig, ax = plt.subplots(figsize=(10, len(stats) * 0.5))
         ax.axis("tight")
         ax.axis("off")
         table = plt.table(cellText=stats.values, colLabels=stats.columns, cellLoc="center", loc="center")
         table.auto_set_font_size(False)
-        table.set_fontsize(8)
+        table.set_fontsize(10)
+        table.scale(1.3, 1.5)
+        plt.title(f"Response Time Statistics Table - Case ID: {case_id}, Case Name: {case_name}", y=1.1)
         return self._save_fig_as_base64()
 
     def save_to_csv(self):
+        output_dir = os.path.join(PROJECT_ROOT, 'report')
+        response_time_data_path = os.path.join(output_dir, 'response_time_data.csv')
+        memory_usage_data_path = os.path.join(output_dir, 'memory_usage_data.csv')
+
         if self.response_time_data:
             response_time_df = pd.DataFrame(self.response_time_data)
-            response_time_df.to_csv("response_time_data.csv", index=False)
-            print("Response time data saved to 'response_time_data.csv'.")
+            response_time_df.to_csv(response_time_data_path, index=False)
+            logging.info("Response time data saved to 'response_time_data.csv'.")
 
         if self.memory_usage_data:
             memory_usage_df = pd.DataFrame(self.memory_usage_data)
-            memory_usage_df.to_csv("memory_usage_data.csv", index=False)
-            print("Memory usage data saved to 'memory_usage_data.csv'.")
+            memory_usage_df.to_csv(memory_usage_data_path, index=False)
+            logging.info("Memory usage data saved to 'memory_usage_data.csv'.")
 
     def _save_fig_as_base64(self):
         buf = BytesIO()
@@ -2896,27 +3288,112 @@ class WebPerformanceTester:
         base64_image = base64.b64encode(buf.getvalue()).decode("utf-8")
         plt.close()
         return base64_image
+</pre>
+</div>
 
-    def generate_reports(self):
-        for _, report_config in self.reporting_config.iterrows():
-            if report_config['Generate (Yes/No)'] == 'Yes':
-                report_type = report_config['Report Type']
-                if report_type == 'Memory Usage Trend Chart':
-                    chart = self.generate_memory_usage_chart()
-                elif report_type == 'Response Time Statistics Chart':
-                    chart = self.generate_response_time_statistics_chart()
-                elif report_type == 'Response Time Trend Chart':
-                    chart = self.generate_response_time_trend_chart()
-                elif report_type == 'Response Time Statistics Table':
-                    chart = self.generate_response_time_statistics_table()
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_pt_robot_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\web_pt_robot_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import os
+from robot.api import TestSuite
+from libraries.common.config_manager import ConfigManager
+from libraries.performance.web_pt_loader import PerformanceTestLoader
+from libraries.common.utility_helpers import PROJECT_ROOT
 
-                print(f'&lt;h2&gt;{report_type}&lt;/h2&gt;')
-                print(f'&lt;img src="data:image/png;base64,{chart}" alt="{report_type}"/&gt;')
+class WebPerformanceRobotCasesGenerator:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
+        self.project_root = PROJECT_ROOT
+        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'web_pt_config.yaml')
+        self.test_cases_path = test_cases_path or os.path.join(self.project_root, 'test_cases', 'web_pt_cases.xlsx')
 
-    def close(self):
-        if self._driver:
-            self._driver.quit()
-            self._driver = None</pre>
+        self._load_configuration()
+        self._initialize_components()
+
+    def _load_configuration(self):
+        self.test_config = ConfigManager.load_yaml(self.test_config_path)
+
+    def _initialize_components(self):
+        self.performance_test_loader = PerformanceTestLoader(self.test_cases_path, self.test_config)
+
+    def create_test_suite(self):
+        # Create main test suite
+        self.robot_suite = TestSuite('Web Performance TestSuite')
+        self._import_required_libraries()
+
+        # Load test cases
+        test_cases = self.performance_test_loader.get_test_cases()
+
+        for _, test_case in test_cases.iterrows():
+            if test_case['Run'] == 'Y':
+                case_id = test_case['Case ID']
+                test_name = f"Performance.{case_id}"
+                robot_test = self.robot_suite.tests.create(name=test_name, doc=test_case['Description'])
+
+                # Create a single execute_single_test keyword for each test case
+                robot_test.body.create_keyword(name='execute_single_test', args=[case_id])
+                robot_test.body.create_keyword(name='generate_reports', args=[case_id])
+
+        # Add setup and teardown for the entire suite
+        self.robot_suite.setup.config(name='initialize_tester', args=[])
+        self.robot_suite.teardown.config(name='finalize_and_close_tester', args=[])
+        return self.robot_suite
+
+    def _import_required_libraries(self):
+        self.robot_suite.resource.imports.library(
+            'libraries.performance.web_pt_robot_keyword.RobotFrameworkWebTester')
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_performance_web_pt_robot_keyword_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\performance\web_pt_robot_keyword.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from robot.api import logger
+from libraries.performance.web_pt import WebPerformanceTester
+
+class RobotFrameworkWebTester:
+    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
+    def __init__(self):
+        self.tester = None
+
+    def initialize_tester(self, test_config_path=None, test_cases_path=None):
+        """Initialize the performance tester."""
+        self.tester = WebPerformanceTester(test_config_path, test_cases_path)
+        logger.info("Performance tester initialized successfully.")
+
+    def execute_single_test(self, case_id: str):
+        """Execute a single performance test case."""
+        if not self.tester:
+            raise ValueError("Tester is not initialized.")
+        self.tester.execute_single_test(case_id)
+
+    def generate_reports(self, case_id: str):
+        """Generate performance reports (charts and tables) for a specific case."""
+        if not self.tester:
+            raise ValueError("Tester is not initialized.")
+
+        report_data = self.tester.generate_reports(case_id)
+
+        logger.info('&lt;h2&gt;Memory Usage Trend Chart&lt;/h2&gt;', html=True)
+        logger.info(f'&lt;img src="data:image/png;base64,{report_data["memory_chart"]}" alt="Memory Usage Trend"/&gt;', html=True)
+
+        logger.info('&lt;h2&gt;Response Time Statistics Chart&lt;/h2&gt;', html=True)
+        logger.info(f'&lt;img src="data:image/png;base64,{report_data["response_time_stats_chart"]}" alt="Response Time Statistics"/&gt;', html=True)
+
+        logger.info('&lt;h2&gt;Response Time Trend Chart&lt;/h2&gt;', html=True)
+        logger.info(f'&lt;img src="data:image/png;base64,{report_data["response_time_trend_chart"]}" alt="Response Time Trend"/&gt;', html=True)
+
+        logger.info('&lt;h2&gt;Response Time Statistics Table&lt;/h2&gt;', html=True)
+        logger.info(f'&lt;img src="data:image/png;base64,{report_data["response_time_table"]}" alt="Response Time Statistics Table"/&gt;', html=True)
+
+
+    def finalize_and_close_tester(self):
+        """Finalize the test by saving data to CSV, then close the tester and release resources."""
+        if self.tester:
+            self.tester.save_to_csv()
+            self.tester.close()
+            logger.info("Tester finalized and closed successfully.")</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot___init___py">
@@ -5297,6 +5774,7 @@ from libraries.robot.robot_dashboard_generator import DashboardGenerator
 from libraries.web.web_robot_generator import WebUIRobotCasesGenerator
 from libraries.e2e.e2e_robot_generator import E2ERobotCasesGenerator
 from libraries.api.api_robot_generator import APIRobotCasesGenerator
+from libraries.performance.web_pt_robot_generator import WebPerformanceRobotCasesGenerator
 
 
 class ExitOnFailureListener:
@@ -5341,11 +5819,17 @@ def create_e2e_suite():
     return rcg.create_test_suite()
 
 
+def create_performance_suite():
+    rcg = WebPerformanceRobotCasesGenerator()
+    return rcg.create_test_suite()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run API, Web UI, or E2E tests.')
     parser.add_argument('--api', action='store_true', help='Run API tests')
     parser.add_argument('--web', action='store_true', help='Run Web UI tests')
     parser.add_argument('--e2e', action='store_true', help='Run E2E tests')
+    parser.add_argument('--performance', action='store_true', help='Run performance tests')
     args = parser.parse_args()
 
     if args.api:
@@ -5354,8 +5838,10 @@ if __name__ == "__main__":
         suite_to_run = create_web_suite()
     elif args.e2e:
         suite_to_run = create_e2e_suite()
+    elif args.performance:
+        suite_to_run = create_performance_suite()
     else:
-        suite_to_run = create_api_suite()
+        suite_to_run = create_e2e_suite()
 
     run_test_suite(suite_to_run)
 </pre>
@@ -5881,7 +6367,7 @@ if __name__ == "__main__":
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 51200.0
+        "CNY": 58700.0
     },
     "transactions": {
         "USD": {
@@ -5921,14 +6407,14 @@ if __name__ == "__main__":
             }
         },
         "CNY": {
-            "2024-12-14": {
+            "2024-12-25": {
                 "inbound": {
-                    "count": 20,
-                    "total_amount": 2000.0
+                    "count": 1,
+                    "total_amount": 100.0
                 },
                 "outbound": {
-                    "count": 10,
-                    "total_amount": 1000.0
+                    "count": 1,
+                    "total_amount": 100.0
                 }
             }
         }
