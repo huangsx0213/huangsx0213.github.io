@@ -946,8 +946,6 @@ from libraries.api.response_handler import ResponseValidator, ResponseFieldSaver
 from libraries.api.api_test_loader import APITestLoader
 from robot.libraries.BuiltIn import BuiltIn
 from robot.api.deco import keyword, library
-from robot.api import logger
-from libraries.common.log_manager import ColorLogger
 
 builtin_lib = BuiltIn()
 
@@ -1045,7 +1043,7 @@ class APITestKeywords:
                 self._validate_dynamic_checks(test_case, pre_check_responses, post_check_responses)
             else:
                 response, execution_time = self._execute_single_test_case(test_case)
-            logger.info(ColorLogger.success(f"{self.__class__.__name__}: Test case [ {test_case_id} ]: PASS."), html=True)
+
             logging.info(f"{self.__class__.__name__}: Finished execution of test case {test_case_id}")
             logging.info("============================================")
 
@@ -1666,7 +1664,6 @@ class ResponseValidator(ResponseHandler):
         if assertion_errors:
             raise AssertionError(f"{self.__class__.__name__}: Assertions failed:\n" + "\n".join(assertion_errors))
         logging.info(f"{self.__class__.__name__}: All assertions passed successfully.")
-        # logger.info(ColorLogger.info(f"{self.__class__.__name__}: All assertions passed successfully."), html=True)
 
     def validate_response_dynamic(self, test_case: dict, pre_check_responses: dict, post_check_responses: dict) -&gt; None:
         exp_results = test_case['Exp Result'].splitlines()
@@ -1679,7 +1676,6 @@ class ResponseValidator(ResponseHandler):
             elif pre_post_checks:
                 self._handle_pre_post_checks(pre_post_checks, pre_check_responses, post_check_responses)
         logging.info(f"{self.__class__.__name__}: All dynamic and pre/post checks passed successfully.")
-        # logger.info(ColorLogger.info(f"{self.__class__.__name__}: All dynamic and pre/post checks passed successfully."), html=True)
 
     def _handle_dynamic_checks(self, checks, pre_check_responses, post_check_responses):
         for tcid, json_path, expected_value in checks:
@@ -1689,6 +1685,7 @@ class ResponseValidator(ResponseHandler):
             actual_value = round(float(post_value) - float(pre_value), 2)
 
             logging.info(f"{self.__class__.__name__}: Actual diff: {actual_value}, Expected diff: {round(float(expected_value), 2)}")
+            logger.info(ColorLogger.success(f"=&gt; {self.__class__.__name__}: Actual diff: {actual_value}, Expected diff: {round(float(expected_value), 2)}"), html=True)
 
             if not self._compare_diff(actual_value, expected_value):
                 raise AssertionError(
@@ -1704,6 +1701,7 @@ class ResponseValidator(ResponseHandler):
                 raise ValueError(f"{self.__class__.__name__}: Invalid check type: {check_type}")
 
             logging.info(f"{self.__class__.__name__}: {check_type.capitalize()} - Actual value: {actual_value}, Expected value: {expected_value}")
+            logger.info(ColorLogger.success(f"=&gt; {self.__class__.__name__}: {check_type.capitalize()} - Actual value: {actual_value}, Expected value: {expected_value}"), html=True)
 
             if str(actual_value) != str(expected_value.strip()):
                 raise AssertionError(f"{self.__class__.__name__}: {check_type.capitalize()} failed for {tcid}.{json_path}. Expected: {expected_value}, Actual: {actual_value}")
@@ -1720,6 +1718,7 @@ class ResponseValidator(ResponseHandler):
             pass  # Keep the original type if conversion fails
 
         logging.info(f"{self.__class__.__name__}: Asserting: {key}, Expected: {expected_value}, Actual: {actual_value}")
+        logger.info(ColorLogger.success(f"=&gt; {self.__class__.__name__}: Asserting: {key}, Expected: {expected_value}, Actual: {actual_value}"), html=True)
         assert actual_value == expected_value, f"{self.__class__.__name__}: Assertion failed for key '{key}'. Expected: {expected_value}, Actual: {actual_value}"
 
     def _compare_diff(self, actual_diff: float, expected_diff: str) -&gt; bool:
@@ -1743,7 +1742,7 @@ class ResponseFieldSaver(ResponseHandler):
                 value = self._extract_value_from_response(response_content, field)
                 field_name = f'{test_case["TCID"]}.{field.strip()}'
                 # logging.info(f"{self.__class__.__name__}: Setting global variable {field_name} to {value}.")
-                logger.info(ColorLogger.info(f"{self.__class__.__name__}: Setting global variable {field_name} to {value}."), html=True)
+                logger.info(ColorLogger.info(f"=&gt; {self.__class__.__name__}: Setting global variable {field_name} to {value}."), html=True)
                 BuiltIn().set_global_variable(f'${{{field_name}}}', value)
             except Exception as e:
                 logging.error(f"{self.__class__.__name__}: Failed to process field '{field}': {e}")</pre>
@@ -2663,6 +2662,7 @@ class E2ERobotCasesGenerator:
         try:
             # Load test steps and data sets
             case_id = test_case['Case ID']
+            case_name = test_case['Name']
             test_steps = self.web_test_loader.get_test_steps(case_id)
             test_data_sets = self.web_test_loader.get_test_data(case_id)
 
@@ -2690,7 +2690,7 @@ class E2ERobotCasesGenerator:
                         robot_ui_test.tags.add(tag)
 
                 # Create test steps
-                self.create_test_steps(robot_ui_test, test_steps, data_set)
+                self.create_test_steps(robot_ui_test, case_name, test_steps, data_set)
                 logging.info(f"{self.__class__.__name__}: Test case {case_id}.{data_set_index} created successfully.")
 
         except Exception as e:
@@ -2708,43 +2708,41 @@ class E2ERobotCasesGenerator:
             logging.error(f"{self.__class__.__name__}: Error importing required libraries: {str(e)}")
             raise
 
-    def create_test_steps(self, robot_ui_test, test_steps: List[Dict], data_set: Dict):
+    def create_test_steps(self, robot_ui_test, case_name, test_steps: List[Dict], data_set: Dict):
         try:
             for _, step in test_steps.iterrows():
                 # Get step information
                 page_name = step['Page Name']
                 module_name = step['Module Name']
 
-
                 # Generate steps based on module type
                 if module_name == 'API':
-                    self._generate_api_step(step, robot_ui_test)
+                    self._generate_api_step(case_name, step, robot_ui_test)
                 else:
-                    self._generate_ui_step(robot_ui_test,step, page_name, module_name, data_set)
+                    self._generate_ui_step(robot_ui_test, case_name, step, page_name, module_name, data_set)
 
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error creating test steps: {str(e)}")
             raise
 
-    def _generate_api_step(self, step, robot_ui_test):
+    def _generate_api_step(self, case_name, step, robot_ui_test):
         try:
             self.child_suite.tests.remove(robot_ui_test)
-            self.child_suite.name = f"APISubSuite.{step['Page Name']}.{step['Case ID']}"
+            self.child_suite.name = f"APISubSuite.{case_name}.{step['Page Name']}.{step['Case ID']}"
             tc_id_list = step['APIs'].split(',')
             self.api_robot_generator.create_test_suite(tc_id_list, None, self.child_suite)
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error generating API step: {str(e)}")
             raise
 
-    def _generate_ui_step(self, robot_ui_test,step, page_name, module_name, params):
+    def _generate_ui_step(self, robot_ui_test, case_name, step, page_name, module_name, params):
         try:
-            self.child_suite.name = f"UISubSuite.{page_name}.{step['Case ID']}"
+            self.child_suite.name = f"UISubSuite.{case_name}.{page_name}.{step['Case ID']}"
             robot_ui_test.body.create_keyword(name='execute_module', args=[page_name, module_name, params])
             self.child_suite.teardown.config(name='close_browser', args=[])
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error generating UI step for {page_name}.{module_name}: {str(e)}")
             raise
-
 </pre>
 </div>
 
@@ -2770,6 +2768,7 @@ from libraries.performance.web_pt_loader import PerformanceTestLoader
 from libraries.web.webdriver_factory import WebDriverFactory
 from libraries.web.web_actions import WebElementActions
 from libraries.performance.web_pt_reporter import WebPerformanceReporter
+
 
 class WebPerformanceTester:
     def __init__(self, test_config_path: str = None, test_cases_path: str = None):
@@ -2858,92 +2857,123 @@ class WebPerformanceTester:
         case_name = self.test_cases[self.test_cases['Case ID'] == case_id]['Name'].iloc[0]
         logging.info(f"Executing test case: {case_id} - {case_name}")
 
+        test_case = self.test_cases[self.test_cases['Case ID'] == case_id].iloc[0]
+        if test_case['Run'] != 'Y':
+            logging.warning(f"Test case {case_id} is not marked to run.")
+            return
 
-        try:
-            rounds = int(self.main_config['Rounds'])
-            target_url = self.main_config['Target URL']
+        rounds = int(self.main_config['Rounds'])
+        target_url = self.main_config['Target URL']
+        case_functions = self.test_functions[self.test_functions['Case ID'] == case_id].sort_values('Execution Order')
 
-            test_case = self.test_cases[self.test_cases['Case ID'] == case_id].iloc[0]
-            if test_case['Run'] != 'Y':
-                logging.warning(f"Test case {case_id} is not marked to run.")
-                return
-
-            case_functions = self.test_functions[self.test_functions['Case ID'] == case_id].sort_values('Execution Order')
-
-            for round_num in range(rounds):
+        for round_num in range(rounds):
+            try:
+                logging.info(f"Starting round {round_num + 1}/{rounds}")
                 self.driver.get(target_url)
+
                 memory_usage = self.get_js_memory()
                 if memory_usage is not None:
-                    self.memory_usage_data.append({"round": round_num + 1, "case_id": case_id, "used_MB": memory_usage})
+                    self.memory_usage_data.append({
+                        "round": round_num + 1,
+                        "case_id": case_id,
+                        "used_MB": memory_usage
+                    })
 
                 for _, function in case_functions.iterrows():
-                    function_name = function['Function Name']
-                    self._execute_test_function(round_num, function_name, case_id)
-        finally:
-            logging.info(f"Finished executing test case: {case_id} - {case_name}")
+                    try:
+                        function_name = function['Function Name']
+                        self._execute_test_function(round_num, function_name, case_id)
+                    except Exception as e:
+                        logging.error(f"Error in function '{function_name}' during round {round_num + 1}: {e}")
+                        # Continue with next function
+                        continue
 
-    def _execute_test_function(self, round_num, function_name, case_id):
+                logging.info(f"Completed round {round_num + 1}/{rounds}")
+
+            except Exception as e:
+                logging.error(f"Error in round {round_num + 1}: {e}")
+                # Continue with next round
+                continue
+
+        logging.info(f"Finished executing test case: {case_id} - {case_name}")
+
+    def _execute_test_function(self, round_num: int, function_name: str, case_id: str):
         function_steps = self.test_functions[self.test_functions['Function Name'] == function_name].iloc[0]
 
-        precondition_steps = self.sub_functions[self.sub_functions['Sub Function Name'] == function_steps['Precondition subFunction']].sort_values('Step Order')
-        operation_steps = self.sub_functions[self.sub_functions['Sub Function Name'] == function_steps['Operation subFunction']].sort_values('Step Order')
-        postcondition_steps = self.sub_functions[self.sub_functions['Sub Function Name'] == function_steps['Postcondition subFunction']].sort_values('Step Order')
+        try:
+            # Execute precondition steps
+            precondition_steps = self.sub_functions[
+                self.sub_functions['Sub Function Name'] == function_steps['Precondition subFunction']
+                ].sort_values('Step Order')
 
-        for _, step in precondition_steps.iterrows():
-            self._execute_step(step)
-        start_time = time.time()
-        for _, step in operation_steps.iterrows():
-            self._execute_step(step)
-        end_time = time.time()
-        response_time = round(end_time - start_time, 2)
-        self.response_time_data.append({
-            "round": round_num + 1,
-            "case_id": case_id,
-            "function_name": function_name,
-            "response_time": response_time
-        })
-        for _, step in postcondition_steps.iterrows():
-            self._execute_step(step)
+            for _, step in precondition_steps.iterrows():
+                self._execute_step(step)
 
-    def _execute_step(self, step):
+            # Execute and time operation steps
+            operation_steps = self.sub_functions[
+                self.sub_functions['Sub Function Name'] == function_steps['Operation subFunction']
+                ].sort_values('Step Order')
+
+            start_time = time.time()
+            for _, step in operation_steps.iterrows():
+                self._execute_step(step)
+            end_time = time.time()
+
+            response_time = round(end_time - start_time, 2)
+            self.response_time_data.append({
+                "round": round_num + 1,
+                "case_id": case_id,
+                "function_name": function_name,
+                "response_time": response_time
+            })
+
+            # Execute postcondition steps
+            postcondition_steps = self.sub_functions[
+                self.sub_functions['Sub Function Name'] == function_steps['Postcondition subFunction']
+                ].sort_values('Step Order')
+
+            for _, step in postcondition_steps.iterrows():
+                self._execute_step(step)
+
+        except Exception as e:
+            logging.error(f"Error executing function '{function_name}': {e}")
+            raise  # Re-raise to be caught by execute_single_test
+
+    def _execute_step(self, step: Dict):
         action_name = step['Action'].lower()
         page = step['Page']
         element = step['Element']
         input_value = step['Input Value (if applicable)']
         locator = self.page_elements[page][element] if element else None
 
-        logging.info(
-            f"{self.__class__.__name__}: Executing action:[{action_name}] on page:[{page}]"
-            + (f" element:[{element}]" if element else "")
-            + (f" with input:[{input_value}]" if input_value else "")
+        log_message = (
+                f"{self.__class__.__name__}: Executing action:[{action_name}] on page:[{page}]"
+                + (f" element:[{element}]" if element else "")
+                + (f" with input:[{input_value}]" if input_value else "")
         )
-        self.change_log_level = self.main_config['Log Details']
-        if self.change_log_level != 'Y':
-            # Temporarily set the logging level to WARNING
-            logger = logging.getLogger()
-            original_level = logger.level
-            logger.setLevel(logging.WARNING)
+        logging.info(log_message)
+
+        logger = logging.getLogger()
+        original_level = logger.level
 
         try:
-            if hasattr(self.web_actions, action_name):
-                action = getattr(self.web_actions, action_name)
-                if locator is not None:
-                    if input_value:
-                        action(locator, input_value)
-                    else:
-                        action(locator)
-                else:
-                    if input_value:
-                        action(input_value)
-                    else:
-                        action()
-            else:
-                raise ValueError(f"Unknown action type: {step['Action']}")
-            logging.info("="*100)
-        finally:
+            if self.main_config['Log Details'] != 'Y':
+                logger.setLevel(logging.WARNING)
 
-            # Restore the original logging level after execution
-            if self.change_log_level != 'Y':
+            if not hasattr(self.web_actions, action_name):
+                raise ValueError(f"Unknown action type: {action_name}")
+
+            action = getattr(self.web_actions, action_name)
+
+            if locator is not None:
+                action(locator, input_value) if input_value else action(locator)
+            else:
+                action(input_value) if input_value else action()
+
+            logging.info("=" * 100)
+
+        finally:
+            if self.main_config['Log Details'] != 'Y':
                 logger.setLevel(original_level)
 
     def _load_page_elements(self) -&gt; Dict[str, Dict[str, Tuple[str, str]]]:
@@ -2956,9 +2986,7 @@ class WebPerformanceTester:
         if case_id is None:
             case_id = self.current_case_id
 
-        # Get the case name from the test cases
         case_name = self.test_cases[self.test_cases['Case ID'] == case_id]['Name'].iloc[0]
-
         filtered_response_time_data = [data for data in self.response_time_data if data['case_id'] == case_id]
         filtered_memory_usage_data = [data for data in self.memory_usage_data if data['case_id'] == case_id]
 
@@ -3236,7 +3264,7 @@ class WebPerformanceReporter:
         plt.title(f"Response Time Trend - Case ID: {case_id}, Case Name: {case_name}")
         plt.xlabel("Round")
         plt.ylabel("Response Time (s)")
-        plt.legend(title="Function Points")
+        plt.legend(title="Function Names")
         plt.grid()
         return self._save_fig_as_base64()
 
@@ -5064,6 +5092,7 @@ from .base import Base
 from .decorators import wait_and_perform
 import logging
 
+
 class VerificationActions(Base):
     @wait_and_perform(default_condition="presence")
     def element_text_should_be(self, element, expected_text):
@@ -5074,10 +5103,29 @@ class VerificationActions(Base):
         logging.info(f"{self.__class__.__name__}: Element text matches expected: '{expected_text}', Actual text: '{actual_text}'")
 
     @wait_and_perform(default_condition="presence")
+    def element_figure_should_be(self, element, expected_figure):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element figured matches expected: {element_desc}, expected figured: '{expected_figure}'")
+        expected_figure = float(expected_figure.replace(",", "").strip())
+        actual_figure = float(element.text.replace(",", "").strip())
+        assert around(actual_figure, decimals=2) == around(expected_figure, decimals=2), \
+            f"{self.__class__.__name__}: Expected figured: '{expected_figure}' is not matching actual figured: '{actual_figure}'"
+        logging.info(f"{self.__class__.__name__}: Element figured matches expected: '{expected_figure}', Actual figured: '{actual_figure}'")
+
+    @wait_and_perform(default_condition="presence")
     def element_text_should_contains(self, element, expected_text):
         element_desc = self._get_element_description(element)
         logging.info(f"{self.__class__.__name__}: Checking if element text contains expected: {element_desc}, expected text: '{expected_text}'")
         actual_text = element.text
+        assert expected_text in actual_text, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not in actual text: '{actual_text}'"
+        logging.info(f"{self.__class__.__name__}: Element text contains expected: '{expected_text}', Actual text: '{actual_text}'")
+
+    @wait_and_perform(default_condition="presence")
+    def element_figure_to_text_should_contains(self, element, expected_text):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element figure to text contains expected: {element_desc}, expected text: '{expected_text}'")
+        expected_text = expected_text.replace(",", "").strip()
+        actual_text = element.text.replace(",", "").strip()
         assert expected_text in actual_text, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not in actual text: '{actual_text}'"
         logging.info(f"{self.__class__.__name__}: Element text contains expected: '{expected_text}', Actual text: '{actual_text}'")
 
@@ -5092,7 +5140,6 @@ class VerificationActions(Base):
         actual_title = self.driver.title
         assert expected_title in actual_title, f"{self.__class__.__name__}: Expected title: '{expected_title}' is not in actual title: '{actual_title}'"
         logging.info(f"{self.__class__.__name__}: Title contains expected: '{expected_title}', Actual title: '{actual_title}'")
-
 
     def is_element_present(self, locator):
         logging.info(f"{self.__class__.__name__}: Checking if element is present: {locator}")
@@ -5114,6 +5161,17 @@ class VerificationActions(Base):
             return True
         except TimeoutException:
             logging.info(f"{self.__class__.__name__}: Element is not visible: {locator}")
+            return False
+
+    def is_element_invisible(self, locator, timeout=None):
+        logging.info(f"{self.__class__.__name__}: Checking if element is invisible: {locator}, timeout: {timeout}")
+        try:
+            element = self.wait_for_element(locator, condition="invisibility", timeout=timeout)
+            element_desc = self._get_element_description(element)
+            logging.info(f"{self.__class__.__name__}: Element is invisible: {element_desc}")
+            return True
+        except TimeoutException:
+            logging.info(f"{self.__class__.__name__}: Element is not invisible: {locator}")
             return False
 
     def is_element_clickable(self, locator, timeout=None):
@@ -5142,7 +5200,6 @@ class VerificationActions(Base):
         is_enabled = element.is_enabled()
         logging.info(f"{self.__class__.__name__}: Element enabled status: {is_enabled} for element: {element_desc}")
         return is_enabled
-
 
     @wait_and_perform(default_condition="presence")
     def capture_element_value(self, element, variable_name):
@@ -6392,7 +6449,7 @@ matplotlib~=3.9.4</pre>
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 58700.0
+        "CNY": 58200.0
     },
     "transactions": {
         "USD": {
@@ -6432,14 +6489,14 @@ matplotlib~=3.9.4</pre>
             }
         },
         "CNY": {
-            "2024-12-25": {
+            "2024-12-27": {
                 "inbound": {
-                    "count": 1,
-                    "total_amount": 100.0
+                    "count": 0,
+                    "total_amount": 0.0
                 },
                 "outbound": {
-                    "count": 1,
-                    "total_amount": 100.0
+                    "count": 4,
+                    "total_amount": 400.0
                 }
             }
         }
