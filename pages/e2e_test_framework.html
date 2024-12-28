@@ -107,7 +107,6 @@
 │   │   ├── web/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_custom_action_executor_py">custom_action_executor.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_page_object_py">page_object.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_table_verifier_py">table_verifier.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_webdriver_factory_py">webdriver_factory.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_actions_py">web_actions.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_robot_generator_py">web_robot_generator.py</a>
@@ -116,17 +115,18 @@
 │   │   │   ├── web_action/
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_alert_actions_py">alert_actions.py</a>
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_base_py">base.py</a>
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_basic_actions_py">basic_actions.py</a>
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_browser_actions_py">browser_actions.py</a>
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_cookie_actions_py">cookie_actions.py</a>
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_decorators_py">decorators.py</a>
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_frame_window_actions_py">frame_window_actions.py</a>
+│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_element_actions_py">element_actions.py</a>
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_javascript_actions_py">javascript_actions.py</a>
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_js_py">js.py</a>
-│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_screenshot_actions_py">screenshot_actions.py</a>
+│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_navigation_actions_py">navigation_actions.py</a>
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_table_actions_py">table_actions.py</a>
+│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_table_verifier_py">table_verifier.py</a>
+│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_utils_actions_py">utils_actions.py</a>
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_verification_actions_py">verification_actions.py</a>
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_wait_actions_py">wait_actions.py</a>
+│   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_window_actions_py">window_actions.py</a>
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action___init___py">__init__.py</a>
 │   ├── templates/
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_templates_rf_report_template_html">rf_report_template.html</a>
@@ -3794,7 +3794,7 @@ class PageObject:
             action_info = {
                 'element_name': row['Element Name'],
                 'web_action': row['Actions'],
-                'parameter_name': row['Parameter Name'].split(',') if row['Parameter Name'] else [],
+                'parameter_names': row['Parameter Name'].split(',') if row['Parameter Name'] else [],
                 'highlight': row['Highlight'],
                 'screen_capture': row['Screenshot'],
                 'wait': row['Wait']
@@ -3814,7 +3814,7 @@ class PageObject:
             screen_capture = action_info['screen_capture']
             wait = action_info['wait']
             locator = self.page_elements[page_name][element_name] if element_name else None
-            action_params = self._extract_parameters(data_set, action_info['parameter_name'])
+            action_params = self._extract_parameters(data_set, action_info['parameter_names'])
 
             logging.info(
                 f"{self.__class__.__name__}: Executing action:[{action}] on page:[{page_name}] module:[{module_name}]"
@@ -3842,8 +3842,7 @@ class PageObject:
 
     def _execute_action(self, action: str, locator, *args, **kwargs):
         action_map = {
-            # Basic operations
-            'open_url': self.web_actions.open_url,
+            # ElementActions
             'send_keys': self.web_actions.send_keys,
             'click': self.web_actions.click,
             'clear': self.web_actions.clear,
@@ -3858,53 +3857,74 @@ class PageObject:
             'get_text': self.web_actions.get_text,
             'get_attribute': self.web_actions.get_attribute,
             'select_radio_by_value': self.web_actions.select_radio_by_value,
-            'fill_by_js': self.web_actions.fill_by_js,
-            'click_by_js': self.web_actions.click_by_js,
 
-            # Element state verification
-            'element_text_should_be': self.web_actions.element_text_should_be,
-            'element_figure_should_be': self.web_actions.element_figure_should_be,
-            'element_text_should_contains': self.web_actions.element_text_should_contains,
-            'element_figure_to_text_should_contains': self.web_actions.element_figure_to_text_should_contains,
-            'title_should_be': self.web_actions.title_should_be,
-            'title_should_contains': self.web_actions.title_should_contains,
-            'is_element_present': self.web_actions.is_element_present,
-            'is_element_visible': self.web_actions.is_element_visible,
-            'is_element_invisible': self.web_actions.is_element_invisible,
-            'is_element_clickable': self.web_actions.is_element_clickable,
-            'is_element_selected': self.web_actions.is_element_selected,
-            'is_element_enabled': self.web_actions.is_element_enabled,
+            # VerificationActions
+            'verify_text_is': self.web_actions.verify_text_is,
+            'verify_figure_is': self.web_actions.verify_figure_is,
+            'verify_text_contains': self.web_actions.verify_text_contains,
+            'verify_figure_text_contains': self.web_actions.verify_figure_text_contains,
+            'verify_title_is': self.web_actions.verify_title_is,
+            'verify_title_contains': self.web_actions.verify_title_contains,
+            'check_element_exists': self.web_actions.check_element_exists,
+            'check_element_visible': self.web_actions.check_element_visible,
+            'check_element_invisible': self.web_actions.check_element_invisible,
+            'check_element_clickable': self.web_actions.check_element_clickable,
+            'check_element_selected': self.web_actions.check_element_selected,
+            'check_element_enabled': self.web_actions.check_element_enabled,
+            'get_text_save_to_variable': self.web_actions.get_text_save_to_variable,
+            'verify_value_changed_by': self.web_actions.verify_value_changed_by,
 
-            # Wait operations
+            # WaitActions
             'wait_for_element_present': self.web_actions.wait_for_element_present,
             'wait_for_element_visible': self.web_actions.wait_for_element_visible,
+            'wait_for_element_invisible': self.web_actions.wait_for_element_invisible,
             'wait_for_element_clickable': self.web_actions.wait_for_element_clickable,
             'wait_for_text_present_in_element': self.web_actions.wait_for_text_present_in_element,
-            'wait_for_element_to_disappear': self.web_actions.wait_for_element_to_disappear,
             'wait_for_staleness_of': self.web_actions.wait_for_staleness_of,
             'wait': self.web_actions.wait,
 
-            # Frame and window operations
+            # WindowActions
             'switch_to_frame': self.web_actions.switch_to_frame,
             'switch_to_default_content': self.web_actions.switch_to_default_content,
             'switch_to_window': self.web_actions.switch_to_window,
             'get_window_handles': self.web_actions.get_window_handles,
             'close_current_window': self.web_actions.close_current_window,
+            'set_window_size': self.web_actions.set_window_size,
+            'maximize_window': self.web_actions.maximize_window,
+            'minimize_window': self.web_actions.minimize_window,
+            'fullscreen_window': self.web_actions.fullscreen_window,
 
-            # JavaScript execution
+            # JavaScriptActions
             'execute_script': self.web_actions.execute_script,
             'execute_async_script': self.web_actions.execute_async_script,
+            'fill_by_js': self.web_actions.fill_by_js,
+            'click_by_js': self.web_actions.click_by_js,
+            'js_click': self.web_actions.js_click,
+            'js_send_keys': self.web_actions.js_send_keys,
+            'js_clear': self.web_actions.js_clear,
+            'js_scroll_into_view': self.web_actions.js_scroll_into_view,
+            'js_select_option': self.web_actions.js_select_option,
+            'js_hover': self.web_actions.js_hover,
 
-            # Alert operations
+            # AlertActions
             'accept_alert': self.web_actions.accept_alert,
             'dismiss_alert': self.web_actions.dismiss_alert,
             'get_alert_text': self.web_actions.get_alert_text,
 
-            # Screenshot and highlight
-            'capture_screenshot': self.web_actions.capture_screenshot,
-            'highlight_element': self.web_actions.highlight_element,
+            # CookieActions
+            'add_cookie': self.web_actions.add_cookie,
+            'get_cookie': self.web_actions.get_cookie,
+            'delete_cookie': self.web_actions.delete_cookie,
+            'delete_all_cookies': self.web_actions.delete_all_cookies,
 
-            # Table operations
+            # NavigationActions
+            'open_url': self.web_actions.open_url,
+            'refresh_page': self.web_actions.refresh_page,
+            'go_back': self.web_actions.go_back,
+            'go_forward': self.web_actions.go_forward,
+            'get_current_url': self.web_actions.get_current_url,
+
+            # TableActions
             'verify_table_exact': self.web_actions.verify_table_exact,
             'verify_table_row_exact': self.web_actions.verify_table_row_exact,
             'verify_specific_cell_exact': self.web_actions.verify_specific_cell_exact,
@@ -3922,35 +3942,9 @@ class PageObject:
             'select_table_row_checkbox': self.web_actions.select_table_row_checkbox,
             'select_multiple_table_row_checkboxes': self.web_actions.select_multiple_table_row_checkboxes,
 
-            # Browser navigation
-            'refresh_page': self.web_actions.refresh_page,
-            'go_back': self.web_actions.go_back,
-            'go_forward': self.web_actions.go_forward,
-            'get_current_url': self.web_actions.get_current_url,
-
-            # Window management
-            'set_window_size': self.web_actions.set_window_size,
-            'maximize_window': self.web_actions.maximize_window,
-            'minimize_window': self.web_actions.minimize_window,
-            'fullscreen_window': self.web_actions.fullscreen_window,
-
-            # Cookie operations
-            'add_cookie': self.web_actions.add_cookie,
-            'get_cookie': self.web_actions.get_cookie,
-            'delete_cookie': self.web_actions.delete_cookie,
-            'delete_all_cookies': self.web_actions.delete_all_cookies,
-
-            # JavaScript enhanced operations
-            'js_click': self.web_actions.js_click,
-            'js_send_keys': self.web_actions.js_send_keys,
-            'js_clear': self.web_actions.js_clear,
-            'js_scroll_into_view': self.web_actions.js_scroll_into_view,
-            'js_select_option': self.web_actions.js_select_option,
-            'js_hover': self.web_actions.js_hover,
-
-            # Value capture and assertion
-            'capture_element_value': self.web_actions.capture_element_value,
-            'assert_value_change': self.web_actions.assert_value_change,
+            # UtilsActions
+            'capture_screenshot': self.web_actions.capture_screenshot,
+            'highlight_element': self.web_actions.highlight_element,
         }
 
         if action not in action_map and action not in self.custom_action_executor.custom_actions:
@@ -4008,8 +4002,687 @@ class PageObject:
             raise</pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_table_verifier_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\table_verifier.py</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action___init___py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\__init__.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre></pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_alert_actions_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\alert_actions.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from .base import Base
+import logging
+
+class AlertActions(Base):
+    def accept_alert(self):
+        logging.info(f"{self.__class__.__name__}: Accepting alert")
+        self.driver.switch_to.alert.accept()
+        logging.info(f"{self.__class__.__name__}: Alert accepted successfully")
+
+    def dismiss_alert(self):
+        logging.info(f"{self.__class__.__name__}: Dismissing alert")
+        self.driver.switch_to.alert.dismiss()
+        logging.info(f"{self.__class__.__name__}: Alert dismissed successfully")
+
+    def get_alert_text(self):
+        logging.info(f"{self.__class__.__name__}: Getting alert text")
+        alert_text = self.driver.switch_to.alert.text
+        logging.info(f"{self.__class__.__name__}: Alert text retrieved: '{alert_text}'")
+        return alert_text</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_base_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\base.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
+from libraries.web.web_action.table_verifier import TableVerifier
+
+class Base:
+    def __init__(self, driver: WebDriver, default_timeout: int = 60):
+        self.driver = driver
+        self.default_timeout = default_timeout
+        self.table_verifier = TableVerifier(self.driver)
+
+
+    def _get_element_description(self, element):
+        if isinstance(element, WebElement):
+            tag_name = element.tag_name
+            element_id = element.get_attribute('id')
+            element_class = element.get_attribute('class')
+            element_name = element.get_attribute('name')
+            element_text = element.text[:30] if element.text else ''
+
+            description = f"&lt;{tag_name}"
+            if element_id:
+                description += f" id='{element_id}'"
+            if element_class:
+                classes = element_class.split()
+                if len(classes) &gt; 2:
+                    description += f" class='{' '.join(classes[:2])}...'"
+                else:
+                    description += f" class='{element_class}'"
+            if element_name:
+                description += f" name='{element_name}'"
+            description += "&gt;"
+            if element_text:
+                description += f" text='{element_text}...'"
+
+            return description
+        elif isinstance(element, tuple):
+            return f"locator: {element}"
+        else:
+            return str(element)
+
+    def wait_for_element(self, locator, condition="presence", timeout=None):
+        if timeout is None:
+            timeout = self.default_timeout
+
+        logging.info(
+            f"{self.__class__.__name__}: Waiting for element with locator {locator}, condition: {condition}, timeout: {timeout}")
+        wait = WebDriverWait(self.driver, timeout)
+
+        try:
+            if condition == "presence":
+                result = wait.until(EC.presence_of_element_located(locator))
+            elif condition == "visibility":
+                result = wait.until(EC.visibility_of_element_located(locator))
+            elif condition == "clickable":
+                result = wait.until(EC.element_to_be_clickable(locator))
+            elif condition == "invisibility":
+                result = wait.until(EC.invisibility_of_element_located(locator))
+            else:
+                raise ValueError(f"{self.__class__.__name__}: Unsupported condition: {condition}")
+
+            element_desc = self._get_element_description(result)
+            logging.info(f"{self.__class__.__name__}: Element found successfully: {element_desc}")
+            return result
+        except TimeoutException:
+            logging.error(f"{self.__class__.__name__}: Timeout waiting for element: {locator}, condition: {condition}")
+            raise</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_cookie_actions_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\cookie_actions.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from .base import Base
+import logging
+
+class CookieActions(Base):
+    def add_cookie(self, cookie_dict):
+        logging.info(f"{self.__class__.__name__}: Adding cookie: {cookie_dict}")
+        self.driver.add_cookie(cookie_dict)
+        logging.info(f"{self.__class__.__name__}: Cookie added successfully")
+
+    def get_cookie(self, name):
+        logging.info(f"{self.__class__.__name__}: Getting cookie with name: '{name}'")
+        cookie = self.driver.get_cookie(name)
+        logging.info(f"{self.__class__.__name__}: Cookie retrieved: {cookie}")
+        return cookie
+
+    def delete_cookie(self, name):
+        logging.info(f"{self.__class__.__name__}: Deleting cookie with name: '{name}'")
+        self.driver.delete_cookie(name)
+        logging.info(f"{self.__class__.__name__}: Cookie deleted successfully")
+
+    def delete_all_cookies(self):
+        logging.info(f"{self.__class__.__name__}: Deleting all cookies")
+        self.driver.delete_all_cookies()
+        logging.info(f"{self.__class__.__name__}: All cookies deleted successfully")</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_decorators_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\decorators.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import time
+
+
+def timer(func):
+    """计算方法执行时间的装饰器"""
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f'Function {func.__name__} execution time: {end - start} seconds')
+        return result
+
+    return wrapper</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_element_actions_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\element_actions.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from selenium.webdriver import ActionChains
+from selenium.webdriver.support.select import Select
+import logging
+from .base import Base
+
+
+class ElementActions(Base):
+
+    def send_keys(self, element, value, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Sending keys to element: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Value to be sent: {value}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        element.send_keys(value)
+        logging.info(f"{self.__class__.__name__}: Keys sent successfully to element: {element_desc}")
+
+    def click(self, element, condition="clickable"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Clicking element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        element.click()
+        logging.info(f"{self.__class__.__name__}: Element clicked successfully: {element_desc}")
+
+    def clear(self, element, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Clearing element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        element.clear()
+        logging.info(f"{self.__class__.__name__}: Element cleared successfully: {element_desc}")
+
+    def get_text(self, element, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Getting text from element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        text = element.text
+        logging.info(f"{self.__class__.__name__}: Text retrieved: '{text}' from element: {element_desc}")
+        return text
+
+    def get_attribute(self, element, attribute_name, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Getting attribute '{attribute_name}' from element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        attribute_value = element.get_attribute(attribute_name)
+        logging.info(f"{self.__class__.__name__}: Attribute '{attribute_name}' value: '{attribute_value}' for element: {element_desc}")
+        return attribute_value
+
+    def select_by_value(self, element, value, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Selecting option by value: {value} for element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        Select(element).select_by_value(value)
+        logging.info(f"{self.__class__.__name__}: Option selected successfully: {value} for element: {element_desc}")
+
+    def select_by_visible_text(self, element, text, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Selecting option by visible text: {text} for element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        Select(element).select_by_visible_text(text)
+        logging.info(f"{self.__class__.__name__}: Option selected successfully: {text} for element: {element_desc}")
+
+    def select_by_index(self, element, index, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Selecting option by index: {index} for element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        Select(element).select_by_index(int(index))
+        logging.info(f"{self.__class__.__name__}: Option selected successfully at index: {index} for element: {element_desc}")
+
+    def hover(self, element, condition="visibility"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Hovering over element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        ActionChains(self.driver).move_to_element(element).perform()
+        logging.info(f"{self.__class__.__name__}: Hovered over element successfully: {element_desc}")
+
+    def double_click(self, element, condition="clickable"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Double clicking element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        ActionChains(self.driver).double_click(element).perform()
+        logging.info(f"{self.__class__.__name__}: Double clicked element successfully: {element_desc}")
+
+    def right_click(self, element, condition="clickable"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Right clicking element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        ActionChains(self.driver).context_click(element).perform()
+        logging.info(f"{self.__class__.__name__}: Right clicked element successfully: {element_desc}")
+
+    def scroll_into_view(self, element, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Scrolling element into view: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
+        logging.info(f"{self.__class__.__name__}: Scrolled element into view successfully: {element_desc}")
+
+    def scroll_to_element(self, element, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Scrolling to element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({behavior: 'smooth', block: 'center', inline: 'nearest'});", element)
+        logging.info(f"{self.__class__.__name__}: Scrolled to element successfully: {element_desc}")
+
+    def select_radio(self, element, condition="clickable"):
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+        element.click()
+
+    def select_radio_by_value(self, element, value, condition="clickable"):
+        logging.info(f"{self.__class__.__name__}: Selecting radio button with value '{value}' in radio group: {element}")
+        locator_type, locator = element
+        locator = locator.format(value)
+        element = (locator_type, locator)
+
+        element = self.wait_for_element(element, condition=condition)
+        self.select_radio(element)
+        logging.info(f"{self.__class__.__name__}: Selected radio button with value '{value}'")
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_javascript_actions_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\javascript_actions.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from .base import Base
+import logging
+
+from .js import click_by_js_script, fill_by_js_script
+
+
+class JavaScriptActions(Base):
+    def execute_script(self, script, *args):
+        logging.info(f"{self.__class__.__name__}: Executing JavaScript: {script}, Arguments: {args}")
+        result = self.driver.execute_script(script, *args)
+        logging.info(f"{self.__class__.__name__}: JavaScript executed successfully, Result: {result}")
+        return result
+
+    def execute_async_script(self, script, *args):
+        logging.info(f"{self.__class__.__name__}: Executing asynchronous JavaScript: {script}, Arguments: {args}")
+        result = self.driver.execute_async_script(script, *args)
+        logging.info(f"{self.__class__.__name__}: Asynchronous JavaScript executed successfully, Result: {result}")
+        return result
+
+    def click_by_js(self, element, condition="clickable"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Clicking element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        js = click_by_js_script
+        self.driver.execute_script(js, element)
+        logging.info(f"{self.__class__.__name__}: Element clicked successfully: {element_desc} by js")
+
+    def fill_by_js(self, element, value, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Sending keys to element: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Value to be sent: {value}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        js = fill_by_js_script.format(text=value)
+        self.driver.execute_script(js, element)
+        logging.info(f"{self.__class__.__name__}: Keys sent successfully to element: {element_desc} by js")
+
+    def js_click(self, element, condition="clickable"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Clicking element using JavaScript: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        self.driver.execute_script("arguments[0].click();", element)
+        logging.info(f"{self.__class__.__name__}: Element clicked successfully using JavaScript: {element_desc}")
+
+    def js_send_keys(self, element, value, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Sending keys to element using JavaScript: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        self.driver.execute_script(f"arguments[0].value = '{value}';", element)
+        logging.info(f"{self.__class__.__name__}: Keys sent successfully using JavaScript: {element_desc}")
+
+    def js_clear(self, element, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Clearing element using JavaScript: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        self.driver.execute_script("arguments[0].value = '';", element)
+        logging.info(f"{self.__class__.__name__}: Element cleared successfully using JavaScript: {element_desc}")
+
+    def js_scroll_into_view(self, element, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Scrolling element into view using JavaScript: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
+        logging.info(f"{self.__class__.__name__}: Element scrolled into view successfully using JavaScript: {element_desc}")
+
+    def js_select_option(self, select_element, option_text, condition="presence"):
+        element_desc = self._get_element_description(select_element)
+        logging.info(f"{self.__class__.__name__}: Selecting option '{option_text}' using JavaScript: {element_desc}")
+
+        if isinstance(select_element, tuple):
+            select_element = self.wait_for_element(select_element, condition=condition)
+
+        self.driver.execute_script(
+            "var select = arguments[0];"
+            "for(var i = 0; i &lt; select.options.length; i++) {"
+            "  if(select.options[i].text == arguments[1]) {"
+            "    select.options[i].selected = true;"
+            "    var event = new Event('change', { bubbles: true });"
+            "    select.dispatchEvent(event);"
+            "    break;"
+            "  }"
+            "}", select_element, option_text
+        )
+        logging.info(f"{self.__class__.__name__}: Option selected successfully using JavaScript: {element_desc}")
+
+    def js_hover(self, element, condition="visibility"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Hovering over element using JavaScript: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        self.driver.execute_script(
+            "var event = new MouseEvent('mouseover', {"
+            "  'view': window,"
+            "  'bubbles': true,"
+            "  'cancelable': true"
+            "});"
+            "arguments[0].dispatchEvent(event);", element
+        )
+        logging.info(f"{self.__class__.__name__}: Hovered over element successfully using JavaScript: {element_desc}")
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_js_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\js.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>fill_by_js_script = '''
+    function setNativeValue(element,value) {{
+        const {{
+            set: valueSetter
+        }} = Object.getOwnPropertyDescriptor(element,'value') || {{}};
+        const prototype = Object.getPrototypeOf(element);
+        const {{
+            set: prototypeValueSetter
+        }} = Object.getOwnPropertyDescriptor(prototype,'value') || {{}};
+
+        if (prototypeValueSetter &amp;&amp; valueSetter !== prototypeValueSetter) {{
+            prototypeValueSetter.call(element,value);
+        }}
+
+        else if (valueSetter) {{
+            valueSetter.call(element,value);
+        }} else {{
+            throw new Error('The given element does not have a value setter');
+        }}
+    }}
+    function fireEvent(element,value) {{
+    setNativeValue(element,value);
+    element.dispatchEvent(new Event('change',{{bubbles: true}}));
+    }}
+    fireEvent(arguments[0], '{text}')
+'''
+
+click_by_js_script = '''
+    function clickByJsFireEvent(element) {
+        // Check if the element is not null and is an instance of HTMLElement
+        if (element instanceof HTMLElement) {
+            element.click(); // Programmatically click the element
+            element.dispatchEvent(new Event('click', { bubbles: true })); // Dispatch the click event, making it bubble up
+        } else {
+            throw new Error('The given element is not a valid HTML element');
+        }
+    }
+    clickByJsFireEvent(arguments[0]);
+'''
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_navigation_actions_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\navigation_actions.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from .base import Base
+import logging
+
+class NavigationActions(Base):
+    def open_url(self, url):
+        logging.info(f"{self.__class__.__name__}: Opening URL: {url}")
+        self.driver.maximize_window()
+        self.driver.get(url)
+        logging.info(f"{self.__class__.__name__}: URL opened successfully: {url}")
+
+    def refresh_page(self):
+        logging.info(f"{self.__class__.__name__}: Refreshing the current page")
+        self.driver.refresh()
+        logging.info(f"{self.__class__.__name__}: Page refreshed successfully")
+
+    def go_back(self):
+        logging.info(f"{self.__class__.__name__}: Navigating back in browser history")
+        self.driver.back()
+        logging.info(f"{self.__class__.__name__}: Navigated back successfully")
+
+    def go_forward(self):
+        logging.info(f"{self.__class__.__name__}: Navigating forward in browser history")
+        self.driver.forward()
+        logging.info(f"{self.__class__.__name__}: Navigated forward successfully")
+
+    def get_current_url(self):
+        logging.info(f"{self.__class__.__name__}: Getting current URL")
+        url = self.driver.current_url
+        logging.info(f"{self.__class__.__name__}: Current URL is: '{url}'")
+        return url</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_table_actions_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\table_actions.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from .base import Base
+from typing import Union, List, Dict
+from selenium.webdriver.remote.webelement import WebElement
+import logging
+
+class TableActions(Base):
+    def verify_table_exact(self, table_locator: Union[tuple, WebElement], expected_data: List[Dict[str, str]]):
+        logging.info(f"{self.__class__.__name__}: Verifying entire table with exact match")
+        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+        table_desc = self._get_element_description(table_element)
+        self.table_verifier.verify_table(table_element, expected_data, match_type='exact')
+        logging.info(f"{self.__class__.__name__}: Table verification (exact match) completed for table: {table_desc}")
+
+    def verify_table_row_exact(self, table_locator: Union[tuple, WebElement], row_index: int, expected_data: Dict[str, str]):
+        logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with exact match")
+        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+        table_desc = self._get_element_description(table_element)
+        self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='exact')
+        logging.info(f"{self.__class__.__name__}: Table row verification (exact match) completed for table: {table_desc}, row: {row_index}")
+
+    def verify_specific_cell_exact(self, table_locator: Union[tuple, WebElement], row_index: int, column: Union[str, int], expected_value: str):
+        logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with exact match")
+        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+        table_desc = self._get_element_description(table_element)
+        self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='exact')
+        logging.info(f"{self.__class__.__name__}: Specific cell verification (exact match) completed for table: {table_desc}, row: {row_index}, column: {column}")
+
+    def verify_table_partial(self, table_locator: Union[tuple, WebElement], expected_data: List[Dict[str, str]]):
+        logging.info(f"{self.__class__.__name__}: Verifying entire table with partial match")
+        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+        table_desc = self._get_element_description(table_element)
+        self.table_verifier.verify_table(table_element, expected_data, match_type='partial')
+        logging.info(f"{self.__class__.__name__}: Table verification (partial match) completed for table: {table_desc}")
+
+    def verify_table_row_partial(self, table_locator: Union[tuple, WebElement], row_index: int, expected_data: Dict[str, str]):
+        logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with partial match")
+        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+        table_desc = self._get_element_description(table_element)
+        self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='partial')
+        logging.info(f"{self.__class__.__name__}: Table row verification (partial match) completed for table: {table_desc}, row: {row_index}")
+
+    def verify_specific_cell_partial(self, table_locator: Union[tuple, WebElement], row_index: int, column: Union[str, int], expected_value: str):
+        logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with partial match")
+        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+        table_desc = self._get_element_description(table_element)
+        self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='partial')
+        logging.info(f"{self.__class__.__name__}: Specific cell verification (partial match) completed for table: {table_desc}, row: {row_index}, column: {column}")
+
+    def verify_table_regex(self, table_locator: Union[tuple, WebElement], expected_data: List[Dict[str, str]]):
+        logging.info(f"{self.__class__.__name__}: Verifying entire table with regex match")
+        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+        table_desc = self._get_element_description(table_element)
+        self.table_verifier.verify_table(table_element, expected_data, match_type='regex')
+        logging.info(f"{self.__class__.__name__}: Table verification (regex match) completed for table: {table_desc}")
+
+    def verify_table_row_regex(self, table_locator: Union[tuple, WebElement], row_index: int, expected_data: Dict[str, str]):
+        logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with regex match")
+        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+        table_desc = self._get_element_description(table_element)
+        self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='regex')
+        logging.info(f"{self.__class__.__name__}: Table row verification (regex match) completed for table: {table_desc}, row: {row_index}")
+
+    def verify_specific_cell_regex(self, table_locator: Union[tuple, WebElement], row_index: int, column: Union[str, int], expected_value: str):
+        logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with regex match")
+        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+        table_desc = self._get_element_description(table_element)
+        self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='regex')
+        logging.info(f"{self.__class__.__name__}: Specific cell verification (regex match) completed for table: {table_desc}, row: {row_index}, column: {column}")
+
+    def verify_table_is_empty(self, table_locator: Union[tuple, WebElement]):
+        logging.info(f"{self.__class__.__name__}: Verifying table is empty")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            self.table_verifier.verify_table_is_empty(table_element)
+            logging.info(f"{self.__class__.__name__}: Table empty verification completed successfully for table: {table_desc}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying table is empty: {str(e)}")
+            raise
+
+    def verify_unique_column_values(self, table_locator: Union[tuple, WebElement], column: Union[str, int]):
+        logging.info(f"{self.__class__.__name__}: Verifying unique values in column: {column}")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            self.table_verifier.verify_unique_column_values(table_element, column)
+            logging.info(f"{self.__class__.__name__}: Unique column values verification completed successfully for table: {table_desc}, column: {column}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying unique column values: {str(e)}")
+            raise
+
+    def verify_value_in_table(self, table_locator: Union[tuple, WebElement], search_value: str):
+        logging.info(f"{self.__class__.__name__}: Verifying value '{search_value}' exists in table")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            result = self.table_verifier.verify_value_in_table(table_element, search_value)
+            logging.info(f"{self.__class__.__name__}: Value verification in table completed successfully for table: {table_desc}")
+            return result
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying value in table: {str(e)}")
+            raise
+
+    def verify_row_count(self, table_locator: Union[tuple, WebElement], expected_row_count: int):
+        logging.info(f"{self.__class__.__name__}: Verifying row count: expected {expected_row_count}")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            self.table_verifier.verify_row_count(table_element, expected_row_count)
+            logging.info(f"{self.__class__.__name__}: Row count verification completed successfully for table: {table_desc}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying row count: {str(e)}")
+            raise
+
+    def verify_column_sorted(self, table_locator: Union[tuple, WebElement], column: Union[str, int], expected_order='ascending', strip_spaces=True):
+        logging.info(f"{self.__class__.__name__}: Verifying column '{column}' is sorted in {expected_order} order")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            self.table_verifier.verify_column_sorted(table_element, column, expected_order, strip_spaces)
+            logging.info(f"{self.__class__.__name__}: Column sorting verification completed successfully for table: {table_desc}, column: {column}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying column sorting: {str(e)}")
+            raise
+
+    def select_table_row_checkbox(self, table_locator: Union[tuple, WebElement], identifier_column: Union[str, int], identifier_value: str, checkbox_column: int = 1):
+        logging.info(f"{self.__class__.__name__}: Selecting checkbox for row with {identifier_column}: {identifier_value}")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            self.table_verifier.select_table_row_checkbox(table_element, identifier_column, identifier_value, checkbox_column)
+            logging.info(f"{self.__class__.__name__}: Checkbox selected successfully for row with {identifier_column}: {identifier_value} in table: {table_desc}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error selecting checkbox: {str(e)}")
+            raise
+
+    def select_multiple_table_row_checkboxes(self, table_locator: Union[tuple, WebElement], identifier_column: Union[str, int], identifier_values: List[str], checkbox_column: int = 1):
+        logging.info(f"{self.__class__.__name__}: Selecting checkboxes for multiple rows with {identifier_column}: {identifier_values}")
+        try:
+            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
+            table_desc = self._get_element_description(table_element)
+            self.table_verifier.select_multiple_table_row_checkboxes(table_element, identifier_column, identifier_values, checkbox_column)
+            logging.info(f"{self.__class__.__name__}: Checkboxes selected successfully for rows with {identifier_column}: {identifier_values} in table: {table_desc}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error selecting multiple checkboxes: {str(e)}")
+            raise</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_table_verifier_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\table_verifier.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import logging
@@ -4325,402 +4998,312 @@ class TableVerifier:
 </pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action___init___py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\__init__.py</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_utils_actions_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\utils_actions.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre></pre>
+    <pre>import base64
+import datetime
+import io
+import logging
+import time
+from PIL import Image
+from robot.libraries.BuiltIn import BuiltIn
+from .base import Base
+
+class UtilsActions(Base):
+    def capture_screenshot(self):
+        try:
+            if self.driver:
+                screenshot_binary = self.driver.get_screenshot_as_png()
+                image = Image.open(io.BytesIO(screenshot_binary))
+                base_width = 1440
+                w_percent = (base_width / float(image.size[0]))
+                h_size = int((float(image.size[1]) * float(w_percent)))
+                image = image.resize((base_width, h_size), Image.LANCZOS)
+                buffer = io.BytesIO()
+                image.save(buffer, format="WebP", quality=30)
+                encoded_string = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                logging.info(
+                    f"{self.__class__.__name__}: Screenshot captured successfully at: " + str(datetime.datetime.now()))
+                BuiltIn().log(f'&lt;img src="data:image/webp;base64,{encoded_string}" width="1440px"&gt;', html=True)
+            else:
+                logging.error(f"{self.__class__.__name__}: WebDriver is not initialized.")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Failed to capture screenshot: {str(e)}")
+            BuiltIn().log(f"{self.__class__.__name__}: Failed to capture screenshot: {str(e)}", level="ERROR")
+
+    def highlight_element(self, element, duration=2, color="lightgreen", border="3px solid red", condition="visibility"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Highlighting element: {element_desc}")
+
+        # Wait for element to be visible
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        def apply_style(s):
+            self.driver.execute_script("arguments[0].setAttribute('style', arguments[1]);", element, s)
+
+        original_style = element.get_attribute('style')
+
+        for _ in range(int(duration)):
+            apply_style(f"background: {color}; border: {border};")
+            time.sleep(0.25)
+            apply_style(original_style)
+            time.sleep(0.25)
+
+        logging.info(f"{self.__class__.__name__}: Finished highlighting element: {element_desc}")</pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_alert_actions_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\alert_actions.py</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_verification_actions_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\verification_actions.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from numpy import around
+from selenium.common import NoSuchElementException, TimeoutException
+from robot.libraries.BuiltIn import BuiltIn
+from .base import Base
+import logging
+
+
+class VerificationActions(Base):
+    def verify_text_is(self, element, expected_text, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element text matches expected: {element_desc}, expected text: '{expected_text}'")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        actual_text = element.text
+        assert actual_text == expected_text, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not matching actual text: '{actual_text}'"
+        logging.info(f"{self.__class__.__name__}: Element text matches expected: '{expected_text}', Actual text: '{actual_text}'")
+
+    def verify_figure_is(self, element, expected_figure, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element figure matches expected: {element_desc}, expected figure: '{expected_figure}'")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        expected_figure = float(expected_figure.replace(",", "").strip())
+        actual_figure = float(element.text.replace(",", "").strip())
+        assert around(actual_figure, decimals=2) == around(expected_figure, decimals=2), \
+            f"{self.__class__.__name__}: Expected figure: '{expected_figure}' is not matching actual figure: '{actual_figure}'"
+        logging.info(f"{self.__class__.__name__}: Element figure matches expected: '{expected_figure}', Actual figure: '{actual_figure}'")
+
+    def verify_text_contains(self, element, expected_text, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element text contains expected: {element_desc}, expected text: '{expected_text}'")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        actual_text = element.text
+        assert expected_text in actual_text, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not in actual text: '{actual_text}'"
+        logging.info(f"{self.__class__.__name__}: Element text contains expected: '{expected_text}', Actual text: '{actual_text}'")
+
+    def verify_figure_text_contains(self, element, expected_text, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element figure to text contains expected: {element_desc}, expected text: '{expected_text}'")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        expected_text = expected_text.replace(",", "").strip()
+        actual_text = element.text.replace(",", "").strip()
+        assert expected_text in actual_text, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not in actual text: '{actual_text}'"
+        logging.info(f"{self.__class__.__name__}: Element text contains expected: '{expected_text}', Actual text: '{actual_text}'")
+
+    def verify_title_is(self, expected_title):
+        logging.info(f"{self.__class__.__name__}: Checking if page title matches expected: '{expected_title}'")
+        actual_title = self.driver.title
+        assert actual_title == expected_title, f"{self.__class__.__name__}: Expected title: '{expected_title}' is not matching actual title: '{actual_title}'"
+        logging.info(f"{self.__class__.__name__}: Title matches expected: '{expected_title}', Actual title: '{actual_title}'")
+
+    def verify_title_contains(self, expected_title):
+        logging.info(f"{self.__class__.__name__}: Checking if page title contains expected: '{expected_title}'")
+        actual_title = self.driver.title
+        assert expected_title in actual_title, f"{self.__class__.__name__}: Expected title: '{expected_title}' is not in actual title: '{actual_title}'"
+        logging.info(f"{self.__class__.__name__}: Title contains expected: '{expected_title}', Actual title: '{actual_title}'")
+
+    def check_element_exists(self, locator):
+        logging.info(f"{self.__class__.__name__}: Checking if element is present: {locator}")
+        try:
+            element = self.driver.find_element(*locator)
+            element_desc = self._get_element_description(element)
+            logging.info(f"{self.__class__.__name__}: Element exists: {element_desc}")
+            return True
+        except NoSuchElementException:
+            logging.info(f"{self.__class__.__name__}: Element does not exist: {locator}")
+            return False
+
+    def check_element_visible(self, locator, timeout=None):
+        logging.info(f"{self.__class__.__name__}: Checking if element is visible: {locator}, timeout: {timeout}")
+        try:
+            element = self.wait_for_element(locator, condition="visibility", timeout=timeout)
+            element_desc = self._get_element_description(element)
+            logging.info(f"{self.__class__.__name__}: Element is visible: {element_desc}")
+            return True
+        except TimeoutException:
+            logging.info(f"{self.__class__.__name__}: Element is not visible: {locator}")
+            return False
+
+    def check_element_invisible(self, locator, timeout=None):
+        logging.info(f"{self.__class__.__name__}: Checking if element is invisible: {locator}, timeout: {timeout}")
+        try:
+            element = self.wait_for_element(locator, condition="invisibility", timeout=timeout)
+            element_desc = self._get_element_description(element)
+            logging.info(f"{self.__class__.__name__}: Element is invisible: {element_desc}")
+            return True
+        except TimeoutException:
+            logging.info(f"{self.__class__.__name__}: Element is not invisible: {locator}")
+            return False
+
+    def check_element_clickable(self, locator, timeout=None):
+        logging.info(f"{self.__class__.__name__}: Checking if element is clickable: {locator}, timeout: {timeout}")
+        try:
+            element = self.wait_for_element(locator, condition="clickable", timeout=timeout)
+            element_desc = self._get_element_description(element)
+            logging.info(f"{self.__class__.__name__}: Element is clickable: {element_desc}")
+            return True
+        except TimeoutException:
+            logging.info(f"{self.__class__.__name__}: Element is not clickable: {locator}")
+            return False
+
+    def check_element_selected(self, element, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element is selected: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        is_selected = element.is_selected()
+        logging.info(f"{self.__class__.__name__}: Element selected status: {is_selected} for element: {element_desc}")
+        return is_selected
+
+    def check_element_enabled(self, element, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Checking if element is enabled: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        is_enabled = element.is_enabled()
+        logging.info(f"{self.__class__.__name__}: Element enabled status: {is_enabled} for element: {element_desc}")
+        return is_enabled
+
+    def get_text_save_to_variable(self, element, variable_name, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Capturing value from element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        value = element.text
+        BuiltIn().set_global_variable(f"${{{variable_name}}}", value)
+        logging.info(f"{self.__class__.__name__}: Saved value '{value}' to variable ${{{variable_name}}}")
+        return value
+
+    def verify_value_changed_by(self, element, initial_value_variable, expected_change, condition="presence"):
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Asserting value change for element: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
+        initial_value = float(BuiltIn().get_variable_value(f"${{{initial_value_variable}}}"))
+        current_value = float(element.text)
+        actual_change = around(current_value - initial_value, 2)
+        expected_change = float(expected_change)
+
+        logging.info(f"{self.__class__.__name__}: Actual change: {actual_change}, Expected change: {expected_change}")
+
+        if not self._compare_diff(actual_change, expected_change):
+            raise AssertionError(f"{self.__class__.__name__}: Value change verification failed for element: {element_desc}")
+
+
+    def _compare_diff(self, actual, expected):
+        return around(actual, decimals=2) == around(expected, decimals=2)</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_wait_actions_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\wait_actions.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from .base import Base
-import logging
-
-class AlertActions(Base):
-    def accept_alert(self):
-        logging.info(f"{self.__class__.__name__}: Accepting alert")
-        self.driver.switch_to.alert.accept()
-        logging.info(f"{self.__class__.__name__}: Alert accepted successfully")
-
-    def dismiss_alert(self):
-        logging.info(f"{self.__class__.__name__}: Dismissing alert")
-        self.driver.switch_to.alert.dismiss()
-        logging.info(f"{self.__class__.__name__}: Alert dismissed successfully")
-
-    def get_alert_text(self):
-        logging.info(f"{self.__class__.__name__}: Getting alert text")
-        alert_text = self.driver.switch_to.alert.text
-        logging.info(f"{self.__class__.__name__}: Alert text retrieved: '{alert_text}'")
-        return alert_text</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_base_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\base.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import logging
-from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+import logging
+import time
 
 
-class Base:
-    def __init__(self, driver: WebDriver, default_timeout: int = 60):
-        self.driver = driver
-        self.default_timeout = default_timeout
+class WaitActions(Base):
+    def wait_for_element_present(self, locator, timeout=None):
+        logging.info(f"{self.__class__.__name__}: Waiting for element to be present: {locator}")
+        return self.wait_for_element(locator, condition="presence", timeout=timeout)
 
+    def wait_for_element_visible(self, locator, timeout=None):
+        logging.info(f"{self.__class__.__name__}: Waiting for element to be visible: {locator}")
+        return self.wait_for_element(locator, condition="visibility", timeout=timeout)
 
-    def _get_element_description(self, element):
-        if isinstance(element, WebElement):
-            tag_name = element.tag_name
-            element_id = element.get_attribute('id')
-            element_class = element.get_attribute('class')
-            element_name = element.get_attribute('name')
-            element_text = element.text[:30] if element.text else ''
+    def wait_for_element_invisible(self, locator, timeout=None):
+        logging.info(f"{self.__class__.__name__}: Waiting for element to be invisible: {locator}")
+        return self.wait_for_element(locator, condition="invisibility", timeout=timeout)
 
-            description = f"&lt;{tag_name}"
-            if element_id:
-                description += f" id='{element_id}'"
-            if element_class:
-                classes = element_class.split()
-                if len(classes) &gt; 2:
-                    description += f" class='{' '.join(classes[:2])}...'"
-                else:
-                    description += f" class='{element_class}'"
-            if element_name:
-                description += f" name='{element_name}'"
-            description += "&gt;"
-            if element_text:
-                description += f" text='{element_text}...'"
+    def wait_for_element_clickable(self, locator, timeout=None):
+        logging.info(f"{self.__class__.__name__}: Waiting for element to be clickable: {locator}")
+        return self.wait_for_element(locator, condition="clickable", timeout=timeout)
 
-            return description
-        elif isinstance(element, tuple):
-            return f"locator: {element}"
-        else:
-            return str(element)
-
-    def wait_for_element(self, locator, condition="presence", timeout=None):
+    def wait_for_text_present_in_element(self, locator, text, timeout=None):
         if timeout is None:
             timeout = self.default_timeout
-
-        logging.info(
-            f"{self.__class__.__name__}: Waiting for element with locator {locator}, condition: {condition}, timeout: {timeout}")
-        wait = WebDriverWait(self.driver, timeout)
-
+        logging.info(f"{self.__class__.__name__}: Waiting for text '{text}' to be present in element: {locator}")
         try:
-            if condition == "presence":
-                result = wait.until(EC.presence_of_element_located(locator))
-            elif condition == "visibility":
-                result = wait.until(EC.visibility_of_element_located(locator))
-            elif condition == "clickable":
-                result = wait.until(EC.element_to_be_clickable(locator))
-            elif condition == "invisibility":
-                result = wait.until(EC.invisibility_of_element_located(locator))
-            else:
-                raise ValueError(f"{self.__class__.__name__}: Unsupported condition: {condition}")
-
-            element_desc = self._get_element_description(result)
-            logging.info(f"{self.__class__.__name__}: Element found successfully: {element_desc}")
-            return result
+            wait = WebDriverWait(self.driver, timeout)
+            element = wait.until(EC.text_to_be_present_in_element(locator, text))
+            element_desc = self._get_element_description(element)
+            logging.info(f"{self.__class__.__name__}: Text '{text}' is present in element: {element_desc}")
+            return element
         except TimeoutException:
-            logging.error(f"{self.__class__.__name__}: Timeout waiting for element: {locator}, condition: {condition}")
-            raise</pre>
-</div>
+            logging.error(f"{self.__class__.__name__}: Text '{text}' not present in element: {locator}")
+            raise
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_basic_actions_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\basic_actions.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from selenium.webdriver import ActionChains
-from selenium.webdriver.support.select import Select
-import logging
-from .base import Base
-from .decorators import wait_and_perform
-from .js import fill_by_js_script, click_by_js_script
-
-
-class BasicActions(Base):
-    def open_url(self, url):
-        logging.info(f"{self.__class__.__name__}: Opening URL: {url}")
-        self.driver.maximize_window()
-        self.driver.get(url)
-        logging.info(f"{self.__class__.__name__}: URL opened successfully: {url}")
-
-    @wait_and_perform(default_condition="presence")
-    def send_keys(self, element, value):
+    def wait_for_staleness_of(self, element, timeout=None):
+        if timeout is None:
+            timeout = self.default_timeout
         element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Sending keys to element: {element_desc}")
-        logging.info(f"{self.__class__.__name__}: Value to be sent: {value}")
-        element.send_keys(value)
-        logging.info(f"{self.__class__.__name__}: Keys sent successfully to element: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Waiting for staleness of element: {element_desc}")
+        try:
+            wait = WebDriverWait(self.driver, timeout)
+            wait.until(EC.staleness_of(element))
+            logging.info(f"{self.__class__.__name__}: Element is stale: {element_desc}")
+            return True
+        except TimeoutException:
+            logging.error(f"{self.__class__.__name__}: Element not stale: {element_desc}")
+            return False
 
-    @wait_and_perform(default_condition="presence")
-    def fill_by_js(self, element, value):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Sending keys to element: {element_desc}")
-        logging.info(f"{self.__class__.__name__}: Value to be sent: {value}")
-        js = fill_by_js_script.format(text=value)
-        self.driver.execute_script(js, element)
-        logging.info(f"{self.__class__.__name__}: Keys sent successfully to element: {element_desc} by js")
-
-    @wait_and_perform(default_condition="clickable")
-    def click(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Clicking element: {element_desc}")
-        element.click()
-        logging.info(f"{self.__class__.__name__}: Element clicked successfully: {element_desc}")
-
-    @wait_and_perform(default_condition="clickable")
-    def click_by_js(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Clicking element: {element_desc}")
-        js = click_by_js_script
-        self.driver.execute_script(js, element)
-        logging.info(f"{self.__class__.__name__}: Element clicked successfully: {element_desc} by js")
-
-    @wait_and_perform(default_condition="presence")
-    def clear(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Clearing element: {element_desc}")
-        element.clear()
-        logging.info(f"{self.__class__.__name__}: Element cleared successfully: {element_desc}")
-
-    @wait_and_perform(default_condition="presence")
-    def get_text(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Getting text from element: {element_desc}")
-        text = element.text
-        logging.info(f"{self.__class__.__name__}: Text retrieved: '{text}' from element: {element_desc}")
-        return text
-
-    @wait_and_perform(default_condition="presence")
-    def get_attribute(self, element, attribute_name):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Getting attribute '{attribute_name}' from element: {element_desc}")
-        attribute_value = element.get_attribute(attribute_name)
-        logging.info(f"{self.__class__.__name__}: Attribute '{attribute_name}' value: '{attribute_value}' for element: {element_desc}")
-        return attribute_value
-
-    @wait_and_perform(default_condition="presence")
-    def select_by_value(self, element, value):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Selecting option by value: {value} for element: {element_desc}")
-        Select(element).select_by_value(value)
-        logging.info(f"{self.__class__.__name__}: Option selected successfully: {value} for element: {element_desc}")
-
-    @wait_and_perform(default_condition="presence")
-    def select_by_visible_text(self, element, text):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Selecting option by visible text: {text} for element: {element_desc}")
-        Select(element).select_by_visible_text(text)
-        logging.info(f"{self.__class__.__name__}: Option selected successfully: {text} for element: {element_desc}")
-
-    @wait_and_perform(default_condition="presence")
-    def select_by_index(self, element, index):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Selecting option by index: {index} for element: {element_desc}")
-        Select(element).select_by_index(int(index))
-        logging.info(
-            f"{self.__class__.__name__}: Option selected successfully at index: {index} for element: {element_desc}")
-
-    @wait_and_perform(default_condition="visibility")
-    def hover(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Hovering over element: {element_desc}")
-        ActionChains(self.driver).move_to_element(element).perform()
-        logging.info(f"{self.__class__.__name__}: Hovered over element successfully: {element_desc}")
-
-    @wait_and_perform(default_condition="clickable")
-    def double_click(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Double clicking element: {element_desc}")
-        ActionChains(self.driver).double_click(element).perform()
-        logging.info(f"{self.__class__.__name__}: Double clicked element successfully: {element_desc}")
-
-    @wait_and_perform(default_condition="clickable")
-    def right_click(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Right clicking element: {element_desc}")
-        ActionChains(self.driver).context_click(element).perform()
-        logging.info(f"{self.__class__.__name__}: Right clicked element successfully: {element_desc}")
-
-    @wait_and_perform(default_condition="presence")
-    def scroll_into_view(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Scrolling element into view: {element_desc}")
-        self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
-        logging.info(f"{self.__class__.__name__}: Scrolled element into view successfully: {element_desc}")
-
-    @wait_and_perform(default_condition="presence")
-    def scroll_to_element(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Scrolling to element: {element_desc}")
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({behavior: 'smooth', block: 'center', inline: 'nearest'});", element)
-        logging.info(f"{self.__class__.__name__}: Scrolled to element successfully: {element_desc}")
-
-    @wait_and_perform(default_condition="presence")
-    def get_text(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Getting text from element: {element_desc}")
-        text = element.text
-        logging.info(f"{self.__class__.__name__}: Text retrieved: '{text}' from element: {element_desc}")
-        return text
-
-    @wait_and_perform(default_condition="presence")
-    def get_attribute(self, element, attribute_name):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Getting attribute '{attribute_name}' from element: {element_desc}")
-        attribute_value = element.get_attribute(attribute_name)
-        logging.info(f"{self.__class__.__name__}: Attribute '{attribute_name}' value: '{attribute_value}' for element: {element_desc}")
-        return attribute_value
-
-    @wait_and_perform(default_condition="clickable")
-    def select_radio(self, element):
-        element.click()
-
-    def select_radio_by_value(self, element, value):
-        logging.info(f"{self.__class__.__name__}: Selecting radio button with value '{value}' in radio group: {element}")
-        locator_type, locator = element
-        locator = locator.format(value)
-        element = (locator_type, locator)
-        self.select_radio(element)
-        logging.info(f"{self.__class__.__name__}: Selected radio button with value '{value}'")
+    def wait(self, seconds):
+        logging.info(f"{self.__class__.__name__}: Waiting for {seconds} seconds")
+        time.sleep(int(seconds))
 </pre>
 </div>
 
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_browser_actions_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\browser_actions.py</div>
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_window_actions_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\window_actions.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from .base import Base
 import logging
 
-class BrowserActions(Base):
-    def refresh_page(self):
-        logging.info(f"{self.__class__.__name__}: Refreshing the current page")
-        self.driver.refresh()
-        logging.info(f"{self.__class__.__name__}: Page refreshed successfully")
-
-    def go_back(self):
-        logging.info(f"{self.__class__.__name__}: Navigating back in browser history")
-        self.driver.back()
-        logging.info(f"{self.__class__.__name__}: Navigated back successfully")
-
-    def go_forward(self):
-        logging.info(f"{self.__class__.__name__}: Navigating forward in browser history")
-        self.driver.forward()
-        logging.info(f"{self.__class__.__name__}: Navigated forward successfully")
-
-    def get_current_url(self):
-        logging.info(f"{self.__class__.__name__}: Getting current URL")
-        url = self.driver.current_url
-        logging.info(f"{self.__class__.__name__}: Current URL is: '{url}'")
-        return url
-
-    def set_window_size(self, width, height):
-        logging.info(f"{self.__class__.__name__}: Setting window size to {width}x{height}")
-        self.driver.set_window_size(width, height)
-        logging.info(f"{self.__class__.__name__}: Window size set successfully")
-
-    def maximize_window(self):
-        logging.info(f"{self.__class__.__name__}: Maximizing window")
-        self.driver.maximize_window()
-        logging.info(f"{self.__class__.__name__}: Window maximized successfully")
-
-    def minimize_window(self):
-        logging.info(f"{self.__class__.__name__}: Minimizing window")
-        self.driver.minimize_window()
-        logging.info(f"{self.__class__.__name__}: Window minimized successfully")
-
-    def fullscreen_window(self):
-        logging.info(f"{self.__class__.__name__}: Setting window to full screen")
-        self.driver.fullscreen_window()
-        logging.info(f"{self.__class__.__name__}: Window set to full screen successfully")</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_cookie_actions_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\cookie_actions.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from .base import Base
-import logging
-
-class CookieActions(Base):
-    def add_cookie(self, cookie_dict):
-        logging.info(f"{self.__class__.__name__}: Adding cookie: {cookie_dict}")
-        self.driver.add_cookie(cookie_dict)
-        logging.info(f"{self.__class__.__name__}: Cookie added successfully")
-
-    def get_cookie(self, name):
-        logging.info(f"{self.__class__.__name__}: Getting cookie with name: '{name}'")
-        cookie = self.driver.get_cookie(name)
-        logging.info(f"{self.__class__.__name__}: Cookie retrieved: {cookie}")
-        return cookie
-
-    def delete_cookie(self, name):
-        logging.info(f"{self.__class__.__name__}: Deleting cookie with name: '{name}'")
-        self.driver.delete_cookie(name)
-        logging.info(f"{self.__class__.__name__}: Cookie deleted successfully")
-
-    def delete_all_cookies(self):
-        logging.info(f"{self.__class__.__name__}: Deleting all cookies")
-        self.driver.delete_all_cookies()
-        logging.info(f"{self.__class__.__name__}: All cookies deleted successfully")</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_decorators_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\decorators.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import time
-from functools import wraps
-
-
-def wait_and_perform(default_condition="presence"):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, locator, *args, condition=None, **kwargs):
-            used_condition = condition or default_condition
-            if isinstance(locator, tuple):
-                element = self.wait_for_element(locator, condition=used_condition)
-            else:
-                element = locator
-            return func(self, element, *args, **kwargs)
-        return wrapper
-    return decorator
-
-
-def timer(func):
-    """计算方法执行时间的装饰器"""
-    def wrapper(*args, **kwargs):
-        start = time.time()
-        result = func(*args, **kwargs)
-        end = time.time()
-        print(f'Function {func.__name__} execution time: {end - start} seconds')
-        return result
-
-    return wrapper</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_frame_window_actions_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\frame_window_actions.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from .base import Base
-from .decorators import wait_and_perform
-import logging
-
-class FrameWindowActions(Base):
-    @wait_and_perform(default_condition="presence")
-    def switch_to_frame(self, element):
+class WindowActions(Base):
+    def switch_to_frame(self, element, condition="presence"):
         element_desc = self._get_element_description(element)
         logging.info(f"{self.__class__.__name__}: Switching to frame: {element_desc}")
+
+        if isinstance(element, tuple):
+            element = self.wait_for_element(element, condition=condition)
+
         self.driver.switch_to.frame(element)
         logging.info(f"{self.__class__.__name__}: Switched to frame successfully: {element_desc}")
 
@@ -4743,560 +5326,27 @@ class FrameWindowActions(Base):
     def close_current_window(self):
         logging.info(f"{self.__class__.__name__}: Closing current window")
         self.driver.close()
-        logging.info(f"{self.__class__.__name__}: Current window closed successfully")</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_javascript_actions_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\javascript_actions.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from .base import Base
-from .decorators import wait_and_perform
-import logging
-
-class JavaScriptActions(Base):
-    def execute_script(self, script, *args):
-        logging.info(f"{self.__class__.__name__}: Executing JavaScript: {script}, Arguments: {args}")
-        result = self.driver.execute_script(script, *args)
-        logging.info(f"{self.__class__.__name__}: JavaScript executed successfully, Result: {result}")
-        return result
-
-    def execute_async_script(self, script, *args):
-        logging.info(f"{self.__class__.__name__}: Executing asynchronous JavaScript: {script}, Arguments: {args}")
-        result = self.driver.execute_async_script(script, *args)
-        logging.info(f"{self.__class__.__name__}: Asynchronous JavaScript executed successfully, Result: {result}")
-        return result
-
-    @wait_and_perform(default_condition="clickable")
-    def js_click(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Clicking element using JavaScript: {element_desc}")
-        self.driver.execute_script("arguments[0].click();", element)
-        logging.info(f"{self.__class__.__name__}: Element clicked successfully using JavaScript: {element_desc}")
-
-    @wait_and_perform(default_condition="presence")
-    def js_send_keys(self, element, value):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Sending keys to element using JavaScript: {element_desc}")
-        self.driver.execute_script(f"arguments[0].value = '{value}';", element)
-        logging.info(f"{self.__class__.__name__}: Keys sent successfully using JavaScript: {element_desc}")
-
-    @wait_and_perform(default_condition="presence")
-    def js_clear(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Clearing element using JavaScript: {element_desc}")
-        self.driver.execute_script("arguments[0].value = '';", element)
-        logging.info(f"{self.__class__.__name__}: Element cleared successfully using JavaScript: {element_desc}")
-
-    @wait_and_perform(default_condition="presence")
-    def js_scroll_into_view(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Scrolling element into view using JavaScript: {element_desc}")
-        self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
-        logging.info(f"{self.__class__.__name__}: Element scrolled into view successfully using JavaScript: {element_desc}")
-
-    @wait_and_perform(default_condition="presence")
-    def js_select_option(self, select_element, option_text):
-        element_desc = self._get_element_description(select_element)
-        logging.info(f"{self.__class__.__name__}: Selecting option '{option_text}' using JavaScript: {element_desc}")
-        self.driver.execute_script(
-            "var select = arguments[0];"
-            "for(var i = 0; i &lt; select.options.length; i++) {"
-            "  if(select.options[i].text == arguments[1]) {"
-            "    select.options[i].selected = true;"
-            "    var event = new Event('change', { bubbles: true });"
-            "    select.dispatchEvent(event);"
-            "    break;"
-            "  }"
-            "}", select_element, option_text
-        )
-        logging.info(f"{self.__class__.__name__}: Option selected successfully using JavaScript: {element_desc}")
-
-    @wait_and_perform(default_condition="visibility")
-    def js_hover(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Hovering over element using JavaScript: {element_desc}")
-        self.driver.execute_script(
-            "var event = new MouseEvent('mouseover', {"
-            "  'view': window,"
-            "  'bubbles': true,"
-            "  'cancelable': true"
-            "});"
-            "arguments[0].dispatchEvent(event);", element
-        )
-        logging.info(f"{self.__class__.__name__}: Hovered over element successfully using JavaScript: {element_desc}")
-</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_js_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\js.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>fill_by_js_script = '''
-    function setNativeValue(element,value) {{
-        const {{
-            set: valueSetter
-        }} = Object.getOwnPropertyDescriptor(element,'value') || {{}};
-        const prototype = Object.getPrototypeOf(element);
-        const {{
-            set: prototypeValueSetter
-        }} = Object.getOwnPropertyDescriptor(prototype,'value') || {{}};
-
-        if (prototypeValueSetter &amp;&amp; valueSetter !== prototypeValueSetter) {{
-            prototypeValueSetter.call(element,value);
-        }}
-
-        else if (valueSetter) {{
-            valueSetter.call(element,value);
-        }} else {{
-            throw new Error('The given element does not have a value setter');
-        }}
-    }}
-    function fireEvent(element,value) {{
-    setNativeValue(element,value);
-    element.dispatchEvent(new Event('change',{{bubbles: true}}));
-    }}
-    fireEvent(arguments[0], '{text}')
-'''
-
-click_by_js_script = '''
-    function clickByJsFireEvent(element) {
-        // Check if the element is not null and is an instance of HTMLElement
-        if (element instanceof HTMLElement) {
-            element.click(); // Programmatically click the element
-            element.dispatchEvent(new Event('click', { bubbles: true })); // Dispatch the click event, making it bubble up
-        } else {
-            throw new Error('The given element is not a valid HTML element');
-        }
-    }
-    clickByJsFireEvent(arguments[0]);
-'''
-</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_screenshot_actions_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\screenshot_actions.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import base64
-import datetime
-import io
-import logging
-import time
-
-from PIL import Image
-from robot.libraries.BuiltIn import BuiltIn
-
-from .base import Base
-from .decorators import wait_and_perform
-
-
-class ScreenshotActions(Base):
-    def capture_screenshot(self):
-        try:
-            if self.driver:
-                screenshot_binary = self.driver.get_screenshot_as_png()
-                image = Image.open(io.BytesIO(screenshot_binary))
-                base_width = 1440
-                w_percent = (base_width / float(image.size[0]))
-                h_size = int((float(image.size[1]) * float(w_percent)))
-                image = image.resize((base_width, h_size), Image.LANCZOS)
-                buffer = io.BytesIO()
-                image.save(buffer, format="WebP", quality=30)
-                encoded_string = base64.b64encode(buffer.getvalue()).decode('utf-8')
-                logging.info(
-                    f"{self.__class__.__name__}: Screenshot captured successfully at: " + str(datetime.datetime.now()))
-                BuiltIn().log(f'&lt;img src="data:image/webp;base64,{encoded_string}" width="1440px"&gt;', html=True)
-            else:
-                logging.error(f"{self.__class__.__name__}: WebDriver is not initialized.")
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Failed to capture screenshot: {str(e)}")
-            BuiltIn().log(f"{self.__class__.__name__}: Failed to capture screenshot: {str(e)}", level="ERROR")
-
-    @wait_and_perform(default_condition="visibility")
-    def highlight_element(self, element, duration=2, color="lightgreen", border="3px solid red"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Highlighting element: {element_desc}")
-
-        def apply_style(s):
-            self.driver.execute_script("arguments[0].setAttribute('style', arguments[1]);", element, s)
-
-        original_style = element.get_attribute('style')
-
-        for _ in range(int(duration)):
-            apply_style(f"background: {color}; border: {border};")
-            time.sleep(0.25)
-            apply_style(original_style)
-            time.sleep(0.25)
-
-        logging.info(f"{self.__class__.__name__}: Finished highlighting element: {element_desc}")</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_table_actions_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\table_actions.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from .base import Base
-from typing import Union, List, Dict
-from selenium.webdriver.remote.webelement import WebElement
-import logging
-
-class TableActions(Base):
-    def verify_table_exact(self, table_locator: Union[tuple, WebElement], expected_data: List[Dict[str, str]]):
-        logging.info(f"{self.__class__.__name__}: Verifying entire table with exact match")
-        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-        table_desc = self._get_element_description(table_element)
-        self.table_verifier.verify_table(table_element, expected_data, match_type='exact')
-        logging.info(f"{self.__class__.__name__}: Table verification (exact match) completed for table: {table_desc}")
-
-    def verify_table_row_exact(self, table_locator: Union[tuple, WebElement], row_index: int, expected_data: Dict[str, str]):
-        logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with exact match")
-        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-        table_desc = self._get_element_description(table_element)
-        self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='exact')
-        logging.info(f"{self.__class__.__name__}: Table row verification (exact match) completed for table: {table_desc}, row: {row_index}")
-
-    def verify_specific_cell_exact(self, table_locator: Union[tuple, WebElement], row_index: int, column: Union[str, int], expected_value: str):
-        logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with exact match")
-        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-        table_desc = self._get_element_description(table_element)
-        self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='exact')
-        logging.info(f"{self.__class__.__name__}: Specific cell verification (exact match) completed for table: {table_desc}, row: {row_index}, column: {column}")
-
-    def verify_table_partial(self, table_locator: Union[tuple, WebElement], expected_data: List[Dict[str, str]]):
-        logging.info(f"{self.__class__.__name__}: Verifying entire table with partial match")
-        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-        table_desc = self._get_element_description(table_element)
-        self.table_verifier.verify_table(table_element, expected_data, match_type='partial')
-        logging.info(f"{self.__class__.__name__}: Table verification (partial match) completed for table: {table_desc}")
-
-    def verify_table_row_partial(self, table_locator: Union[tuple, WebElement], row_index: int, expected_data: Dict[str, str]):
-        logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with partial match")
-        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-        table_desc = self._get_element_description(table_element)
-        self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='partial')
-        logging.info(f"{self.__class__.__name__}: Table row verification (partial match) completed for table: {table_desc}, row: {row_index}")
-
-    def verify_specific_cell_partial(self, table_locator: Union[tuple, WebElement], row_index: int, column: Union[str, int], expected_value: str):
-        logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with partial match")
-        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-        table_desc = self._get_element_description(table_element)
-        self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='partial')
-        logging.info(f"{self.__class__.__name__}: Specific cell verification (partial match) completed for table: {table_desc}, row: {row_index}, column: {column}")
-
-    def verify_table_regex(self, table_locator: Union[tuple, WebElement], expected_data: List[Dict[str, str]]):
-        logging.info(f"{self.__class__.__name__}: Verifying entire table with regex match")
-        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-        table_desc = self._get_element_description(table_element)
-        self.table_verifier.verify_table(table_element, expected_data, match_type='regex')
-        logging.info(f"{self.__class__.__name__}: Table verification (regex match) completed for table: {table_desc}")
-
-    def verify_table_row_regex(self, table_locator: Union[tuple, WebElement], row_index: int, expected_data: Dict[str, str]):
-        logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with regex match")
-        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-        table_desc = self._get_element_description(table_element)
-        self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='regex')
-        logging.info(f"{self.__class__.__name__}: Table row verification (regex match) completed for table: {table_desc}, row: {row_index}")
-
-    def verify_specific_cell_regex(self, table_locator: Union[tuple, WebElement], row_index: int, column: Union[str, int], expected_value: str):
-        logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with regex match")
-        table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-        table_desc = self._get_element_description(table_element)
-        self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='regex')
-        logging.info(f"{self.__class__.__name__}: Specific cell verification (regex match) completed for table: {table_desc}, row: {row_index}, column: {column}")
-
-    def verify_table_is_empty(self, table_locator: Union[tuple, WebElement]):
-        logging.info(f"{self.__class__.__name__}: Verifying table is empty")
-        try:
-            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-            table_desc = self._get_element_description(table_element)
-            self.table_verifier.verify_table_is_empty(table_element)
-            logging.info(f"{self.__class__.__name__}: Table empty verification completed successfully for table: {table_desc}")
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error verifying table is empty: {str(e)}")
-            raise
-
-    def verify_unique_column_values(self, table_locator: Union[tuple, WebElement], column: Union[str, int]):
-        logging.info(f"{self.__class__.__name__}: Verifying unique values in column: {column}")
-        try:
-            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-            table_desc = self._get_element_description(table_element)
-            self.table_verifier.verify_unique_column_values(table_element, column)
-            logging.info(f"{self.__class__.__name__}: Unique column values verification completed successfully for table: {table_desc}, column: {column}")
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error verifying unique column values: {str(e)}")
-            raise
-
-    def verify_value_in_table(self, table_locator: Union[tuple, WebElement], search_value: str):
-        logging.info(f"{self.__class__.__name__}: Verifying value '{search_value}' exists in table")
-        try:
-            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-            table_desc = self._get_element_description(table_element)
-            result = self.table_verifier.verify_value_in_table(table_element, search_value)
-            logging.info(f"{self.__class__.__name__}: Value verification in table completed successfully for table: {table_desc}")
-            return result
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error verifying value in table: {str(e)}")
-            raise
-
-    def verify_row_count(self, table_locator: Union[tuple, WebElement], expected_row_count: int):
-        logging.info(f"{self.__class__.__name__}: Verifying row count: expected {expected_row_count}")
-        try:
-            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-            table_desc = self._get_element_description(table_element)
-            self.table_verifier.verify_row_count(table_element, expected_row_count)
-            logging.info(f"{self.__class__.__name__}: Row count verification completed successfully for table: {table_desc}")
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error verifying row count: {str(e)}")
-            raise
-
-    def verify_column_sorted(self, table_locator: Union[tuple, WebElement], column: Union[str, int], expected_order='ascending', strip_spaces=True):
-        logging.info(f"{self.__class__.__name__}: Verifying column '{column}' is sorted in {expected_order} order")
-        try:
-            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-            table_desc = self._get_element_description(table_element)
-            self.table_verifier.verify_column_sorted(table_element, column, expected_order, strip_spaces)
-            logging.info(f"{self.__class__.__name__}: Column sorting verification completed successfully for table: {table_desc}, column: {column}")
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error verifying column sorting: {str(e)}")
-            raise
-
-    def select_table_row_checkbox(self, table_locator: Union[tuple, WebElement], identifier_column: Union[str, int], identifier_value: str, checkbox_column: int = 1):
-        logging.info(f"{self.__class__.__name__}: Selecting checkbox for row with {identifier_column}: {identifier_value}")
-        try:
-            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-            table_desc = self._get_element_description(table_element)
-            self.table_verifier.select_table_row_checkbox(table_element, identifier_column, identifier_value, checkbox_column)
-            logging.info(f"{self.__class__.__name__}: Checkbox selected successfully for row with {identifier_column}: {identifier_value} in table: {table_desc}")
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error selecting checkbox: {str(e)}")
-            raise
-
-    def select_multiple_table_row_checkboxes(self, table_locator: Union[tuple, WebElement], identifier_column: Union[str, int], identifier_values: List[str], checkbox_column: int = 1):
-        logging.info(f"{self.__class__.__name__}: Selecting checkboxes for multiple rows with {identifier_column}: {identifier_values}")
-        try:
-            table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
-            table_desc = self._get_element_description(table_element)
-            self.table_verifier.select_multiple_table_row_checkboxes(table_element, identifier_column, identifier_values, checkbox_column)
-            logging.info(f"{self.__class__.__name__}: Checkboxes selected successfully for rows with {identifier_column}: {identifier_values} in table: {table_desc}")
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error selecting multiple checkboxes: {str(e)}")
-            raise</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_verification_actions_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\verification_actions.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from numpy import around
-from selenium.common import NoSuchElementException, TimeoutException
-
-from .base import Base
-from .decorators import wait_and_perform
-import logging
-
-
-class VerificationActions(Base):
-    @wait_and_perform(default_condition="presence")
-    def element_text_should_be(self, element, expected_text):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element text matches expected: {element_desc}, expected text: '{expected_text}'")
-        actual_text = element.text
-        assert actual_text == expected_text, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not matching actual text: '{actual_text}'"
-        logging.info(f"{self.__class__.__name__}: Element text matches expected: '{expected_text}', Actual text: '{actual_text}'")
-
-    @wait_and_perform(default_condition="presence")
-    def element_figure_should_be(self, element, expected_figure):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element figured matches expected: {element_desc}, expected figured: '{expected_figure}'")
-        expected_figure = float(expected_figure.replace(",", "").strip())
-        actual_figure = float(element.text.replace(",", "").strip())
-        assert around(actual_figure, decimals=2) == around(expected_figure, decimals=2), \
-            f"{self.__class__.__name__}: Expected figured: '{expected_figure}' is not matching actual figured: '{actual_figure}'"
-        logging.info(f"{self.__class__.__name__}: Element figured matches expected: '{expected_figure}', Actual figured: '{actual_figure}'")
-
-    @wait_and_perform(default_condition="presence")
-    def element_text_should_contains(self, element, expected_text):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element text contains expected: {element_desc}, expected text: '{expected_text}'")
-        actual_text = element.text
-        assert expected_text in actual_text, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not in actual text: '{actual_text}'"
-        logging.info(f"{self.__class__.__name__}: Element text contains expected: '{expected_text}', Actual text: '{actual_text}'")
-
-    @wait_and_perform(default_condition="presence")
-    def element_figure_to_text_should_contains(self, element, expected_text):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element figure to text contains expected: {element_desc}, expected text: '{expected_text}'")
-        expected_text = expected_text.replace(",", "").strip()
-        actual_text = element.text.replace(",", "").strip()
-        assert expected_text in actual_text, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not in actual text: '{actual_text}'"
-        logging.info(f"{self.__class__.__name__}: Element text contains expected: '{expected_text}', Actual text: '{actual_text}'")
-
-    def title_should_be(self, expected_title):
-        logging.info(f"{self.__class__.__name__}: Checking if page title matches expected: '{expected_title}'")
-        actual_title = self.driver.title
-        assert actual_title == expected_title, f"{self.__class__.__name__}: Expected title: '{expected_title}' is not matching actual title: '{actual_title}'"
-        logging.info(f"{self.__class__.__name__}: Title matches expected: '{expected_title}', Actual title: '{actual_title}'")
-
-    def title_should_contains(self, expected_title):
-        logging.info(f"{self.__class__.__name__}: Checking if page title contains expected: '{expected_title}'")
-        actual_title = self.driver.title
-        assert expected_title in actual_title, f"{self.__class__.__name__}: Expected title: '{expected_title}' is not in actual title: '{actual_title}'"
-        logging.info(f"{self.__class__.__name__}: Title contains expected: '{expected_title}', Actual title: '{actual_title}'")
-
-    def is_element_present(self, locator):
-        logging.info(f"{self.__class__.__name__}: Checking if element is present: {locator}")
-        try:
-            element = self.driver.find_element(*locator)
-            element_desc = self._get_element_description(element)
-            logging.info(f"{self.__class__.__name__}: Element is present: {element_desc}")
-            return True
-        except NoSuchElementException:
-            logging.info(f"{self.__class__.__name__}: Element is not present: {locator}")
-            return False
-
-    def is_element_visible(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Checking if element is visible: {locator}, timeout: {timeout}")
-        try:
-            element = self.wait_for_element(locator, condition="visibility", timeout=timeout)
-            element_desc = self._get_element_description(element)
-            logging.info(f"{self.__class__.__name__}: Element is visible: {element_desc}")
-            return True
-        except TimeoutException:
-            logging.info(f"{self.__class__.__name__}: Element is not visible: {locator}")
-            return False
-
-    def is_element_invisible(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Checking if element is invisible: {locator}, timeout: {timeout}")
-        try:
-            element = self.wait_for_element(locator, condition="invisibility", timeout=timeout)
-            element_desc = self._get_element_description(element)
-            logging.info(f"{self.__class__.__name__}: Element is invisible: {element_desc}")
-            return True
-        except TimeoutException:
-            logging.info(f"{self.__class__.__name__}: Element is not invisible: {locator}")
-            return False
-
-    def is_element_clickable(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Checking if element is clickable: {locator}, timeout: {timeout}")
-        try:
-            element = self.wait_for_element(locator, condition="clickable", timeout=timeout)
-            element_desc = self._get_element_description(element)
-            logging.info(f"{self.__class__.__name__}: Element is clickable: {element_desc}")
-            return True
-        except TimeoutException:
-            logging.info(f"{self.__class__.__name__}: Element is not clickable: {locator}")
-            return False
-
-    @wait_and_perform(default_condition="presence")
-    def is_element_selected(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element is selected: {element_desc}")
-        is_selected = element.is_selected()
-        logging.info(f"{self.__class__.__name__}: Element selected status: {is_selected} for element: {element_desc}")
-        return is_selected
-
-    @wait_and_perform(default_condition="presence")
-    def is_element_enabled(self, element):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element is enabled: {element_desc}")
-        is_enabled = element.is_enabled()
-        logging.info(f"{self.__class__.__name__}: Element enabled status: {is_enabled} for element: {element_desc}")
-        return is_enabled
-
-    @wait_and_perform(default_condition="presence")
-    def capture_element_value(self, element, variable_name):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Capturing value from element: {element_desc}")
-        value = self.get_text(element)
-        self.builtin.set_global_variable(f"${{{variable_name}}}", value)
-        logging.info(f"{self.__class__.__name__}: Saved value '{value}' to variable ${{{variable_name}}}")
-        return value
-
-    @wait_and_perform(default_condition="presence")
-    def assert_value_change(self, element, initial_value_variable, expected_change):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Asserting value change for element: {element_desc}")
-
-        initial_value = float(self.builtin.get_variable_value(f"${{{initial_value_variable}}}"))
-        current_value = float(self.get_text(element))
-        actual_change = around(current_value - initial_value, 2)
-        expected_change = float(expected_change)
-
-        logging.info(f"{self.__class__.__name__}: Actual diff: {actual_change}, Expected diff: {expected_change}")
-
-        if not self._compare_diff(actual_change, expected_change):
-            raise AssertionError(f"{self.__class__.__name__}: Dynamic check failed for element: {element_desc}")
-</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_wait_actions_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\web\web_action\wait_actions.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from .base import Base
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
-import logging
-import time
-
-class WaitActions(Base):
-    def wait_for_element_present(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Waiting for element to be present: {locator}")
-        return self.wait_for_element(locator, condition="presence", timeout=timeout)
-
-    def wait_for_element_visible(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Waiting for element to be visible: {locator}")
-        return self.wait_for_element(locator, condition="visibility", timeout=timeout)
-
-    def wait_for_element_clickable(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Waiting for element to be clickable: {locator}")
-        return self.wait_for_element(locator, condition="clickable", timeout=timeout)
-
-    def wait_for_text_present_in_element(self, locator, text, timeout=None):
-        if timeout is None:
-            timeout = self.default_timeout
-        logging.info(f"{self.__class__.__name__}: Waiting for text '{text}' to be present in element: {locator}")
-        try:
-            wait = WebDriverWait(self.driver, timeout)
-            element = wait.until(EC.text_to_be_present_in_element(locator, text))
-            element_desc = self._get_element_description(element)
-            logging.info(f"{self.__class__.__name__}: Text '{text}' is present in element: {element_desc}")
-            return element
-        except TimeoutException:
-            logging.error(f"{self.__class__.__name__}: Text '{text}' not present in element: {locator}")
-            raise
-
-    def wait_for_element_to_disappear(self, locator, timeout=None):
-        if timeout is None:
-            timeout = self.default_timeout
-        logging.info(f"{self.__class__.__name__}: Waiting for element to disappear: {locator}, timeout: {timeout}")
-        try:
-            self.wait_for_element(locator, condition="invisibility", timeout=timeout)
-            logging.info(f"{self.__class__.__name__}: Element disappeared: {locator}")
-            return True
-        except TimeoutException:
-            logging.warning(f"{self.__class__.__name__}: Element did not disappear: {locator} after {timeout} seconds")
-            return False
-
-    def wait_for_staleness_of(self, element, timeout=None):
-        if timeout is None:
-            timeout = self.default_timeout
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Waiting for staleness of element: {element_desc}")
-        try:
-            wait = WebDriverWait(self.driver, timeout)
-            wait.until(EC.staleness_of(element))
-            logging.info(f"{self.__class__.__name__}: Element is stale: {element_desc}")
-            return True
-        except TimeoutException:
-            logging.error(f"{self.__class__.__name__}: Element not stale: {element_desc}")
-            return False
-
-    def wait(self, seconds):
-        logging.info(f"{self.__class__.__name__}: Waiting for {seconds} seconds")
-        time.sleep(int(seconds))</pre>
+        logging.info(f"{self.__class__.__name__}: Current window closed successfully")
+
+    def set_window_size(self, width, height):
+        logging.info(f"{self.__class__.__name__}: Setting window size to {width}x{height}")
+        self.driver.set_window_size(width, height)
+        logging.info(f"{self.__class__.__name__}: Window size set successfully")
+
+    def maximize_window(self):
+        logging.info(f"{self.__class__.__name__}: Maximizing window")
+        self.driver.maximize_window()
+        logging.info(f"{self.__class__.__name__}: Window maximized successfully")
+
+    def minimize_window(self):
+        logging.info(f"{self.__class__.__name__}: Minimizing window")
+        self.driver.minimize_window()
+        logging.info(f"{self.__class__.__name__}: Window minimized successfully")
+
+    def fullscreen_window(self):
+        logging.info(f"{self.__class__.__name__}: Setting window to full screen")
+        self.driver.fullscreen_window()
+        logging.info(f"{self.__class__.__name__}: Window set to full screen successfully")</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_actions_py">
@@ -5304,28 +5354,28 @@ class WaitActions(Base):
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from libraries.web.web_action.alert_actions import AlertActions
-from libraries.web.web_action.basic_actions import BasicActions
-from libraries.web.web_action.browser_actions import BrowserActions
+from libraries.web.web_action.element_actions import ElementActions
+from libraries.web.web_action.navigation_actions import NavigationActions
 from libraries.web.web_action.cookie_actions import CookieActions
-from libraries.web.web_action.frame_window_actions import FrameWindowActions
+from libraries.web.web_action.window_actions import WindowActions
 from libraries.web.web_action.javascript_actions import JavaScriptActions
-from libraries.web.web_action.screenshot_actions import ScreenshotActions
+from libraries.web.web_action.utils_actions import UtilsActions
 from libraries.web.web_action.table_actions import TableActions
 from libraries.web.web_action.verification_actions import VerificationActions
 from libraries.web.web_action.wait_actions import WaitActions
 
 
 class WebElementActions(
-                        BasicActions,
+                        ElementActions,
                         VerificationActions,
                         WaitActions,
-                        FrameWindowActions,
+                        WindowActions,
                         JavaScriptActions,
                         TableActions,
-                        BrowserActions,
+                        NavigationActions,
                         CookieActions,
                         AlertActions,
-                        ScreenshotActions):
+                        UtilsActions):
     pass
 </pre>
 </div>
@@ -6452,7 +6502,7 @@ matplotlib~=3.9.4</pre>
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 58200.0
+        "CNY": 58000.0
     },
     "transactions": {
         "USD": {
@@ -6492,14 +6542,14 @@ matplotlib~=3.9.4</pre>
             }
         },
         "CNY": {
-            "2024-12-27": {
+            "2024-12-28": {
                 "inbound": {
                     "count": 0,
                     "total_amount": 0.0
                 },
                 "outbound": {
-                    "count": 4,
-                    "total_amount": 400.0
+                    "count": 2,
+                    "total_amount": 200.0
                 }
             }
         }
