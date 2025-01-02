@@ -79,7 +79,6 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_response_handler_py">response_handler.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_saved_fields_manager_py">saved_fields_manager.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_template_renderer_py">template_renderer.py</a>
-│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_variable_generator_py">variable_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api___init___py">__init__.py</a>
 │   │   ├── common/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_config_manager_py">config_manager.py</a>
@@ -88,6 +87,8 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_gen_temp_default_py">gen_temp_default.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_log_manager_py">log_manager.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_utility_helpers_py">utility_helpers.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_variable_generator_py">variable_generator.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_variable_transformer_py">variable_transformer.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common___init___py">__init__.py</a>
 │   │   ├── e2e/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_e2e_e2e_robot_generator_py">e2e_robot_generator.py</a>
@@ -630,21 +631,39 @@ tags:
 
 database:
   DEV:
-    type: postgresql  # or oracle
-    user: vhuang1
-    password: Apj.com1
-    host: 10.191.111.77
-    port: 5432
-    database: postgres
+    db_name1:
+      type: postgresql  # or oracle
+      user: vhuang1
+      password: Apj.com1
+      host: 10.191.111.77
+      port: 5432
+      database: postgres
+    db_name2:
+      type: postgresql  # or oracle
+      user: vhuang1
+      password: Apj.com1
+      host: 10.191.111.77
+      port: 5432
+      database: postgres
   UAT:
-    type: oracle
-    user: uat_user
-    password: uat_password
-    host: uat_host
-    port: 1521
-    service_name: uat_service_name
-    min_connections: 1
-    max_connections: 10
+    db_name1:
+      type: oracle
+      user: uat_user
+      password: uat_password
+      host: uat_host
+      port: 1521
+      service_name: uat_service_name
+      min_connections: 1
+      max_connections: 10
+    db_name2:
+      type: oracle
+      user: uat_user
+      password: uat_password
+      host: uat_host
+      port: 1521
+      service_name: uat_service_name
+      min_connections: 1
+      max_connections: 10
 </pre>
 </div>
 
@@ -763,7 +782,8 @@ tags:
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import logging
 import os
-from typing import Dict, List
+import re
+from typing import Dict, List, Any
 import pandas as pd
 from libraries.api.api_test_loader import APITestLoader
 from libraries.common.config_manager import ConfigManager
@@ -771,26 +791,27 @@ from libraries.common.utility_helpers import PROJECT_ROOT
 from robot.api import TestSuite
 from libraries.common.log_manager import logger_instance
 
+
 class APIRobotCasesGenerator:
     def __init__(self, test_config_path: str = None, test_cases_path: str = None) -&gt; None:
         self.project_root: str = PROJECT_ROOT
         self.test_config_path = test_config_path
         self.test_cases_path = test_cases_path
+        self.test_cases_df = None
+        self.api_suite = None
+
+        self._initialize()
+
+    def _initialize(self) -&gt; None:
+        """Initialize the configuration and components."""
+        self._load_configuration()
+        self._initialize_components()
+
+    def _load_configuration(self) -&gt; None:
+        """Load configuration from YAML file."""
+        self.test_config_path = self.test_config_path or os.path.join(self.project_root, 'configs', 'api_test_config.yaml')
 
         try:
-            self._load_configuration()
-            self._initialize_components()
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Initialization failed: {str(e)}")
-            raise RuntimeError(f"{self.__class__.__name__}: Initialization failed: {str(e)}")
-
-    def _load_configuration(self):
-        try:
-            self.test_config_path = (
-                os.path.join(self.project_root, 'configs', 'api_test_config.yaml')
-                if self.test_config_path is None
-                else self.test_config_path
-            )
             self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
             logging.info(f"{self.__class__.__name__}: Configuration loaded successfully from {self.test_config_path}")
         except FileNotFoundError:
@@ -800,60 +821,58 @@ class APIRobotCasesGenerator:
             logging.error(f"{self.__class__.__name__}: Error loading configuration: {str(e)}")
             raise
 
-    def _initialize_components(self):
-        try:
-            default_test_cases_path: str = os.path.join('test_cases', 'api_test_cases.xlsx')
-            self.test_cases_path: str = (
-                os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
-                if self.test_cases_path is None
-                else self.test_cases_path
-            )
+    def _initialize_components(self) -&gt; None:
+        """Initialize components required for test case generation."""
+        default_test_cases_path: str = os.path.join('test_cases', 'api_test_cases.xlsx')
+        self.test_cases_path = (
+            os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+            if self.test_cases_path is None
+            else self.test_cases_path
+        )
 
-            if not os.path.exists(self.test_cases_path):
-                logging.error(f"{self.__class__.__name__}: Test cases file not found at {self.test_cases_path}")
-                raise FileNotFoundError(f"Test cases file does not exist: {self.test_cases_path}")
+        if not os.path.exists(self.test_cases_path):
+            logging.error(f"{self.__class__.__name__}: Test cases file not found at {self.test_cases_path}")
+            raise FileNotFoundError(f"{self.__class__.__name__}: Test cases file does not exist: {self.test_cases_path}")
 
-            self.test_cases_df = APITestLoader(self.test_cases_path)
-            logging.info(f"{self.__class__.__name__}: Components initialized successfully")
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error initializing components: {str(e)}")
-            raise
+        self.test_cases_df = APITestLoader(self.test_cases_path)
+        logging.info(f"{self.__class__.__name__}: Components initialized successfully")
 
     def create_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None, test_suite=None) -&gt; TestSuite:
+        """Create a test suite from the filtered test cases."""
+        self.api_suite = test_suite if test_suite else TestSuite('API TestSuite')
+        self.api_suite.teardown.config(name='clear_saved_fields', args=[])
+
+        self._configure_test_resources()
+
+        tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
+        tags = tags or self.test_config.get('tags', [])
+
+        filtered_cases = self._filter_cases(tc_id_list, tags)
+
+        self._create_test_cases(filtered_cases)
+
+        logging.info(f"{self.__class__.__name__}: Test suite created successfully")
+        return self.api_suite
+
+    def _configure_test_resources(self) -&gt; None:
+        """Configure the test resources for the test suite."""
+        test_cases_path_arg = os.path.normpath(self.test_cases_path).replace(os.path.sep, '/')
+        logging.info(f"{self.__class__.__name__}: Using test cases from {test_cases_path_arg}")
+        self.api_suite.resource.imports.library(
+            'libraries.api.api_test_keywords.APITestKeywords',
+            args=[None, test_cases_path_arg]
+        )
+
+    def _filter_cases(self, tc_id_list: List[str], tags: List[str]) -&gt; pd.DataFrame:
+        """Filter test cases based on the provided TC ID list and tags."""
         try:
-            self.api_suite = test_suite if test_suite else TestSuite('API TestSuite')
-            self.api_suite.teardown.config(name='clear_saved_fields', args=[])
-            self._configure_test_resources()
-            tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
-            tags = tags or self.test_config.get('tags', [])
-
-            try:
-                filtered_cases = self.test_cases_df.filter_cases(tcid_list=tc_id_list, tags=tags)
-                self._create_test_cases(filtered_cases)
-            except Exception as e:
-                logging.error(f"{self.__class__.__name__}: Failed to create test cases: {str(e)}")
-                raise
-
-            logging.info(f"{self.__class__.__name__}: Test suite created successfully")
-            return self.api_suite
-
+            return self.test_cases_df.filter_cases(tcid_list=tc_id_list, tags=tags)
         except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error creating test suite: {str(e)}")
-            raise RuntimeError(f"Failed to create test suite: {str(e)}")
-
-    def _configure_test_resources(self):
-        try:
-            test_cases_path_arg = os.path.normpath(self.test_cases_path).replace(os.path.sep, '/')
-            logging.info(f"{self.__class__.__name__}: Using test cases from {test_cases_path_arg}")
-            self.api_suite.resource.imports.library(
-                'libraries.api.api_test_keywords.APITestKeywords',
-                args=[None, test_cases_path_arg]
-            )
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error configuring test resources: {str(e)}")
+            logging.error(f"{self.__class__.__name__}: Failed to filter test cases: {str(e)}")
             raise
 
-    def _create_test_cases(self, filtered_cases) -&gt; None:
+    def _create_test_cases(self, filtered_cases: pd.DataFrame) -&gt; None:
+        """Create test cases in the provided test suite."""
         try:
             for _, test_case in filtered_cases.iterrows():
                 self._create_single_test_case(test_case)
@@ -861,7 +880,8 @@ class APIRobotCasesGenerator:
             logging.error(f"{self.__class__.__name__}: Error creating test cases: {str(e)}")
             raise
 
-    def _create_single_test_case(self, test_case) -&gt; None:
+    def _create_single_test_case(self,  test_case: pd.Series) -&gt; None:
+        """Create a single test case in the test suite."""
         try:
             robot_api_test_name = f"API.{test_case['TCID']}"
             robot_api_test = self.api_suite.tests.create(
@@ -870,18 +890,15 @@ class APIRobotCasesGenerator:
             )
             robot_api_test.body.create_keyword(name='api_sanity_check', args=[])
             self._add_test_tags(robot_api_test, test_case)
-            robot_api_test.body.create_keyword(
-                name='execute_api_test_case',
-                args=[test_case['TCID']]
-            )
+            robot_api_test.body.create_keyword(name='execute_api_test_case', args=[test_case['TCID']])
             self._configure_test_conditions(robot_api_test, test_case)
             logging.info(f"{self.__class__.__name__}: Test case {test_case['TCID']} created successfully")
-
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error creating test case {test_case.get('TCID', 'Unknown')}: {str(e)}")
             raise
 
     def _add_test_tags(self, robot_api_test, test_case) -&gt; None:
+        """Add tags to the test case."""
         try:
             if 'Tags' in test_case and pd.notna(test_case['Tags']):
                 tags = [tag.strip() for tag in test_case['Tags'].split(',')]
@@ -892,37 +909,41 @@ class APIRobotCasesGenerator:
             raise
 
     def _configure_test_conditions(self, robot_api_test, test_case) -&gt; None:
+        """Configure setup and teardown conditions for the test case."""
         try:
             if pd.notna(test_case['Conditions']):
                 conditions = test_case['Conditions'].splitlines()
                 for condition in conditions:
-                    self._process_condition(condition, robot_api_test)
+                    if not condition.startswith('[TestSetup]'):
+                        self._process_condition(condition, robot_api_test)
+
+                test_setup_case_ids = re.findall(r'\[TestSetup\]\s*(\w*,*\s*\w*)', test_case['Conditions'])
+                if test_setup_case_ids:
+                    test_setup_case_ids = test_setup_case_ids[0].strip().split(',')
+                robot_api_test.setup.config(
+                    name='execute_conditions_cases_with_transformer',
+                    args=[test_case['TCID'], test_setup_case_ids]
+                )
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error configuring test conditions: {str(e)}")
             raise
 
     def _process_condition(self, condition: str, robot_api_test) -&gt; None:
+        """Process a single condition for setup or teardown."""
         try:
             condition_mapping = {
-                '[TestSetup]': (robot_api_test.setup, 'Test setup'),
                 '[TestTeardown]': (robot_api_test.teardown, 'Test teardown'),
                 '[SuiteSetup]': (self.api_suite.setup, 'Suite setup'),
                 '[SuiteTeardown]': (self.api_suite.teardown, 'Suite teardown')
             }
-
             for condition_type, (config_object, condition_name) in condition_mapping.items():
                 if condition_type in condition:
                     case_ids = condition.strip(condition_type).split(',')
-                    config_object.config(
-                        name='execute_multiple_api_test_cases',
-                        args=[case_ids]
-                    )
+                    config_object.config(name='execute_conditions_cases', args=[case_ids])
                     logging.info(f"{self.__class__.__name__}: Configured {condition_name} with case IDs: {case_ids}")
-
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error processing condition '{condition}': {str(e)}")
-            raise
-</pre>
+            raise</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_keywords_py">
@@ -933,7 +954,7 @@ class APIRobotCasesGenerator:
 import os
 import re
 from time import sleep
-from typing import Dict, List
+from typing import Dict, List, Any
 import pandas as pd
 from libraries.common.config_manager import ConfigManager
 from libraries.common.db_validator import DBValidator
@@ -946,6 +967,7 @@ from libraries.api.response_handler import ResponseValidator, ResponseFieldSaver
 from libraries.api.api_test_loader import APITestLoader
 from robot.libraries.BuiltIn import BuiltIn
 from robot.api.deco import keyword, library
+from libraries.common.variable_transformer import VariableTransformer
 
 builtin_lib = BuiltIn()
 
@@ -969,8 +991,8 @@ class APITestKeywords:
         self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
 
         self.active_environment = self.test_config['active_environment']
-        self.db_config = self.test_config.get('database', {}).get(self.active_environment, {})
-        if not self.db_config:
+        self.db_configs = self.test_config.get('database', {}).get(self.active_environment, {})
+        if not self.db_configs:
             raise ValueError(f"No database configuration for environment: {self.active_environment}")
 
     def _load_endpoints(self):
@@ -990,8 +1012,8 @@ class APITestKeywords:
         self.headers_generator: HeadersGenerator = HeadersGenerator(self.api_test_loader)
         self.api_response_asserter: ResponseValidator = ResponseValidator()
         self.response_field_saver: ResponseFieldSaver = ResponseFieldSaver()
+        self.variable_transformer = VariableTransformer()
         self.db_validator = DBValidator()
-
 
     @keyword
     def api_sanity_check(self) -&gt; None:
@@ -1008,15 +1030,9 @@ class APITestKeywords:
             logging.info(f"{self.__class__.__name__}: Cleared saved fields")
 
     @keyword
-    def execute_multiple_api_test_cases(self, test_case_ids: List[str] = None):
-
-        test_cases = self.api_test_loader = APITestLoader(self.test_cases_path).get_api_test_cases()
-
-        if test_case_ids is None:
-            test_case_ids = [tc['TCID'] for tc in test_cases]
-
+    def execute_conditions_cases(self, conditions_case_ids: List[str] = None):
         results = {}
-        for tcid in test_case_ids:
+        for tcid in conditions_case_ids:
             logging.info(f"{self.__class__.__name__}: Executing test case: {tcid}")
             result = self.execute_api_test_case(tcid)
             results[tcid] = result
@@ -1024,10 +1040,26 @@ class APITestKeywords:
         return results
 
     @keyword
+    def execute_conditions_cases_with_transformer(self, original_tcid, setup_case_ids: List[str] = None):
+
+        test_cases = APITestLoader(self.test_cases_path).get_api_test_cases()
+
+        # Execute function transformations before creating the test case
+        test_case = test_cases.loc[test_cases['TCID'] == original_tcid].to_dict('records')[0]
+        self._transformer_handler(test_case)
+
+        results = {}
+        for setup_id in setup_case_ids:
+            logging.info(f"{self.__class__.__name__}: Executing setup test case: {setup_id}")
+            result = self.execute_api_test_case(setup_id)
+            results[setup_id] = result
+
+        return results
+
+    @keyword
     def execute_api_test_case(self, test_case_id: str, is_dynamic_check: bool = False):
         try:
-
-            test_cases = self.api_test_loader = APITestLoader(self.test_cases_path).get_api_test_cases()
+            test_cases = APITestLoader(self.test_cases_path).get_api_test_cases()
             test_case = next((tc for _, tc in test_cases.iterrows() if tc['TCID'] == test_case_id), None)
 
             if test_case is None:
@@ -1067,14 +1099,23 @@ class APITestKeywords:
 
     def validate_data_base(self, test_case):
         try:
-            if 'DB.' in test_case['Exp Result']:
-                self.db_validator.setup_database(self.db_config)
-                for line in test_case['Exp Result'].splitlines():
-                    if line.strip().startswith('DB.'):
-                        self.db_validator.validate_database_value(line.strip())
+            for line in test_case['Exp Result'].splitlines():
+                if line.strip().startswith('db_'):
+                    prefix = line.strip().split('.')[0]
+                    db_config = self._get_db_config_by_prefix(prefix)
+                    if not db_config:
+                        raise ValueError(f"No database configuration found for prefix: {prefix}")
+                    self.db_validator.setup_database(db_config)
+                    self.db_validator.validate_database_value(line.strip())
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Failed to validate database: {str(e)}")
             raise e
+
+    def _get_db_config_by_prefix(self, prefix: str) -&gt; dict:
+        db_config = self.db_configs.get(prefix.lower(), {})
+        if not db_config:
+            raise ValueError(f"No database configuration found for prefix: {prefix}")
+        return db_config
 
     def _extract_check_with_tcids(self, test_case):
         conditions = test_case['Conditions']
@@ -1116,6 +1157,19 @@ class APITestKeywords:
         response, execution_time = RequestSender.send_request(url, method, headers, body, format_type)
 
         return response, execution_time
+
+    def _transformer_handler(self, test_case: Dict[str, Any]) -&gt; None:
+        transformers = test_case.get('Variable Transform', '').splitlines()
+        transformers_data = []
+        for transformer in transformers:
+            match = re.findall(r'(\w*)\((.*?)\s*(?:,\s*(.*?))?\)', transformer.strip())
+            if match:
+                function_name, input_field, output_field = match[0]
+                transformers_data.append((function_name.strip(), input_field.strip(), output_field.strip() if output_field else None))
+
+        self.variable_transformer.transform(transformers_data, test_case)
+        logging.info(f"{self.__class__.__name__}: Transformed variables for test case {test_case['TCID']}.")
+        logging.info("=" * 100)
 </pre>
 </div>
 
@@ -1312,7 +1366,7 @@ import re
 from typing import Any, Dict, Union
 from libraries.common.utility_helpers import UtilityHelpers
 from libraries.api.template_renderer import TemplateRenderer
-from libraries.api.variable_generator import VariableGenerator
+from libraries.common.variable_generator import VariableGenerator
 
 
 class BodyGenerator:
@@ -1424,7 +1478,7 @@ import yaml
 from typing import Dict, Any
 import pandas as pd
 from libraries.common.utility_helpers import UtilityHelpers
-from libraries.api.variable_generator import VariableGenerator
+from libraries.common.variable_generator import VariableGenerator
 from robot.libraries.BuiltIn import BuiltIn
 
 builtin_lib = BuiltIn()
@@ -1668,7 +1722,7 @@ class ResponseValidator(ResponseHandler):
     def validate_response_dynamic(self, test_case: dict, pre_check_responses: dict, post_check_responses: dict) -&gt; None:
         exp_results = test_case['Exp Result'].splitlines()
         for exp_result in exp_results:
-            dynamic_checks = re.findall(r'(\w+)\.(\$[.\[\]\w]+)=([+-]\d+)', exp_result)
+            dynamic_checks = re.findall(r'(\w+)\.(?!precheck|postcheck)(\$[.\[\]\w]+)=([+-]\d*\.?\d+)', exp_result)
             pre_post_checks = re.findall(r'(\w+)\.(precheck|postcheck)\.(\$[.\[\]\w]+)=(.+)', exp_result)
 
             if dynamic_checks:
@@ -1742,7 +1796,7 @@ class ResponseFieldSaver(ResponseHandler):
                 value = self._extract_value_from_response(response_content, field)
                 field_name = f'{test_case["TCID"]}.{field.strip()}'
                 # logging.info(f"{self.__class__.__name__}: Setting global variable {field_name} to {value}.")
-                logger.info(ColorLogger.info(f"=&gt; {self.__class__.__name__}: Setting global variable {field_name} to {value}."), html=True)
+                logger.info(ColorLogger.info(f"=&gt; {self.__class__.__name__}: Setting global variable ${{{field_name}}} to {value}."), html=True)
                 BuiltIn().set_global_variable(f'${{{field_name}}}', value)
             except Exception as e:
                 logging.error(f"{self.__class__.__name__}: Failed to process field '{field}': {e}")</pre>
@@ -1858,67 +1912,6 @@ class TemplateRenderer:
             return rendered_body
         else:
             raise ValueError(f"TemplateRenderer: Unsupported format type: {format_type}")
-</pre>
-</div>
-
-<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_variable_generator_py">
-    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\api\variable_generator.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import random
-import string
-import uuid
-import datetime
-from typing import Any, Dict, Callable
-
-
-class VariableGenerator:
-    @staticmethod
-    def generate_dynamic_value(field_name: str) -&gt; Any:
-        handlers: Dict[str, Callable[[str], Any]] = {
-            'uetr': VariableGenerator._generate_uuid4,
-            'uuid4': VariableGenerator._generate_uuid4,
-            'value_date': VariableGenerator._generate_current_day,
-            'msg_id': VariableGenerator._generate_msg_id,
-            'timestamp': VariableGenerator._generate_timestamp,
-            'formated_timestamp': VariableGenerator._generate_formated_timestamp,
-            'bic': VariableGenerator._generate_bic
-        }
-        return handlers.get(field_name, VariableGenerator._generate_error_handling)()
-
-    @staticmethod
-    def _generate_uuid4() -&gt; str:
-        return str(uuid.uuid4())
-
-    @staticmethod
-    def _generate_current_day(date_format: str = "%Y%m%d") -&gt; str:
-        return datetime.datetime.now().strftime(date_format)
-
-    @staticmethod
-    def _generate_msg_id() -&gt; str:
-        prefix = 'MSG'
-        suffix = ''.join(random.choices(string.ascii_lowercase, k=5))
-        timestamp = VariableGenerator._generate_timestamp()
-        msg_id = f'{prefix}{timestamp}{suffix}'
-        return msg_id
-
-    @staticmethod
-    def _generate_timestamp() -&gt; str:
-        return str(int(datetime.datetime.now().timestamp()))
-
-    @staticmethod
-    def _generate_formated_timestamp() -&gt; str:
-        now = datetime.datetime.now()
-        timestamp_str = now.strftime("%m%d%H%M%S") + f"{now.microsecond // 1000:03d}"
-        return timestamp_str
-
-    @staticmethod
-    def _generate_bic() -&gt; str:
-        return ''.join(random.choices(string.ascii_uppercase, k=8))
-
-    @staticmethod
-    def _generate_error_handling() -&gt; str:
-        raise ValueError(f"VariableGenerator: No handler registered for this field.")
 </pre>
 </div>
 
@@ -2046,7 +2039,7 @@ class OracleDatabase(Database):
             finally:
                 self.pool = None
 
-    def execute_query(self, table: str, fields: Optional[List[str]] = None, where: Optional[str] = None) -&gt; List[Dict]:
+    def execute_query(self, table: str, fields: Optional[List[str]] = None, where: Optional[str] = None, order_by: Optional[str] = None) -&gt; List[Dict]:
         if fields:
             field_str = ', '.join(fields)
         else:
@@ -2055,6 +2048,8 @@ class OracleDatabase(Database):
         query = f"SELECT {field_str} FROM {table}"
         if where:
             query += f" WHERE {where}"
+        if order_by:
+            query += f" ORDER BY {order_by}"
 
         connection = self._get_connection()
         try:
@@ -2144,7 +2139,7 @@ class PostgreSQLDatabase(Database):
             except psycopg2.Error:
                 pass  # Ignore if already closed or if there's an error during close
 
-    def execute_query(self, table: str, fields: Optional[List[str]] = None, where: Optional[str] = None) -&gt; List[Dict]:
+    def execute_query(self, table: str, fields: Optional[List[str]] = None, where: Optional[str] = None, order_by: Optional[str] = None) -&gt; List[Dict]:
         if fields:
             field_str = ', '.join(fields)
         else:
@@ -2153,6 +2148,8 @@ class PostgreSQLDatabase(Database):
         query = f"SELECT {field_str} FROM {table}"
         if where:
             query += f" WHERE {where}"
+        if order_by:
+            query += f" ORDER BY {order_by}"
 
         connection = self._get_connection()
         try:
@@ -2243,30 +2240,47 @@ builtin_lib = BuiltIn()
 class DBValidator:
     def __init__(self):
         self.db = None
+        self.db_cache = {}
 
     def setup_database(self, db_config):
+        db_key = self.get_db_key(db_config)
+        if db_key in self.db_cache:
+            self.db = self.db_cache[db_key]
+            logging.info(f"{self.__class__.__name__}: Using cached DB connection for {db_key}")
+        else:
+            db_type = db_config['type'].lower()
+            db_config.pop('type')
+            self.db = create_database(db_type, **db_config)
+            self.db_cache[db_key] = self.db
+            logging.info(f"{self.__class__.__name__}: New DB connection created and cached for {db_key}")
+
+    def get_db_key(self, db_config):
         db_type = db_config['type'].lower()
-        db_config.pop('type')
-        self.db = create_database(db_type, **db_config)
+        host = db_config.get('host', 'localhost')
+        port = db_config.get('port', 3306)
+        db_name = db_config.get('database', '')
+        return f"{db_type}_{host}_{port}_{db_name}"
 
     def validate_database_value(self, db_clause):
         if not self.db:
-            raise ValueError("Database connection is not configured.")
+            raise ValueError("{self.__class__.__name__}: Database connection is not configured.")
 
-        # Parse the format DB.TableName.FieldName[FilterFieldName=FilterValue;AnotherField=AnotherValue]=ExpectedValue
-        pattern = r'^DB\.(?P&lt;Table&gt;\w+)\.(?P&lt;Field&gt;\w+)\s*\[(?P&lt;Filters&gt;[^\]]+)\]\s*=\s*(?P&lt;ExpectedValue&gt;.+)$'
+        # Parse the format: db_name1.TableName.FieldName[FilterFieldName=FilterValue;AnotherField=AnotherValue][OrderBy=CreateTime]=ExpectedValue
+        pattern = r'^db_\w+\.(?P&lt;Table&gt;\w+)\.(?P&lt;Field&gt;\w+)\s*\[(?P&lt;Filters&gt;[^\]]+)\](?:\s*\[(?P&lt;OrderBy&gt;[^\]]+)\])?\s*=\s*(?P&lt;ExpectedValue&gt;.+)$'
 
         match = re.match(pattern, db_clause)
         if not match:
-            raise ValueError(f"Invalid format for validate_database_value: {db_clause}")
+            raise ValueError(f"{self.__class__.__name__}: Invalid format for validate_database_value: {db_clause}")
 
         # Extract components using named groups
         table_name = match.group('Table')
         field_name = match.group('Field')
         filters = match.group('Filters')
+        order_by = match.group('OrderBy')
         expected_value = match.group('ExpectedValue').strip()
 
-        # Check if there's a filter part and process it
+        # Process filters to build WHERE clause
+        where_clause = ''
         if filters:
             filter_conditions = filters.split(';')
             where_clauses = []
@@ -2274,27 +2288,46 @@ class DBValidator:
                 filter_field, filter_value = condition.split('=')
                 where_clauses.append(f"{filter_field} = '{filter_value}'")
             where_clause = ' AND '.join(where_clauses)
+
+        # Process order_by
+        if order_by:
+            order_by_clause = f"{order_by.replace('OrderBy=', '')}"
         else:
-            where_clause = None
+            order_by_clause = ''
 
-        # Query the database
-        result = self.db.execute_query(table_name, fields=[field_name], where=where_clause)
+        # Build SQL for logging
+        sql_query = f"SELECT {field_name} FROM {table_name}"
+        if where_clause:
+            sql_query += f" WHERE {where_clause}"
+        if order_by_clause:
+            sql_query += f" ORDER BY {order_by_clause}"
 
+        # Log the generated SQL query
+        logging.info(f"{self.__class__.__name__}: Generated SQL query: {sql_query}")
+
+        # Execute the generated query
+        result = self.db.execute_query(table_name, fields=[field_name], where=where_clause, order_by=order_by_clause)
+
+        # Validate query result
         if not result:
+            no_data_message = f"No data found for field '{field_name}' in table '{table_name}'."
             if where_clause:
-                raise AssertionError(f"No data found for {field_name} in {table_name} where {where_clause}")
-            else:
-                raise AssertionError(f"No data found for {field_name} in {table_name}")
+                no_data_message += f" Filter applied: {where_clause}."
+            if order_by_clause:
+                no_data_message += f" Order: {order_by_clause}."
+            raise AssertionError(no_data_message)
 
         actual_value = result[0][field_name]
 
         if actual_value != expected_value:
-            raise AssertionError(f"Database value mismatch. Expected {expected_value} but got {actual_value} for {field_name} in {table_name}")
+            raise AssertionError(
+                f"{self.__class__.__name__}: Database value mismatch. Expected '{expected_value}' but got '{actual_value}' for field '{field_name}' in table '{table_name}'."
+            )
 
-        logging.info(f"{self.__class__.__name__}: Database value matched for {field_name} in {table_name}. Expected: {expected_value}, Actual: {actual_value}")
-        logging.info(f"{self.__class__.__name__}: {db_clause} passed.")
-
-
+        logging.info(
+            f"{self.__class__.__name__}: Database value matched for '{field_name}' in table '{table_name}'. "
+            f"Expected: '{expected_value}', Actual: '{actual_value}'. Executed SQL: {sql_query}"
+        )
 </pre>
 </div>
 
@@ -2563,6 +2596,178 @@ class UtilityHelpers:
 
 
 PROJECT_ROOT = UtilityHelpers.get_project_root()
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_variable_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\variable_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import random
+import string
+import uuid
+import datetime
+from typing import Any, Dict, Callable
+
+
+class VariableGenerator:
+    @staticmethod
+    def generate_dynamic_value(field_name: str) -&gt; Any:
+        handlers: Dict[str, Callable[[str], Any]] = {
+            'uetr': VariableGenerator._generate_uuid4,
+            'uuid4': VariableGenerator._generate_uuid4,
+            'value_date': VariableGenerator._generate_current_day,
+            'msg_id': VariableGenerator._generate_msg_id,
+            'timestamp': VariableGenerator._generate_timestamp,
+            'formated_timestamp': VariableGenerator._generate_formated_timestamp,
+            'bic': VariableGenerator._generate_bic
+        }
+        return handlers.get(field_name, VariableGenerator._generate_error_handling)()
+
+    @staticmethod
+    def _generate_uuid4() -&gt; str:
+        return str(uuid.uuid4())
+
+    @staticmethod
+    def _generate_current_day(date_format: str = "%Y%m%d") -&gt; str:
+        return datetime.datetime.now().strftime(date_format)
+
+    @staticmethod
+    def _generate_msg_id() -&gt; str:
+        prefix = 'MSG'
+        suffix = ''.join(random.choices(string.ascii_lowercase, k=5))
+        timestamp = VariableGenerator._generate_timestamp()
+        msg_id = f'{prefix}{timestamp}{suffix}'
+        return msg_id
+
+    @staticmethod
+    def _generate_timestamp() -&gt; str:
+        return str(int(datetime.datetime.now().timestamp()))
+
+    @staticmethod
+    def _generate_formated_timestamp() -&gt; str:
+        now = datetime.datetime.now()
+        timestamp_str = now.strftime("%m%d%H%M%S") + f"{now.microsecond // 1000:03d}"
+        return timestamp_str
+
+    @staticmethod
+    def _generate_bic() -&gt; str:
+        return ''.join(random.choices(string.ascii_uppercase, k=8))
+
+    @staticmethod
+    def _generate_error_handling() -&gt; str:
+        raise ValueError(f"VariableGenerator: No handler registered for this field.")
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_common_variable_transformer_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\common\variable_transformer.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import re
+import datetime
+from robot.libraries.BuiltIn import BuiltIn
+from typing import Any, Dict
+from robot.api import logger
+from libraries.common.log_manager import ColorLogger
+from libraries.common.variable_generator import VariableGenerator
+
+
+class VariableTransformer:
+    def __init__(self):
+        self.builtin = BuiltIn()
+        self.functions = {
+            'to_iso_date': self._to_iso_date,
+            'to_timestamp': self._to_timestamp,
+            'to_upper': self._to_upper,
+            'to_lower': self._to_lower,
+            'remove_spaces': self._remove_spaces,
+            'extract_numbers': self._extract_numbers,
+            'add': self._add,
+            'subtract': self._subtract,
+            'multiply': self._multiply,
+            'divide': self._divide,
+        }
+
+    def transform(self, transformations, test_case: Dict[str, Any]) -&gt; None:
+        for function_name, input_field, output_field in transformations:
+            if output_field is None:
+                output_field = self._get_output_field(input_field)
+            input_value = self._get_input_value(input_field, test_case)
+
+            if function_name not in self.functions:
+                raise ValueError(f"Unknown function: {function_name}")
+
+            output_value = self.functions[function_name](input_value)
+
+            self._save_as_global_variable(output_field, output_value)
+
+    def _get_input_value(self, input_field: str, test_case: Dict[str, Any]) -&gt; Any:
+        if input_field.startswith('{{') and input_field.endswith('}}'):
+            # Generate dynamic value
+            dynamic_field = re.findall(r'{{(.*?)}}', input_field)[0]
+            return VariableGenerator.generate_dynamic_value(dynamic_field)
+        elif input_field.startswith('${') and input_field.endswith('}'):
+            # Get Robot Framework variable
+            return self.builtin.get_variable_value(input_field)
+        elif input_field in test_case:
+            # Get value from test case
+            return test_case[input_field]
+        else:
+            # Try to get it as a global variable
+            return self.builtin.get_variable_value(f"${{{input_field}}}")
+
+    def _get_output_field(self, input_field: str) -&gt; Any:
+        if input_field.startswith('{{') and input_field.endswith('}}'):
+            dynamic_field = re.findall(r'{{(.*?)}}', input_field)[0]
+            return dynamic_field
+        elif input_field.startswith('${') and input_field.endswith('}'):
+            field_name = re.findall(r'\$\{\s*(.*?)\s*\}', input_field)[0]
+            return field_name
+
+    def _save_as_global_variable(self, output_field: str, value: Any) -&gt; None:
+        logger.info(ColorLogger.info(f"=&gt; {self.__class__.__name__}: Setting global variable ${{{output_field}}} to {value}."), html=True)
+        self.builtin.set_global_variable(f'${{{output_field}}}', value)
+
+    # Function definitions
+    def _to_iso_date(self, value: str) -&gt; str:
+        date_obj = datetime.datetime.strptime(value, "%Y%m%d")
+        return date_obj.strftime("%Y-%m-%d")
+
+    def _to_timestamp(self, value: str) -&gt; int:
+        date_obj = datetime.datetime.strptime(value, "%Y-%m-%d")
+        return int(date_obj.timestamp())
+
+    def _to_upper(self, value: str) -&gt; str:
+        return value.upper()
+
+    def _to_lower(self, value: str) -&gt; str:
+        return value.lower()
+
+    def _remove_spaces(self, value: str) -&gt; str:
+        return value.replace(" ", "")
+
+    def _extract_numbers(self, value: str) -&gt; str:
+        return ''.join(filter(str.isdigit, value))
+
+    def _add(self, value: str) -&gt; float:
+        numbers = [float(n) for n in value.split(',')]
+        return sum(numbers)
+
+    def _subtract(self, value: str) -&gt; float:
+        numbers = [float(n) for n in value.split(',')]
+        return numbers[0] - sum(numbers[1:])
+
+    def _multiply(self, value: str) -&gt; float:
+        numbers = [float(n) for n in value.split(',')]
+        result = 1
+        for n in numbers:
+            result *= n
+        return result
+
+    def _divide(self, value: str) -&gt; float:
+        numbers = [float(n) for n in value.split(',')]
+        return numbers[0] / numbers[1] if numbers[1] != 0 else float('inf')
 </pre>
 </div>
 
@@ -5955,7 +6160,7 @@ if __name__ == "__main__":
     elif args.performance:
         suite_to_run = create_performance_suite()
     else:
-        suite_to_run = create_e2e_suite()
+        suite_to_run = create_api_suite()
 
     run_test_suite(suite_to_run)
 </pre>
@@ -6505,7 +6710,7 @@ matplotlib~=3.9.4</pre>
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 57600.0
+        "CNY": 66100.0
     },
     "transactions": {
         "USD": {
@@ -6545,14 +6750,14 @@ matplotlib~=3.9.4</pre>
             }
         },
         "CNY": {
-            "2024-12-29": {
+            "2025-01-02": {
                 "inbound": {
-                    "count": 0,
-                    "total_amount": 0.0
+                    "count": 12,
+                    "total_amount": 1200.0
                 },
                 "outbound": {
-                    "count": 1,
-                    "total_amount": 100.0
+                    "count": 3,
+                    "total_amount": 300.0
                 }
             }
         }
