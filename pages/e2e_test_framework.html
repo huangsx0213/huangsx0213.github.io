@@ -4098,7 +4098,7 @@ class SummaryReportGenerator:
                         color = "green" if row[col].upper() == "PASS" else ("red" if row[col].upper() == "FAIL" else "orange")
                         html_table += f'&lt;td style="text-align: center; color: {color};"&gt;{row[col]}&lt;/td&gt;\n'
                     elif col == "Field":
-                        html_table += f'&lt;td class="field-cell"&gt;{row[col]}&lt;span class="tooltip"&gt;{row[col]}&lt;/span&gt;&lt;/td&gt;\n'
+                        html_table += f'&lt;td class="field-cell" title="{row[col]}"&gt;{row[col]}&lt;/td&gt;\n'
                     else:
                         html_table += f'&lt;td style="text-align: center;"&gt;{row[col]}&lt;/td&gt;\n'
                 html_table += '&lt;/tr&gt;\n'
@@ -4127,7 +4127,7 @@ class SummaryReportGenerator:
                         color = "green" if row[col].upper() == "PASS" else ("red" if row[col].upper() == "FAIL" else "orange")
                         html_table += f'&lt;td style="text-align: center; color: {color};"&gt;{row[col]}&lt;/td&gt;\n'
                     elif col == "Field":
-                        html_table += f'&lt;td class="field-cell"&gt;{row[col]}&lt;span class="tooltip"&gt;{row[col]}&lt;/span&gt;&lt;/td&gt;\n'
+                        html_table += f'&lt;td class="field-cell" title="{row[col]}"&gt;{row[col]}&lt;/td&gt;\n'
                     else:
                         html_table += f'&lt;td style="text-align: center;"&gt;{row[col]}&lt;/td&gt;\n'
                 html_table += '&lt;/tr&gt;\n'
@@ -4146,8 +4146,7 @@ class SummaryReportGenerator:
             )
 
         html_table += '&lt;/table&gt;'
-        return html_table
-</pre>
+        return html_table</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">
@@ -7130,49 +7129,15 @@ function openInNewTab(url) {
         max-width: 200px;
         word-wrap: break-word;
         white-space: normal;
+        font-size: 0.8em;
         }
         .field-cell {
         max-width: 300px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        font-size: 0.9em;
-        position: relative;
-        cursor: pointer;
-    }
-
-    .field-cell .tooltip {
-        visibility: hidden;
-        width: 300px;
-        background-color: #555;
-        color: #fff;
-        text-align: center;
-        border-radius: 6px;
-        padding: 5px;
-        position: absolute;
-        z-index: 1;
-        bottom: 125%;
-        left: 50%;
-        margin-left: -150px;
-        opacity: 0;
-        transition: opacity 0.3s;
-    }
-
-    .field-cell .tooltip::after {
-        content: "";
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        margin-left: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: #555 transparent transparent transparent;
-    }
-
-    .field-cell:hover .tooltip {
-        visibility: visible;
-        opacity: 1;
-    }
+        font-size: 0.8em;
+        }
     &lt;/style&gt;
 &lt;/head&gt;
 &lt;body&gt;
@@ -7191,7 +7156,7 @@ function openInNewTab(url) {
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 69900.0
+        "CNY": 70500.0
     },
     "transactions": {
         "USD": {
@@ -7233,12 +7198,12 @@ function openInNewTab(url) {
         "CNY": {
             "2025-01-20": {
                 "inbound": {
-                    "count": 96,
-                    "total_amount": 9600.0
+                    "count": 108,
+                    "total_amount": 10800.0
                 },
                 "outbound": {
-                    "count": 48,
-                    "total_amount": 4800.0
+                    "count": 54,
+                    "total_amount": 5400.0
                 }
             }
         }
