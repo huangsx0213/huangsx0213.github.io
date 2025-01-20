@@ -3925,7 +3925,7 @@ class SummaryReportGenerator:
         return {
              "TCID": tcid,
              "Description": description,
-             "Type": "Assertions",
+             "Type": "Self",
              "Field": field,
              "Pre Value": '',
              "Post Value": '',
@@ -3950,7 +3950,7 @@ class SummaryReportGenerator:
         return {
             "TCID": tcid,
             "Description": description,
-            "Type": "Dynamic Checks",
+            "Type": "Diff",
             "Field": field,
             "Pre Value": pre_value if pre_value else '',
             "Post Value": post_value if post_value else '',
@@ -3970,7 +3970,7 @@ class SummaryReportGenerator:
         return {
             "TCID": tcid,
              "Description": description,
-            "Type": f"{check_type} Checks",
+            "Type": f"{check_type}",
             "Field": field,
             "Pre Value": '',
             "Post Value": '',
@@ -3995,7 +3995,7 @@ class SummaryReportGenerator:
         return {
             "TCID": tcid,
             "Description": description,
-            "Type": "Database Checks",
+            "Type": "DB",
             "Field": f"{table_name}.{field}",  # added table name to the field
             "Pre Value": '',
             "Post Value": '',
@@ -4070,15 +4070,17 @@ class SummaryReportGenerator:
             yield row
 
     def _create_html_table(self, df: DataFrame) -&gt; str:
-        """
-        Creates the HTML table content.
-        """
         html_table = '&lt;table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;"&gt;\n'
 
         # Add table headers
         html_table += '&lt;tr&gt;\n'
         for col in df.columns:
-            html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;{col}&lt;/th&gt;\n'
+            if col == "Description":
+                html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;" class="description-cell"&gt;{col}&lt;/th&gt;\n'
+            elif col == "Field":
+                html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Field&lt;/th&gt;\n'
+            else:
+                html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;{col}&lt;/th&gt;\n'
         html_table += '&lt;/tr&gt;\n'
 
         # Add table rows
@@ -4094,8 +4096,9 @@ class SummaryReportGenerator:
                 for col in df.columns[2:]:  # Skip TCID and Description columns
                     if col == "Result":
                         color = "green" if row[col].upper() == "PASS" else ("red" if row[col].upper() == "FAIL" else "orange")
-                        # Use font color instead of background color
                         html_table += f'&lt;td style="text-align: center; color: {color};"&gt;{row[col]}&lt;/td&gt;\n'
+                    elif col == "Field":
+                        html_table += f'&lt;td class="field-cell"&gt;{row[col]}&lt;span class="tooltip"&gt;{row[col]}&lt;/span&gt;&lt;/td&gt;\n'
                     else:
                         html_table += f'&lt;td style="text-align: center;"&gt;{row[col]}&lt;/td&gt;\n'
                 html_table += '&lt;/tr&gt;\n'
@@ -4109,7 +4112,7 @@ class SummaryReportGenerator:
                     )
                     html_table = html_table.replace(
                         f'&lt;td rowspan="placeholder_description"&gt;{current_description}&lt;/td&gt;',
-                        f'&lt;td rowspan="{description_rowspan}" style="text-align: center; vertical-align: middle;"&gt;{current_description}&lt;/td&gt;',
+                        f'&lt;td rowspan="{description_rowspan}" style="text-align: center; vertical-align: middle;" class="description-cell"&gt;{current_description}&lt;/td&gt;',
                         1
                     )
                 current_tcid = row["TCID"]
@@ -4122,8 +4125,9 @@ class SummaryReportGenerator:
                 for col in df.columns[2:]:  # Skip TCID and Description columns
                     if col == "Result":
                         color = "green" if row[col].upper() == "PASS" else ("red" if row[col].upper() == "FAIL" else "orange")
-                        # Use font color instead of background color
                         html_table += f'&lt;td style="text-align: center; color: {color};"&gt;{row[col]}&lt;/td&gt;\n'
+                    elif col == "Field":
+                        html_table += f'&lt;td class="field-cell"&gt;{row[col]}&lt;span class="tooltip"&gt;{row[col]}&lt;/span&gt;&lt;/td&gt;\n'
                     else:
                         html_table += f'&lt;td style="text-align: center;"&gt;{row[col]}&lt;/td&gt;\n'
                 html_table += '&lt;/tr&gt;\n'
@@ -4137,7 +4141,7 @@ class SummaryReportGenerator:
             )
             html_table = html_table.replace(
                 f'&lt;td rowspan="placeholder_description"&gt;{current_description}&lt;/td&gt;',
-                f'&lt;td rowspan="{description_rowspan}" style="text-align: center; vertical-align: middle;"&gt;{current_description}&lt;/td&gt;',
+                f'&lt;td rowspan="{description_rowspan}" style="text-align: center; vertical-align: middle;" class="description-cell"&gt;{current_description}&lt;/td&gt;',
                 1
             )
 
@@ -7122,6 +7126,53 @@ function openInNewTab(url) {
         .warning {
             color: orange;
         }
+        .description-cell {
+        max-width: 200px;
+        word-wrap: break-word;
+        white-space: normal;
+        }
+        .field-cell {
+        max-width: 300px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.9em;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .field-cell .tooltip {
+        visibility: hidden;
+        width: 300px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -150px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .field-cell .tooltip::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #555 transparent transparent transparent;
+    }
+
+    .field-cell:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
+    }
     &lt;/style&gt;
 &lt;/head&gt;
 &lt;body&gt;
@@ -7140,7 +7191,7 @@ function openInNewTab(url) {
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 65100.0
+        "CNY": 69900.0
     },
     "transactions": {
         "USD": {
@@ -7180,14 +7231,14 @@ function openInNewTab(url) {
             }
         },
         "CNY": {
-            "2025-01-19": {
+            "2025-01-20": {
                 "inbound": {
-                    "count": 132,
-                    "total_amount": 13200.0
+                    "count": 96,
+                    "total_amount": 9600.0
                 },
                 "outbound": {
-                    "count": 66,
-                    "total_amount": 6600.0
+                    "count": 48,
+                    "total_amount": 4800.0
                 }
             }
         }
