@@ -104,6 +104,7 @@
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_dashboard_generator_py">robot_dashboard_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_report_data_py">robot_report_data.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_robot_result_visitor_py">robot_result_visitor.py</a>
+│   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_summary_report_generator_py">summary_report_generator.py</a>
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot___init___py">__init__.py</a>
 │   │   ├── web/
 │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_custom_action_executor_py">custom_action_executor.py</a>
@@ -131,6 +132,7 @@
 │   │   │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action___init___py">__init__.py</a>
 │   ├── templates/
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_templates_rf_report_template_html">rf_report_template.html</a>
+│   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_templates_test_summary_template_html">test_summary_template.html</a>
 │   ├── testing_server/
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_positions_json">positions.json</a>
 │   │   ├── <a href="#C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_server_py">server.py</a>
@@ -838,7 +840,6 @@ class APIRobotCasesGenerator:
         logging.info(f"{self.__class__.__name__}: Components initialized successfully")
 
     def create_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None, test_suite=None) -&gt; TestSuite:
-        """Create a test suite from the filtered test cases."""
         self.api_suite = test_suite if test_suite else TestSuite('API TestSuite')
         self.api_suite.teardown.config(name='clear_saved_fields', args=[])
 
@@ -853,6 +854,13 @@ class APIRobotCasesGenerator:
 
         logging.info(f"{self.__class__.__name__}: Test suite created successfully")
         return self.api_suite
+
+    def _add_report_generation_test(self):
+        report_test = self.api_suite.tests.create(
+            name="Generate API Test Report",
+            doc="Generates the API test report after all tests have been executed"
+        )
+        report_test.body.create_keyword(name='generate_report', args=[])
 
     def _configure_test_resources(self) -&gt; None:
         """Configure the test resources for the test suite."""
@@ -880,7 +888,7 @@ class APIRobotCasesGenerator:
             logging.error(f"{self.__class__.__name__}: Error creating test cases: {str(e)}")
             raise
 
-    def _create_single_test_case(self,  test_case: pd.Series) -&gt; None:
+    def _create_single_test_case(self, test_case: pd.Series) -&gt; None:
         """Create a single test case in the test suite."""
         try:
             robot_api_test_name = f"API.{test_case['TCID']}"
@@ -911,39 +919,67 @@ class APIRobotCasesGenerator:
     def _configure_test_conditions(self, robot_api_test, test_case) -&gt; None:
         """Configure setup and teardown conditions for the test case."""
         try:
-            if pd.notna(test_case['Conditions']):
-                conditions = test_case['Conditions'].splitlines()
-                for condition in conditions:
-                    if not condition.startswith('[TestSetup]'):
-                        self._process_condition(condition, robot_api_test)
+            has_setup_condition = '[TestSetup]' in test_case['Conditions']
+            has_transformer = test_case['Variable Transform'] != ''
 
-                test_setup_case_ids = re.findall(r'\[TestSetup\]\s*(\w*,*\s*\w*)', test_case['Conditions'])
-                if test_setup_case_ids:
-                    test_setup_case_ids = test_setup_case_ids[0].strip().split(',')
-                robot_api_test.setup.config(
-                    name='execute_conditions_cases_with_transformer',
-                    args=[test_case['TCID'], test_setup_case_ids]
-                )
+            if not has_transformer:
+                self._process_conditions(test_case['Conditions'], robot_api_test)
+            else:
+                self._process_transformer_conditions(test_case, robot_api_test, has_setup_condition)
+
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error configuring test conditions: {str(e)}")
             raise
+
+    def _process_conditions(self, conditions_str: str, robot_api_test) -&gt; None:
+        """Processes conditions when no transformer is present."""
+        conditions = conditions_str.splitlines()
+        for condition in conditions:
+            self._process_condition(condition, robot_api_test)
+
+    def _process_transformer_conditions(self, test_case, robot_api_test, has_setup_condition):
+        """Processes conditions when a transformer is present."""
+        if not has_setup_condition:
+            robot_api_test.setup.config(
+                name='execute_transform', args=[test_case['TCID']])
+        else:
+            conditions = test_case['Conditions'].splitlines()
+            setup_case_ids = []
+            for condition in conditions:
+                if condition.startswith('[TestSetup]'):
+                    setup_case_ids = re.findall(r'\[TestSetup\]\s*([\w,\s]*)', condition)
+                    if setup_case_ids:
+                        setup_case_ids = setup_case_ids[0].strip().split(',')
+                else:
+                    self._process_condition(condition, robot_api_test)
+
+            if setup_case_ids:
+                robot_api_test.setup.config(
+                    name='execute_conditions_cases_with_transformer',
+                    args=[test_case['TCID'], setup_case_ids]
+                )
 
     def _process_condition(self, condition: str, robot_api_test) -&gt; None:
         """Process a single condition for setup or teardown."""
         try:
             condition_mapping = {
+                '[TestSetup]': (robot_api_test.setup, 'Test setup'),
                 '[TestTeardown]': (robot_api_test.teardown, 'Test teardown'),
-                '[SuiteSetup]': (self.api_suite.setup, 'Suite setup'),
-                '[SuiteTeardown]': (self.api_suite.teardown, 'Suite teardown')
+                '[SuiteSetup]': (self.api_suite.setup, 'Suite setup'),  # Assuming self.api_suite exists
+                '[SuiteTeardown]': (self.api_suite.teardown, 'Suite teardown')  # Assuming self.api_suite exists
             }
             for condition_type, (config_object, condition_name) in condition_mapping.items():
                 if condition_type in condition:
-                    case_ids = condition.strip(condition_type).split(',')
-                    config_object.config(name='execute_conditions_cases', args=[case_ids])
-                    logging.info(f"{self.__class__.__name__}: Configured {condition_name} with case IDs: {case_ids}")
+                    case_ids_str = condition.replace(condition_type, '').strip()
+                    if case_ids_str:  # handle empty string after condition type
+                        case_ids = [case_id.strip() for case_id in case_ids_str.split(',')]
+                        config_object.config(name='execute_conditions_cases', args=[case_ids])
+                        logging.info(f"{self.__class__.__name__}: Configured {condition_name} with case IDs: {case_ids}")
+                    break  # Exit loop after processing a condition
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error processing condition '{condition}': {str(e)}")
-            raise</pre>
+            raise
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_keywords_py">
@@ -1010,7 +1046,7 @@ class APITestKeywords:
         self._load_endpoints()
         self.body_generator: BodyGenerator = BodyGenerator(self.api_test_loader)
         self.headers_generator: HeadersGenerator = HeadersGenerator(self.api_test_loader)
-        self.api_response_asserter: ResponseValidator = ResponseValidator()
+        self.api_response_validator: ResponseValidator = ResponseValidator(self.db_configs)
         self.response_field_saver: ResponseFieldSaver = ResponseFieldSaver()
         self.variable_transformer = VariableTransformer()
         self.db_validator = DBValidator()
@@ -1036,25 +1072,23 @@ class APITestKeywords:
             logging.info(f"{self.__class__.__name__}: Executing test case: {tcid}")
             result = self.execute_api_test_case(tcid)
             results[tcid] = result
-
         return results
 
     @keyword
     def execute_conditions_cases_with_transformer(self, original_tcid, setup_case_ids: List[str] = None):
-
-        test_cases = APITestLoader(self.test_cases_path).get_api_test_cases()
-
-        # Execute function transformations before creating the test case
-        test_case = test_cases.loc[test_cases['TCID'] == original_tcid].to_dict('records')[0]
-        self._transformer_handler(test_case)
-
+        self.execute_transform(original_tcid)
         results = {}
         for setup_id in setup_case_ids:
             logging.info(f"{self.__class__.__name__}: Executing setup test case: {setup_id}")
             result = self.execute_api_test_case(setup_id)
             results[setup_id] = result
-
         return results
+
+    @keyword
+    def execute_transform(self, original_tcid):
+        test_cases = APITestLoader(self.test_cases_path).get_api_test_cases()
+        test_case = test_cases.loc[test_cases['TCID'] == original_tcid].to_dict('records')[0]
+        self._transformer_handler(test_case)
 
     @keyword
     def execute_api_test_case(self, test_case_id: str, is_dynamic_check: bool = False):
@@ -1072,9 +1106,10 @@ class APITestKeywords:
                 response, execution_time = self._execute_single_test_case(test_case)
                 logging.info("============================================")
                 post_check_responses = self._execute_check_with_cases(check_with_tcids)
-                self._validate_dynamic_checks(test_case, pre_check_responses, post_check_responses)
+                self.api_response_validator.validate(test_case, response, pre_check_responses, post_check_responses)
             else:
                 response, execution_time = self._execute_single_test_case(test_case)
+                self.api_response_validator.validate(test_case, response)
 
             logging.info(f"{self.__class__.__name__}: Finished execution of test case {test_case_id}")
             logging.info("============================================")
@@ -1087,35 +1122,15 @@ class APITestKeywords:
     def _execute_single_test_case(self, test_case):
         response, execution_time = self.send_request(test_case)
         logging.info(f"{self.__class__.__name__}: Time taken to execute test case {test_case['TCID']}: {execution_time:.2f} seconds")
-        self.api_response_asserter.validate_response(test_case['Exp Result'], response)
+        # self.api_response_validator.validate_response(test_case, response)
         self.response_field_saver.save_fields_to_robot_variables(response, test_case)
-        self.validate_data_base(test_case)
+        # self.validate_data_base(test_case)
         wait = float(test_case['Wait']) if test_case['Wait'] != '' else 0
         if wait &gt; 0:
             sleep(wait)
             logging.info(f"{self.__class__.__name__}: Waiting for results of {test_case['TCID']} in {wait} seconds.")
 
         return response, execution_time
-
-    def validate_data_base(self, test_case):
-        try:
-            for line in test_case['Exp Result'].splitlines():
-                if line.strip().startswith('db_'):
-                    prefix = line.strip().split('.')[0]
-                    db_config = self._get_db_config_by_prefix(prefix)
-                    if not db_config:
-                        raise ValueError(f"No database configuration found for prefix: {prefix}")
-                    self.db_validator.setup_database(db_config)
-                    self.db_validator.validate_database_value(line.strip())
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Failed to validate database: {str(e)}")
-            raise e
-
-    def _get_db_config_by_prefix(self, prefix: str) -&gt; dict:
-        db_config = self.db_configs.get(prefix.lower(), {})
-        if not db_config:
-            raise ValueError(f"No database configuration found for prefix: {prefix}")
-        return db_config
 
     def _extract_check_with_tcids(self, test_case):
         conditions = test_case['Conditions']
@@ -1134,10 +1149,6 @@ class APITestKeywords:
             response, _ = self.execute_api_test_case(tcid, is_dynamic_check=True)
             responses[tcid] = response
         return responses
-
-    def _validate_dynamic_checks(self, test_case, pre_check_responses, post_check_responses):
-        logging.info(f"{self.__class__.__name__}: Validating dynamic checks for test case {test_case['TCID']}:")
-        self.api_response_asserter.validate_response_dynamic(test_case, pre_check_responses, post_check_responses)
 
     def send_request(self, test_case):
         ex_endpoint = test_case['Endpoint']
@@ -1639,42 +1650,69 @@ class RequestSender:
     <pre>import logging
 import json
 import re
-from typing import Any, Union, Tuple
+from typing import Any, Union, Tuple, List, Dict
 from jsonpath_ng import parse
 import xmltodict
 from requests import Response
 from robot.libraries.BuiltIn import BuiltIn
 from robot.api import logger
+
+from libraries.common.db_validator import DBValidator
 from libraries.common.log_manager import ColorLogger
 from libraries.common.utility_helpers import UtilityHelpers
 
 builtin_lib = BuiltIn()
 
+
 class ResponseHandler:
     def get_content_and_format(self, response: Union[str, Response]) -&gt; Tuple[str, str]:
         try:
-            content = response.text.strip() if isinstance(response, Response) else response.strip()
-
-            if self._is_json(content):
-                return content, 'json'
-            if self._is_xml(content):
-                return UtilityHelpers.format_xml(content), 'xml'
-
-            raise ValueError(f"{self.__class__.__name__}: Response content is neither valid JSON nor XML.")
+            content = self._get_raw_content(response)
+            response_format = self._determine_format(content)
+            if response_format == 'xml':
+                content = UtilityHelpers.format_xml(content)
+            return content, response_format
         except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error processing response: {str(e)}")
-            raise
+            msg = f"{self.__class__.__name__}: Error processing response: {e}"
+            logging.error(msg)
+            raise ValueError(msg) from e
+
+    def _get_raw_content(self, response: Union[str, Response]) -&gt; str:
+        if isinstance(response, Response):
+            return response.text.strip()
+        elif isinstance(response, str):
+            return response.strip()
+        else:
+            raise TypeError(f"{self.__class__.__name__}: Response must be a requests.Response object or a string.")
+
+    def _determine_format(self, content: str) -&gt; str:
+        if self._is_json(content):
+            return 'json'
+        elif self._is_xml(content):
+            return 'xml'
+        else:
+            raise ValueError(f"{self.__class__.__name__}: Response content is neither valid JSON nor XML.")
 
     def _extract_value_from_response(self, response: Union[str, Response], json_path: str) -&gt; Any:
-        response_content, response_format = self.get_content_and_format(response)
+        content, response_format = self.get_content_and_format(response)
+        return self._extract_value(content, json_path, response_format)
 
-        if response_format == 'json':
-            return self._get_value_by_json_path(response_content, json_path)
-        elif response_format == 'xml':
-            json_content = json.dumps(xmltodict.parse(response_content))
-            return self._get_value_by_json_path(json_content, json_path)
-        else:
-            raise ValueError(f"{self.__class__.__name__}: Unsupported response format. Use 'xml' or 'json'.")
+    def _extract_value(self, content: str, json_path: str, response_format: str) -&gt; Any:
+        try:
+            if response_format == 'xml':
+                content = json.dumps(xmltodict.parse(content))
+
+            jsonpath_expr = parse(f'$.{json_path}')
+            matches = [match.value for match in jsonpath_expr.find(json.loads(content))]
+
+            if not matches:
+                raise ValueError(f"{self.__class__.__name__}: No match found for JSONPath: {json_path}")
+
+            return matches[0]
+        except Exception as e:
+            msg = f"{self.__class__.__name__}: Error extracting value with JSONPath '{json_path}': {e}"
+            logging.error(msg)
+            raise ValueError(msg) from e
 
     def _is_json(self, content: str) -&gt; bool:
         try:
@@ -1690,101 +1728,136 @@ class ResponseHandler:
         except Exception:
             return False
 
-    def _get_value_by_json_path(self, json_string: str, json_path: str) -&gt; Any:
-        parsed_json = json.loads(json_string)
-        jsonpath_expr = parse(f'$.{json_path}')
-        matches = [match.value for match in jsonpath_expr.find(parsed_json)]
-        if matches:
-            return matches[0]
-        else:
-            raise ValueError(f"{self.__class__.__name__}: No match found for JSONPath: {json_path}")
 
 class ResponseValidator(ResponseHandler):
-    def validate_response(self, expected_results: str, actual_response: Union[str, Response]) -&gt; None:
-        response_content, response_format = self.get_content_and_format(actual_response)
+    def __init__(self, db_configs):
+        super().__init__()
+        self.db_configs = db_configs
+        self.db_validator = DBValidator()
+        self.is_main_test = False
+
+    def validate(self, test_case: dict, response, pre_check_responses=None, post_check_responses=None) -&gt; None:
+        logging.info(f"{self.__class__.__name__}: Validating response for test case: {test_case['TCID']}")
+        self.is_main_test = test_case['Run'].strip() == 'Y'
+        response_content, response_format = self.get_content_and_format(response)
         logging.info(f"{self.__class__.__name__}: Actual response:\n{response_content}")
 
-        expected_lines = expected_results.splitlines()
-        assertion_errors = []
+        current_test_results = self._process_expected_results(test_case, response, pre_check_responses, post_check_responses)
 
-        for line in expected_lines:
-            if line.strip().startswith('$'):
-                try:
-                    self._assert_line(line.strip(), response_content, response_format)
-                except AssertionError as e:
-                    logging.error(f"{self.__class__.__name__}: Assertion failed: {str(e)}")
-                    assertion_errors.append(str(e))
+        if current_test_results and any(result['Result'] == 'Fail' for result in current_test_results):
+            raise AssertionError(f"{self.__class__.__name__}: Results validation failed for test case: {test_case['TCID']}")
 
-        if assertion_errors:
-            raise AssertionError(f"{self.__class__.__name__}: Assertions failed:\n" + "\n".join(assertion_errors))
-        logging.info(f"{self.__class__.__name__}: All assertions passed successfully.")
+        logging.info(f"{self.__class__.__name__}: All checks passed successfully.")
 
-    def validate_response_dynamic(self, test_case: dict, pre_check_responses: dict, post_check_responses: dict) -&gt; None:
+    def _process_expected_results(self, test_case, response, pre_check_responses, post_check_responses):
+        """Processes expected results from the test case."""
         exp_results = test_case['Exp Result'].splitlines()
+        current_test_results = []
         for exp_result in exp_results:
-            dynamic_checks = re.findall(r'(\w+)\.(?!precheck|postcheck)(\$[.\[\]\w]+)=([+-]\d*\.?\d+)', exp_result)
-            pre_post_checks = re.findall(r'(\w+)\.(precheck|postcheck)\.(\$[.\[\]\w]+)=(.+)', exp_result)
+            current_test_results.extend(
+                self._process_single_expected_result(exp_result, response, pre_check_responses, post_check_responses))
+        return current_test_results
 
-            if dynamic_checks:
-                self._handle_dynamic_checks(dynamic_checks, pre_check_responses, post_check_responses)
-            elif pre_post_checks:
-                self._handle_pre_post_checks(pre_post_checks, pre_check_responses, post_check_responses)
-        logging.info(f"{self.__class__.__name__}: All dynamic and pre/post checks passed successfully.")
+    def _process_single_expected_result(self, exp_result, response, pre_check_responses, post_check_responses):
+        """Processes a single expected result line."""
+        dynamic_checks = re.findall(r'(\w+)\.(?!precheck|postcheck)(\$[.\[\]\w]+)=([+-]\d*\.?\d+)', exp_result)
+        pre_post_checks = re.findall(r'(\w+)\.(precheck|postcheck)\.(\$[.\[\]\w]+)=(.+)', exp_result)
+        results = []
+        if dynamic_checks:
+            results.extend(self._handle_dynamic_checks(dynamic_checks, pre_check_responses, post_check_responses))
+        elif pre_post_checks:
+            results.extend(self._handle_pre_post_checks(pre_post_checks, pre_check_responses, post_check_responses))
+        elif exp_result.strip().startswith('$'):
+            result = self._handle_response_checks(exp_result.strip(), response)
+            results.append(result)
+        elif exp_result.strip().startswith('db_'):  # Use 'db_' as prefix
+            result= self._handle_db_checks(exp_result.strip())
+            results.append(result)
+        return results
 
-    def _handle_dynamic_checks(self, checks, pre_check_responses, post_check_responses):
-        for tcid, json_path, expected_value in checks:
+    def _handle_dynamic_checks(self, checks, pre_check_responses, post_check_responses) -&gt; List[Dict]:
+        """Handles dynamic checks (e.g., TC01.$result.total=+1)."""
+        results = []
+        for tcid, json_path, expected_diff in checks:
             pre_value = self._extract_value_from_response(pre_check_responses[tcid], json_path)
             post_value = self._extract_value_from_response(post_check_responses[tcid], json_path)
 
-            actual_value = round(float(post_value) - float(pre_value), 2)
+            # Format actual_diff to include "+" sign for positive values
+            actual_diff_value = round(float(post_value) - float(pre_value), 2)
+            actual_diff_str = f"{actual_diff_value:+g}"
 
-            logging.info(f"{self.__class__.__name__}: Actual diff: {actual_value}, Expected diff: {round(float(expected_value), 2)}")
-            logger.info(ColorLogger.success(f"=&gt; {self.__class__.__name__}: Actual diff: {actual_value}, Expected diff: {round(float(expected_value), 2)}"), html=True)
+            # Format expected_diff to include "+" sign for positive values
+            expected_diff_val = round(float(expected_diff), 2)
+            expected_diff_str = f"{expected_diff_val:+g}"
 
-            if not self._compare_diff(actual_value, expected_value):
-                raise AssertionError(
-                    f"{self.__class__.__name__}: Dynamic check failed for {tcid}.{json_path}. Expected diff: {expected_value}, Actual diff: {actual_value}")
+            success = actual_diff_value == expected_diff_val
+            log_msg = f"Dynamic check for {tcid}.{json_path}. Pre Value: {pre_value}, Post Value:{post_value}, Expected diff: {expected_diff_str}, Actual diff: {actual_diff_str}"
+            self._log_result(success, log_msg)
 
-    def _handle_pre_post_checks(self, checks, pre_check_responses, post_check_responses):
+            results.append({"Result": "Pass" if success else "Fail"})
+        return results
+
+    def _handle_pre_post_checks(self, checks, pre_check_responses, post_check_responses) -&gt; List[Dict]:
+        """Handles pre/post checks (e.g., TC01.precheck.$result.status=success)."""
+        results = []
         for tcid, check_type, json_path, expected_value in checks:
-            if check_type == 'precheck':
-                actual_value = self._extract_value_from_response(pre_check_responses[tcid], json_path)
-            elif check_type == 'postcheck':
-                actual_value = self._extract_value_from_response(post_check_responses[tcid], json_path)
-            else:
-                raise ValueError(f"{self.__class__.__name__}: Invalid check type: {check_type}")
+            responses = pre_check_responses if check_type == 'precheck' else post_check_responses
+            actual_value = self._extract_value_from_response(responses[tcid], json_path)
+            expected_value = expected_value.strip()
+            success = str(actual_value) == str(expected_value)
+            log_msg = f"{check_type.capitalize()} for {tcid}.{json_path} - Expected value: {expected_value}, Actual value: {actual_value}"
 
-            logging.info(f"{self.__class__.__name__}: {check_type.capitalize()} - Actual value: {actual_value}, Expected value: {expected_value}")
-            logger.info(ColorLogger.success(f"=&gt; {self.__class__.__name__}: {check_type.capitalize()} - Actual value: {actual_value}, Expected value: {expected_value}"), html=True)
+            results.append({"Result": "Pass" if success else "Fail"})
+            self._log_result(success, log_msg)
+        return results
 
-            if str(actual_value) != str(expected_value.strip()):
-                raise AssertionError(f"{self.__class__.__name__}: {check_type.capitalize()} failed for {tcid}.{json_path}. Expected: {expected_value}, Actual: {actual_value}")
-
-    def _assert_line(self, line: str, response_content: str, response_format: str) -&gt; None:
+    def _handle_response_checks(self, line: str, response_content: str) -&gt; Dict:
+        """Handles direct response checks (e.g., $result.status=success)."""
         key, expected_value = map(str.strip, line.split('=', 1))
-
         actual_value = self._extract_value_from_response(response_content, key)
-
-        # Convert values to the same type for comparison
+        # Attempt type conversion for comparison
         try:
             expected_value = type(actual_value)(expected_value)
         except (ValueError, TypeError):
-            pass  # Keep the original type if conversion fails
+            pass
+        success = actual_value == expected_value
+        log_msg = f"Asserting: {key}, Expected: {expected_value}, Actual: {actual_value}"
+        result = {"Result": "Pass" if success else "Fail"}
+        self._log_result(success, log_msg)
+        return result
 
-        logging.info(f"{self.__class__.__name__}: Asserting: {key}, Expected: {expected_value}, Actual: {actual_value}")
-        logger.info(ColorLogger.success(f"=&gt; {self.__class__.__name__}: Asserting: {key}, Expected: {expected_value}, Actual: {actual_value}"), html=True)
-        assert actual_value == expected_value, f"{self.__class__.__name__}: Assertion failed for key '{key}'. Expected: {expected_value}, Actual: {actual_value}"
+    def _handle_db_checks(self, exp_result):
+        """Handles database validation checks."""
+        try:
+            if exp_result.startswith('db_'):
+                prefix = exp_result.split('.')[0]
+                db_config = self._get_db_config_by_prefix(prefix)
+                if not db_config:
+                    raise ValueError(f"No database configuration found for prefix: {prefix}")
+                self.db_validator.setup_database(db_config)
+                is_valid,msg = self.db_validator.validate_database_value(exp_result)
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Failed to validate database: {str(e)}")
+        result = {"Result": "Pass" if is_valid else "Fail"}
+        self._log_result(is_valid, msg)
+        return result
 
-    def _compare_diff(self, actual_diff: float, expected_diff: str) -&gt; bool:
-        expected_operator = expected_diff[0]
-        expected_value = float(expected_diff[1:])
+    def _get_db_config_by_prefix(self, prefix: str) -&gt; dict:
+        db_config = self.db_configs.get(prefix.lower(), {})
+        if not db_config:
+            raise ValueError(f"No database configuration found for prefix: {prefix}")
+        return db_config
 
-        if expected_operator == '+':
-            return actual_diff == expected_value
-        elif expected_operator == '-':
-            return actual_diff == -expected_value
-        else:
-            raise ValueError(f"{self.__class__.__name__}: Unsupported operator in expected diff: {expected_operator}")
+    def _log_result(self, success: bool, message: str):
+        """Logs the result of a check with appropriate color."""
+        case_type = 'Sub Test'
+        if self.is_main_test:
+            case_type = 'Main Test'
+        logging.info(f"{self.__class__.__name__}: {message}")
+        logger.info(
+            ColorLogger.success(f"{case_type}=&gt; {self.__class__.__name__}: {message}") if success else ColorLogger.error(f"{case_type}=&gt; {self.__class__.__name__}: {message}"),
+            html=True)
+
 
 class ResponseFieldSaver(ResponseHandler):
     def save_fields_to_robot_variables(self, response: Union[str, Response], test_case: dict) -&gt; None:
@@ -1795,11 +1868,11 @@ class ResponseFieldSaver(ResponseHandler):
             try:
                 value = self._extract_value_from_response(response_content, field)
                 field_name = f'{test_case["TCID"]}.{field.strip()}'
-                # logging.info(f"{self.__class__.__name__}: Setting global variable {field_name} to {value}.")
                 logger.info(ColorLogger.info(f"=&gt; {self.__class__.__name__}: Setting global variable ${{{field_name}}} to {value}."), html=True)
                 BuiltIn().set_global_variable(f'${{{field_name}}}', value)
             except Exception as e:
-                logging.error(f"{self.__class__.__name__}: Failed to process field '{field}': {e}")</pre>
+                logging.error(f"{self.__class__.__name__}: Failed to process field '{field}': {e}")
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_saved_fields_manager_py">
@@ -2240,6 +2313,7 @@ builtin_lib = BuiltIn()
 class DBValidator:
     def __init__(self):
         self.db = None
+        self.db_name = None
         self.db_cache = {}
 
     def setup_database(self, db_config):
@@ -2258,8 +2332,8 @@ class DBValidator:
         db_type = db_config['type'].lower()
         host = db_config.get('host', 'localhost')
         port = db_config.get('port', 3306)
-        db_name = db_config.get('database', '')
-        return f"{db_type}_{host}_{port}_{db_name}"
+        self.db_name = db_config.get('database', '')
+        return f"{db_type}_{host}_{port}_{self.db_name}"
 
     def validate_database_value(self, db_clause):
         if not self.db:
@@ -2318,16 +2392,16 @@ class DBValidator:
             raise AssertionError(no_data_message)
 
         actual_value = result[0][field_name]
-
+        msg = f"Database validation for '{field_name}' in table '{self.db_name}.{table_name}'. Expected: '{expected_value}', Actual: '{actual_value}'."
         if actual_value != expected_value:
-            raise AssertionError(
-                f"{self.__class__.__name__}: Database value mismatch. Expected '{expected_value}' but got '{actual_value}' for field '{field_name}' in table '{table_name}'."
-            )
+            return False, msg
 
         logging.info(
-            f"{self.__class__.__name__}: Database value matched for '{field_name}' in table '{table_name}'. "
+            f"{self.__class__.__name__}: Database value matched for '{field_name}' in table '{self.db_name}.{table_name}'. "
             f"Expected: '{expected_value}', Actual: '{actual_value}'. Executed SQL: {sql_query}"
         )
+
+        return True, msg
 </pre>
 </div>
 
@@ -2666,6 +2740,8 @@ class VariableGenerator:
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import re
 import datetime
+
+import pytz
 from robot.libraries.BuiltIn import BuiltIn
 from typing import Any, Dict
 from robot.api import logger
@@ -2677,16 +2753,12 @@ class VariableTransformer:
     def __init__(self):
         self.builtin = BuiltIn()
         self.functions = {
-            'to_iso_date': self._to_iso_date,
-            'to_timestamp': self._to_timestamp,
-            'to_upper': self._to_upper,
-            'to_lower': self._to_lower,
-            'remove_spaces': self._remove_spaces,
-            'extract_numbers': self._extract_numbers,
-            'add': self._add,
-            'subtract': self._subtract,
-            'multiply': self._multiply,
-            'divide': self._divide,
+            'to_iso_date': self._compact_to_iso_date,
+            'to_compact_date': self._iso_to_compact_date,
+            'utc_to_poland_iso_datetime': self._utc_to_poland_iso_datetime,
+            'to_uppercase': lambda x: x.upper(),
+            'to_lowercase': lambda x: x.lower(),
+            'assign_value': lambda x: x,
         }
 
     def transform(self, transformations, test_case: Dict[str, Any]) -&gt; None:
@@ -2729,45 +2801,29 @@ class VariableTransformer:
         logger.info(ColorLogger.info(f"=&gt; {self.__class__.__name__}: Setting global variable ${{{output_field}}} to {value}."), html=True)
         self.builtin.set_global_variable(f'${{{output_field}}}', value)
 
-    # Function definitions
-    def _to_iso_date(self, value: str) -&gt; str:
+    # e.g. 20230101 -&gt; 2023-01-01
+    def _compact_to_iso_date(self, value: str) -&gt; str:
         date_obj = datetime.datetime.strptime(value, "%Y%m%d")
         return date_obj.strftime("%Y-%m-%d")
 
-    def _to_timestamp(self, value: str) -&gt; int:
+    # e.g. 2023-01-01 -&gt; 20230101
+    def _iso_to_compact_date(self, value: str) -&gt; str:
         date_obj = datetime.datetime.strptime(value, "%Y-%m-%d")
-        return int(date_obj.timestamp())
+        return date_obj.strftime("%Y%m%d")
 
-    def _to_upper(self, value: str) -&gt; str:
-        return value.upper()
+    # e.g. 2023-10-05T12:00:00.000Z -&gt; 2023-10-05T14:00:00+02:00
+    def _utc_to_poland_iso_datetime(self, utc_datetime_str: str) -&gt; str:
+        utc_datetime = datetime.datetime.strptime(utc_datetime_str, "%Y-%m-%dT%H:%M:%S.%fZ").replace(microsecond=0)
+        poland_zone = pytz.timezone('Europe/Warsaw')
+        poland_datetime = utc_datetime.astimezone(poland_zone)
+        return poland_datetime.isoformat()
 
-    def _to_lower(self, value: str) -&gt; str:
-        return value.lower()
 
-    def _remove_spaces(self, value: str) -&gt; str:
-        return value.replace(" ", "")
-
-    def _extract_numbers(self, value: str) -&gt; str:
-        return ''.join(filter(str.isdigit, value))
-
-    def _add(self, value: str) -&gt; float:
-        numbers = [float(n) for n in value.split(',')]
-        return sum(numbers)
-
-    def _subtract(self, value: str) -&gt; float:
-        numbers = [float(n) for n in value.split(',')]
-        return numbers[0] - sum(numbers[1:])
-
-    def _multiply(self, value: str) -&gt; float:
-        numbers = [float(n) for n in value.split(',')]
-        result = 1
-        for n in numbers:
-            result *= n
-        return result
-
-    def _divide(self, value: str) -&gt; float:
-        numbers = [float(n) for n in value.split(',')]
-        return numbers[0] / numbers[1] if numbers[1] != 0 else float('inf')
+if __name__ == "__main__":
+    vt = VariableTransformer()
+    print(vt._compact_to_iso_date("20230101"))
+    print(vt._iso_to_compact_date("2023-01-01"))
+    print(vt._utc_to_poland_iso_datetime("2023-10-05T12:00:00.000Z"))
 </pre>
 </div>
 
@@ -3791,6 +3847,302 @@ class CustomResultVisitor(ResultVisitor):
             "Tags": test.tags
         }
         self.test_list.append(test_json)
+</pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_robot_summary_report_generator_py">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\libraries\robot\summary_report_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import codecs
+import logging
+import os
+from typing import Dict, List, Any
+from jinja2 import FileSystemLoader, Environment, TemplateNotFound
+from pandas import DataFrame
+from robot.api import ExecutionResult
+from libraries.common.utility_helpers import PROJECT_ROOT
+import re
+
+
+class SummaryReportGenerator:
+    def __init__(self, output_xml_path: str):
+        self.output_xml_path = output_xml_path
+        self.templates_dir = os.path.join(PROJECT_ROOT, 'templates')
+        self.test_results = self._parse_robot_output()
+
+    def _parse_robot_output(self) -&gt; List[Dict]:
+        """Parses the robot output.xml and extracts test results."""
+        try:
+            result = ExecutionResult(self.output_xml_path)
+            all_results = []
+
+            for test in result.suite.tests:
+                test_results = self._extract_results_from_test(test)
+                all_results.extend(test_results)
+
+            return all_results
+
+        except Exception as e:
+            logging.error(f"HTMLReportGenerator: Error parsing Robot output.xml: {e}")
+            return []
+
+    def _extract_results_from_test(self, test) -&gt; List[Dict]:
+        """Extracts all test results from a robot test case."""
+        test_results = []
+        for keyword in test.body:
+            if keyword.name == 'Execute Api Test Case':
+                test_case_id = keyword.args[0]
+
+                for log_msg in keyword.messages:
+                     if "Main Test=&gt; ResponseValidator: Asserting" in log_msg.message:
+                        test_results.append(self._parse_assertion_log(log_msg.message, test_case_id, test.doc))
+
+                     elif "Main Test=&gt; ResponseValidator: Dynamic check" in log_msg.message:
+                         test_results.append(self._parse_dynamic_check_log(log_msg.message, test_case_id, test.doc))
+
+                     elif "Main Test=&gt; ResponseValidator: Postcheck" in log_msg.message:
+                          test_results.append(
+                              self._parse_pre_post_check_log(log_msg.message, "Postcheck", test_case_id, test.doc))
+
+                     elif "Main Test=&gt; ResponseValidator: Precheck" in log_msg.message:
+                         test_results.append(
+                             self._parse_pre_post_check_log(log_msg.message, "Precheck", test_case_id, test.doc))
+                     elif "Main Test=&gt; ResponseValidator: Database validation" in log_msg.message:
+                         test_results.append(self._parse_database_validation_log(log_msg.message, test_case_id, test.doc))
+        return test_results
+
+
+    def _parse_assertion_log(self, log_message, tcid, description):
+        parts = re.split(r"Main Test=&gt; ResponseValidator: Asserting:\s*(.*?),\s*Expected:\s*(.*?),\s*Actual:\s*([^&lt;]*)", log_message,
+                         flags=re.DOTALL | re.MULTILINE)
+        if len(parts) != 5:
+            logging.error(f"Could not parse assertion log message: {log_message}")
+            return {}
+
+        field, expected, actual = parts[1].strip(), parts[2].strip(), parts[3].strip()
+
+        return {
+             "TCID": tcid,
+             "Description": description,
+             "Type": "Assertions",
+             "Field": field,
+             "Pre Value": '',
+             "Post Value": '',
+             "Expected": expected.strip(),
+             "Actual": actual.strip(),
+             "Result": "Pass" if actual.strip() == expected.strip() else "Fail",
+         }
+
+    def _parse_dynamic_check_log(self, log_message, tcid, description):
+        parts = re.split(
+            r"Main Test=&gt; ResponseValidator: Dynamic check for\s*(.*?)\.\s*(?:Pre Value:\s*(.*?),\s*Post Value:\s*(.*?),\s*)?Expected diff:\s*([^&lt;]*?),\s*Actual diff:\s*([^&lt;]*)",
+            log_message, flags=re.DOTALL | re.MULTILINE)
+        if len(parts) != 7:
+            logging.error(f"Could not parse dynamic check log message: {log_message}")
+            return {}
+
+        field, pre_value, post_value, expected_diff_str, actual_diff_str = parts[1].strip(), parts[2].strip() if parts[2] else None, parts[3].strip() if parts[3] else None, parts[
+            4].strip(), parts[5].strip()
+        actual_diff = float(actual_diff_str)
+        expected_diff = float(expected_diff_str)
+
+        return {
+            "TCID": tcid,
+            "Description": description,
+            "Type": "Dynamic Checks",
+            "Field": field,
+            "Pre Value": pre_value if pre_value else '',
+            "Post Value": post_value if post_value else '',
+            "Actual Diff": actual_diff_str,
+            "Expected Diff": expected_diff_str,
+            "Result": "Pass" if actual_diff == expected_diff else "Fail",
+        }
+
+    def _parse_pre_post_check_log(self, log_message, check_type, tcid, description):
+        parts = re.split(rf"Main Test=&gt; ResponseValidator: {check_type} for\s*(.*?)\s*- Expected value:\s*([^&lt;]*?),\s*Actual value:\s*([^&lt;]*)", log_message, flags=re.DOTALL | re.MULTILINE)
+        if len(parts) != 5:
+            logging.error(f"Could not parse pre/post check log message: {log_message}")
+            return {}
+
+        field, expected_value, actual_value = parts[1].strip(), parts[2].strip(), parts[3].strip()
+
+        return {
+            "TCID": tcid,
+             "Description": description,
+            "Type": f"{check_type} Checks",
+            "Field": field,
+            "Pre Value": '',
+            "Post Value": '',
+            "Expected": expected_value.strip(),
+            "Actual": actual_value.strip(),
+            "Result": "Pass" if actual_value.strip() == expected_value.strip() else "Fail",
+        }
+
+    def _parse_database_validation_log(self, log_message, tcid, description):
+        """Parses the database validation log message."""
+        parts = re.split(
+            r"Main Test=&gt; ResponseValidator: Database validation for '([^']*)' in table '([^']*)'\. Expected: '([^']*)', Actual: '([^']*)'\.",
+            log_message, flags=re.DOTALL | re.MULTILINE
+        )
+
+        if len(parts) != 6:
+            logging.error(f"Could not parse database validation log message: {log_message}")
+            return {}
+
+        field, table_name, expected_value, actual_value = parts[1].strip(), parts[2].strip(), parts[3].strip(), parts[4].strip()
+
+        return {
+            "TCID": tcid,
+            "Description": description,
+            "Type": "Database Checks",
+            "Field": f"{table_name}.{field}",  # added table name to the field
+            "Pre Value": '',
+            "Post Value": '',
+            "Expected": expected_value,
+            "Actual": actual_value,
+            "Result": "Pass" if actual_value == expected_value else "Fail",
+        }
+    def generate_html_report(self) -&gt; str:
+        """
+        Generates the HTML report content.
+        """
+        try:
+            file_loader = FileSystemLoader(self.templates_dir)
+            env = Environment(loader=file_loader)
+            template = env.get_template('test_summary_template.html')
+
+            flattened_data = self._flatten_results(self.test_results)
+            if not flattened_data:  # Check if flattened_data is empty
+                return "No test results to display."
+
+            df = DataFrame(flattened_data)
+
+            # Reorder columns if needed
+            df = df[
+                [
+                    "TCID",
+                    "Description",
+                    "Type",
+                    "Field",
+                    "Pre Value",
+                    "Post Value",
+                    "Expected",
+                    "Actual",
+                    "Result",
+                ]
+            ]
+
+            # Create the HTML table with merged cells and color-coded results
+            html_table = self._create_html_table(df)
+            html_content = template.render(html_table=html_table)
+
+             # Save the HTML report to a file
+            report_file = os.path.join(PROJECT_ROOT, "report", "test_summary.html")
+            os.makedirs(os.path.dirname(report_file), exist_ok=True)  # Ensure the directory exists
+            with codecs.open(report_file, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            logging.info(f"HTMLReportGenerator: Test report saved to: {report_file}")
+
+        except TemplateNotFound as e:
+            logging.error(f"HTMLReportGenerator: Template not found: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"HTMLReportGenerator: Error generating HTML report: {e}")
+            raise
+
+    def _flatten_results(self, test_results: List[Dict]):
+        """
+        Flattens the test results data.
+        """
+        for result in test_results:
+            row = {
+                "TCID": result["TCID"],
+                "Description": result["Description"],
+                "Type": result["Type"],
+                "Field": result["Field"],
+                "Pre Value": result.get("Pre Value", ""),
+                "Post Value": result.get("Post Value", ""),
+                "Expected": result.get("Expected Diff", "") if result.get("Expected Diff") else result.get("Expected", ""),
+                "Actual": result.get("Actual Diff", "") if result.get("Actual Diff") else result.get("Actual", ""),
+                "Result": result["Result"]
+            }
+            yield row
+
+    def _create_html_table(self, df: DataFrame) -&gt; str:
+        """
+        Creates the HTML table content.
+        """
+        html_table = '&lt;table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;"&gt;\n'
+
+        # Add table headers
+        html_table += '&lt;tr&gt;\n'
+        for col in df.columns:
+            html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;{col}&lt;/th&gt;\n'
+        html_table += '&lt;/tr&gt;\n'
+
+        # Add table rows
+        current_tcid = None
+        current_description = None
+        tcid_rowspan = 1
+        description_rowspan = 1
+        for i, row in df.iterrows():
+            if row["TCID"] == current_tcid and row["Description"] == current_description:
+                tcid_rowspan += 1
+                description_rowspan += 1
+                html_table += '&lt;tr&gt;\n'
+                for col in df.columns[2:]:  # Skip TCID and Description columns
+                    if col == "Result":
+                        color = "green" if row[col].upper() == "PASS" else ("red" if row[col].upper() == "FAIL" else "orange")
+                        # Use font color instead of background color
+                        html_table += f'&lt;td style="text-align: center; color: {color};"&gt;{row[col]}&lt;/td&gt;\n'
+                    else:
+                        html_table += f'&lt;td style="text-align: center;"&gt;{row[col]}&lt;/td&gt;\n'
+                html_table += '&lt;/tr&gt;\n'
+            else:
+                if current_tcid is not None:
+                    # Update the rowspan for the previous TCID and Description groups
+                    html_table = html_table.replace(
+                        f'&lt;td rowspan="placeholder_tcid"&gt;{current_tcid}&lt;/td&gt;',
+                        f'&lt;td rowspan="{tcid_rowspan}" style="text-align: center; vertical-align: middle;"&gt;{current_tcid}&lt;/td&gt;',
+                        1
+                    )
+                    html_table = html_table.replace(
+                        f'&lt;td rowspan="placeholder_description"&gt;{current_description}&lt;/td&gt;',
+                        f'&lt;td rowspan="{description_rowspan}" style="text-align: center; vertical-align: middle;"&gt;{current_description}&lt;/td&gt;',
+                        1
+                    )
+                current_tcid = row["TCID"]
+                current_description = row["Description"]
+                tcid_rowspan = 1
+                description_rowspan = 1
+                html_table += '&lt;tr&gt;\n'
+                html_table += f'&lt;td rowspan="placeholder_tcid"&gt;{row["TCID"]}&lt;/td&gt;\n'  # Placeholder for TCID rowspan
+                html_table += f'&lt;td rowspan="placeholder_description"&gt;{row["Description"]}&lt;/td&gt;\n'  # Placeholder for Description rowspan
+                for col in df.columns[2:]:  # Skip TCID and Description columns
+                    if col == "Result":
+                        color = "green" if row[col].upper() == "PASS" else ("red" if row[col].upper() == "FAIL" else "orange")
+                        # Use font color instead of background color
+                        html_table += f'&lt;td style="text-align: center; color: {color};"&gt;{row[col]}&lt;/td&gt;\n'
+                    else:
+                        html_table += f'&lt;td style="text-align: center;"&gt;{row[col]}&lt;/td&gt;\n'
+                html_table += '&lt;/tr&gt;\n'
+
+        # Update the rowspan for the last TCID and Description groups
+        if current_tcid is not None:
+            html_table = html_table.replace(
+                f'&lt;td rowspan="placeholder_tcid"&gt;{current_tcid}&lt;/td&gt;',
+                f'&lt;td rowspan="{tcid_rowspan}" style="text-align: center; vertical-align: middle;"&gt;{current_tcid}&lt;/td&gt;',
+                1
+            )
+            html_table = html_table.replace(
+                f'&lt;td rowspan="placeholder_description"&gt;{current_description}&lt;/td&gt;',
+                f'&lt;td rowspan="{description_rowspan}" style="text-align: center; vertical-align: middle;"&gt;{current_description}&lt;/td&gt;',
+                1
+            )
+
+        html_table += '&lt;/table&gt;'
+        return html_table
 </pre>
 </div>
 
@@ -6089,6 +6441,7 @@ import argparse
 from robot.libraries.BuiltIn import BuiltIn
 from robot.reporting import ResultWriter
 from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.robot.summary_report_generator import SummaryReportGenerator
 from libraries.robot.robot_dashboard_generator import DashboardGenerator
 from libraries.web.web_robot_generator import WebUIRobotCasesGenerator
 from libraries.e2e.e2e_robot_generator import E2ERobotCasesGenerator
@@ -6121,6 +6474,9 @@ def run_test_suite(suite):
 
     dashboard_generator = DashboardGenerator()
     dashboard_generator.generate_dashboard(output_xml)
+
+    report_generator = SummaryReportGenerator(output_xml)
+    report_generator.generate_html_report()
 
 
 def create_api_suite():
@@ -6382,6 +6738,10 @@ matplotlib~=3.9.4</pre>
             &lt;i class="fa fa-file-text"&gt;&lt;/i&gt;
             &lt;span&gt;Robot Logs&lt;/span&gt;
         &lt;/a&gt;
+        &lt;a class="nav-link" href="#" onclick="openPage('testSummary', this);"&gt;
+            &lt;i class="fa fa-list-check"&gt;&lt;/i&gt;
+            &lt;span&gt;Test Summary&lt;/span&gt;
+        &lt;/a&gt;
     &lt;/div&gt;
 &lt;/nav&gt;
 
@@ -6460,6 +6820,8 @@ matplotlib~=3.9.4</pre>
     &lt;/div&gt;
 
     &lt;div class="tabcontent" id="log"&gt;
+        &lt;h4&gt;&lt;b&gt;&lt;i class="fa fa-file-text"&gt;&lt;/i&gt; Robot Logs&lt;/b&gt;&lt;/h4&gt;
+        &lt;hr&gt;
         &lt;p class="text-end"&gt;
             ** &lt;b&gt;Report.html&lt;/b&gt; and &lt;b&gt;Log.html&lt;/b&gt; need to be in the current folder to display here
         &lt;/p&gt;
@@ -6469,107 +6831,118 @@ matplotlib~=3.9.4</pre>
     &lt;/div&gt;
 
     &lt;div class="tabcontent" id="dashboard"&gt;
-    &lt;h4&gt;&lt;b&gt;&lt;i class="fa fa-dashboard"&gt;&lt;/i&gt; Dashboard&lt;/b&gt;&lt;/h4&gt;
-    &lt;hr&gt;
-    &lt;div class="row mb-4"&gt;
-        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
-            &lt;div class="card bg-dark text-white text-center"&gt;
-                &lt;div class="card-body"&gt;
-                    &lt;h5 class="card-title"&gt;Suite&lt;/h5&gt;
-                    &lt;p class="card-text"&gt;Statistics&lt;/p&gt;
+        &lt;h4&gt;&lt;b&gt;&lt;i class="fa fa-dashboard"&gt;&lt;/i&gt; Dashboard&lt;/b&gt;&lt;/h4&gt;
+        &lt;hr&gt;
+        &lt;div class="row mb-4"&gt;
+            &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+                &lt;div class="card bg-dark text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;Suite&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Statistics&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+                &lt;div class="card bg-primary text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{suite_stats['Total']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Total&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
+                &lt;div class="card bg-success text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{suite_stats['Pass']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Passed&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
+                &lt;div class="card bg-danger text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{suite_stats['Fail']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Failed&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
+                &lt;div class="card bg-warning text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{suite_stats['Skip']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Skipped&lt;/p&gt;
+                    &lt;/div&gt;
                 &lt;/div&gt;
             &lt;/div&gt;
         &lt;/div&gt;
-        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
-            &lt;div class="card bg-primary text-white text-center"&gt;
-                &lt;div class="card-body"&gt;
-                    &lt;h5 class="card-title"&gt;{{suite_stats['Total']}}&lt;/h5&gt;
-                    &lt;p class="card-text"&gt;Total&lt;/p&gt;
+
+        &lt;div class="row mb-4"&gt;
+            &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+                &lt;div class="card bg-dark text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;Test Case&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Statistics&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
+                &lt;div class="card bg-primary text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{test_stats['Total']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Total&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
+                &lt;div class="card bg-success text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{test_stats['Pass']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Passed&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
+                &lt;div class="card bg-danger text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{test_stats['Fail']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Failed&lt;/p&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
+                &lt;div class="card bg-warning text-white text-center"&gt;
+                    &lt;div class="card-body"&gt;
+                        &lt;h5 class="card-title"&gt;{{test_stats['Skip']}}&lt;/h5&gt;
+                        &lt;p class="card-text"&gt;Skipped&lt;/p&gt;
+                    &lt;/div&gt;
                 &lt;/div&gt;
             &lt;/div&gt;
         &lt;/div&gt;
-        &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
-            &lt;div class="card bg-success text-white text-center"&gt;
-                &lt;div class="card-body"&gt;
-                    &lt;h5 class="card-title"&gt;{{suite_stats['Pass']}}&lt;/h5&gt;
-                    &lt;p class="card-text"&gt;Passed&lt;/p&gt;
+
+        &lt;div class="row"&gt;
+            &lt;div class="col-sm-6 col-md-6 mb-4"&gt;
+                &lt;div class="pie-chart"&gt;
+                    &lt;canvas id="suiteChart"&gt;&lt;/canvas&gt;
                 &lt;/div&gt;
             &lt;/div&gt;
-        &lt;/div&gt;
-        &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
-            &lt;div class="card bg-danger text-white text-center"&gt;
-                &lt;div class="card-body"&gt;
-                    &lt;h5 class="card-title"&gt;{{suite_stats['Fail']}}&lt;/h5&gt;
-                    &lt;p class="card-text"&gt;Failed&lt;/p&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-        &lt;/div&gt;
-        &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
-            &lt;div class="card bg-warning text-white text-center"&gt;
-                &lt;div class="card-body"&gt;
-                    &lt;h5 class="card-title"&gt;{{suite_stats['Skip']}}&lt;/h5&gt;
-                    &lt;p class="card-text"&gt;Skipped&lt;/p&gt;
+            &lt;div class="col-sm-6 col-md-6 mb-4"&gt;
+                &lt;div class="pie-chart"&gt;
+                    &lt;canvas id="testChart"&gt;&lt;/canvas&gt;
                 &lt;/div&gt;
             &lt;/div&gt;
         &lt;/div&gt;
     &lt;/div&gt;
 
-    &lt;div class="row mb-4"&gt;
-        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
-            &lt;div class="card bg-dark text-white text-center"&gt;
-                &lt;div class="card-body"&gt;
-                    &lt;h5 class="card-title"&gt;Test Case&lt;/h5&gt;
-                    &lt;p class="card-text"&gt;Statistics&lt;/p&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-        &lt;/div&gt;
-        &lt;div class="col-sm-3 col-md-3 mb-3"&gt;
-            &lt;div class="card bg-primary text-white text-center"&gt;
-                &lt;div class="card-body"&gt;
-                    &lt;h5 class="card-title"&gt;{{test_stats['Total']}}&lt;/h5&gt;
-                    &lt;p class="card-text"&gt;Total&lt;/p&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-        &lt;/div&gt;
-        &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
-            &lt;div class="card bg-success text-white text-center"&gt;
-                &lt;div class="card-body"&gt;
-                    &lt;h5 class="card-title"&gt;{{test_stats['Pass']}}&lt;/h5&gt;
-                    &lt;p class="card-text"&gt;Passed&lt;/p&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-        &lt;/div&gt;
-        &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
-            &lt;div class="card bg-danger text-white text-center"&gt;
-                &lt;div class="card-body"&gt;
-                    &lt;h5 class="card-title"&gt;{{test_stats['Fail']}}&lt;/h5&gt;
-                    &lt;p class="card-text"&gt;Failed&lt;/p&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-        &lt;/div&gt;
-        &lt;div class="col-sm-2 col-md-2 mb-2"&gt;
-            &lt;div class="card bg-warning text-white text-center"&gt;
-                &lt;div class="card-body"&gt;
-                    &lt;h5 class="card-title"&gt;{{test_stats['Skip']}}&lt;/h5&gt;
-                    &lt;p class="card-text"&gt;Skipped&lt;/p&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
+    &lt;div class="tabcontent" id="testSummary"&gt;
+        &lt;h4&gt;&lt;b&gt;&lt;i class="fa fa-list-check"&gt;&lt;/i&gt; Test Summary&lt;/b&gt;&lt;/h4&gt;
+        &lt;hr&gt;
+        &lt;p class="text-end"&gt;
+            ** &lt;b&gt;Test_summary.html&lt;/b&gt; needs to be in the current folder to display here
+        &lt;/p&gt;
+        &lt;div class="ratio ratio-16x9"&gt;
+            &lt;iframe src="test_summary.html"&gt;&lt;/iframe&gt;
         &lt;/div&gt;
     &lt;/div&gt;
-
-    &lt;div class="row"&gt;
-        &lt;div class="col-sm-6 col-md-6 mb-4"&gt;
-            &lt;div class="pie-chart"&gt;
-                &lt;canvas id="suiteChart"&gt;&lt;/canvas&gt;
-            &lt;/div&gt;
-        &lt;/div&gt;
-        &lt;div class="col-sm-6 col-md-6 mb-4"&gt;
-            &lt;div class="pie-chart"&gt;
-                &lt;canvas id="testChart"&gt;&lt;/canvas&gt;
-            &lt;/div&gt;
-        &lt;/div&gt;
-    &lt;/div&gt;
-&lt;/div&gt;
 &lt;/div&gt;
 
 &lt;script src="https://code.jquery.com/jquery-3.6.0.min.js"&gt;&lt;/script&gt;
@@ -6579,126 +6952,183 @@ matplotlib~=3.9.4</pre>
 &lt;script src="https://cdn.jsdelivr.net/npm/chart.js"&gt;&lt;/script&gt;
 &lt;script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"&gt;&lt;/script&gt;
 &lt;script&gt;
-        document.addEventListener("DOMContentLoaded", function() {
-            document.getElementById("loadingDiv").style.display = "none";
-            document.getElementById("defaultOpen").click();
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById("loadingDiv").style.display = "none";
+        document.getElementById("defaultOpen").click();
 
-            createPieChart('suiteChart', 'Suite Results', ['Pass', 'Fail', 'Skip'],
-                           [{{ suite_stats['Pass'] }}, {{ suite_stats['Fail'] }},{{ suite_stats['Skip'] }}],
-                           {{ suite_stats['Total'] }});
+        createPieChart('suiteChart', 'Suite Results', ['Pass', 'Fail', 'Skip'],
+                       [{{ suite_stats['Pass'] }}, {{ suite_stats['Fail'] }},{{ suite_stats['Skip'] }}],
+                       {{ suite_stats['Total'] }});
 
-        createPieChart('testChart', 'Test Case Results', ['Pass', 'Fail', 'Skip'],
-                       [{{ test_stats['Pass'] }}, {{ test_stats['Fail'] }}, {{ test_stats['Skip'] }}],
-                       {{ test_stats['Total'] }});
+    createPieChart('testChart', 'Test Case Results', ['Pass', 'Fail', 'Skip'],
+                   [{{ test_stats['Pass'] }}, {{ test_stats['Fail'] }}, {{ test_stats['Skip'] }}],
+                   {{ test_stats['Total'] }});
 
-        // Toggle sidebar on menu button click
-        document.getElementById('menu-toggle').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('show');
-        });
+    // Toggle sidebar on menu button click
+    document.getElementById('menu-toggle').addEventListener('click', function() {
+        document.getElementById('sidebar').classList.toggle('show');
     });
+});
 
-        function createPieChart(canvasId, title, labels, data, total) {
-            var ctx = document.getElementById(canvasId).getContext('2d');
-            Chart.register(ChartDataLabels);
-            var chart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: title,
-                        data: data,
-                        backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                        },
-                        title: {
-                            display: true,
-                            text: title
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(tooltipItem) {
-                                    var value = tooltipItem.raw;
-                                    var percentage = ((value / total) * 100).toFixed(2);
-                                    return tooltipItem.label + ': ' + value + ' (' + percentage + '%)';
-                                }
-                            }
-                        },
-                        datalabels: {
-                            color: '#fff',
-                            font: {
-                                weight: 'bold'
-                            },
-                            formatter: function(value, context) {
+    function createPieChart(canvasId, title, labels, data, total) {
+        var ctx = document.getElementById(canvasId).getContext('2d');
+        Chart.register(ChartDataLabels);
+        var chart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: title,
+                    data: data,
+                    backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    title: {
+                        display: true,
+                        text: title
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                var value = tooltipItem.raw;
                                 var percentage = ((value / total) * 100).toFixed(2);
-                                return percentage + '%';
+                                return tooltipItem.label + ': ' + value + ' (' + percentage + '%)';
                             }
                         }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        font: {
+                            weight: 'bold'
+                        },
+                        formatter: function(value, context) {
+                            var percentage = ((value / total) * 100).toFixed(2);
+                            return percentage + '%';
+                        }
                     }
-                }
-            });
-        }
-
-    function openPage(pageName, elmnt) {
-        var i, tabcontent, tablinks;
-        tabcontent = document.getElementsByClassName("tabcontent");
-        for (i = 0; i &lt; tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
-        }
-        tablinks = document.getElementsByClassName("nav-link");
-        for (i = 0; i &lt; tablinks.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active", "");
-        }
-        document.getElementById(pageName).style.display = "block";
-        elmnt.className += " active";
-
-        // Hide sidebar on page change for mobile devices
-        if (window.innerWidth &lt;= 767.98) {
-            document.getElementById('sidebar').classList.remove('show');
-        }
-    }
-
-    function executeDataTable(tableID, minRows, sortIndex) {
-        if ($.fn.DataTable.isDataTable(tableID)) {
-            $(tableID).DataTable().destroy();
-        }
-        $(tableID).DataTable({
-            "pageLength": minRows,
-            "ordering": true,
-            "searching": true,
-            "paging": true,
-            "info": true,
-            "lengthChange": true,
-            "order": [[sortIndex, "asc"]],
-            "language": {
-                "paginate": {
-                    "previous": "&lt;",
-                    "next": "&gt;"
                 }
             }
         });
     }
 
-    $(document).ready(function () {
-        $('[data-bs-toggle="tooltip"]').tooltip();
-        executeDataTable('#sm', 10, 6);
-        executeDataTable('#tm', 10, 3);
-        document.getElementById("defaultOpen").click();
-    });
-    function openInNewTab(url) {
-        window.open(url, '_blank').focus();
+function openPage(pageName, elmnt) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i &lt; tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
     }
+    tablinks = document.getElementsByClassName("nav-link");
+    for (i = 0; i &lt; tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(pageName).style.display = "block";
+    elmnt.className += " active";
+
+    // Hide sidebar on page change for mobile devices
+    if (window.innerWidth &lt;= 767.98) {
+        document.getElementById('sidebar').classList.remove('show');
+    }
+}
+
+function executeDataTable(tableID, minRows, sortIndex) {
+    if ($.fn.DataTable.isDataTable(tableID)) {
+        $(tableID).DataTable().destroy();
+    }
+    $(tableID).DataTable({
+        "pageLength": minRows,
+        "ordering": true,
+        "searching": true,
+        "paging": true,
+        "info": true,
+        "lengthChange": true,
+        "order": [[sortIndex, "asc"]],
+        "language": {
+            "paginate": {
+                "previous": "&lt;",
+                "next": "&gt;"
+            }
+        }
+    });
+}
+
+$(document).ready(function () {
+    $('[data-bs-toggle="tooltip"]').tooltip();
+    executeDataTable('#sm', 10, 6);
+    executeDataTable('#tm', 10, 3);
+    document.getElementById("defaultOpen").click();
+});
+function openInNewTab(url) {
+    window.open(url, '_blank').focus();
+}
 &lt;/script&gt;
 &lt;/body&gt;
 &lt;/html&gt;
 </pre>
+</div>
+
+<div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_templates_test_summary_template_html">
+    <div class="class-header">C:\Users\vhuang1\PycharmProjects\api_test_framework\templates\test_summary_template.html</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Test Summary Report&lt;/title&gt;
+    &lt;style&gt;
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .pass {
+            color: green;
+        }
+
+        .fail {
+            color: red;
+        }
+
+        .warning {
+            color: orange;
+        }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h1&gt;Test Summary Report&lt;/h1&gt;
+{{ html_table }}
+&lt;/body&gt;
+&lt;/html&gt;</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_testing_server_positions_json">
@@ -6710,7 +7140,7 @@ matplotlib~=3.9.4</pre>
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 66100.0
+        "CNY": 65100.0
     },
     "transactions": {
         "USD": {
@@ -6750,14 +7180,14 @@ matplotlib~=3.9.4</pre>
             }
         },
         "CNY": {
-            "2025-01-02": {
+            "2025-01-19": {
                 "inbound": {
-                    "count": 12,
-                    "total_amount": 1200.0
+                    "count": 132,
+                    "total_amount": 13200.0
                 },
                 "outbound": {
-                    "count": 3,
-                    "total_amount": 300.0
+                    "count": 66,
+                    "total_amount": 6600.0
                 }
             }
         }
