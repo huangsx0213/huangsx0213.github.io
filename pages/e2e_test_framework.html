@@ -784,7 +784,6 @@ tags:
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import logging
 import os
-import re
 from typing import Dict, List, Any
 import pandas as pd
 from libraries.api.api_test_loader import APITestLoader
@@ -917,69 +916,36 @@ class APIRobotCasesGenerator:
             raise
 
     def _configure_test_conditions(self, robot_api_test, test_case) -&gt; None:
-        """Configure setup and teardown conditions for the test case."""
         try:
-            has_setup_condition = '[TestSetup]' in test_case['Conditions']
-            has_transformer = test_case['Variable Transform'] != ''
-
-            if not has_transformer:
-                self._process_conditions(test_case['Conditions'], robot_api_test)
-            else:
-                self._process_transformer_conditions(test_case, robot_api_test, has_setup_condition)
-
+            if pd.notna(test_case['Conditions']):
+                conditions = test_case['Conditions'].splitlines()
+                for condition in conditions:
+                    self._process_condition(condition, robot_api_test)
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error configuring test conditions: {str(e)}")
             raise
 
-    def _process_conditions(self, conditions_str: str, robot_api_test) -&gt; None:
-        """Processes conditions when no transformer is present."""
-        conditions = conditions_str.splitlines()
-        for condition in conditions:
-            self._process_condition(condition, robot_api_test)
-
-    def _process_transformer_conditions(self, test_case, robot_api_test, has_setup_condition):
-        """Processes conditions when a transformer is present."""
-        if not has_setup_condition:
-            robot_api_test.setup.config(
-                name='execute_transform', args=[test_case['TCID']])
-        else:
-            conditions = test_case['Conditions'].splitlines()
-            setup_case_ids = []
-            for condition in conditions:
-                if condition.startswith('[TestSetup]'):
-                    setup_case_ids = re.findall(r'\[TestSetup\]\s*([\w,\s]*)', condition)
-                    if setup_case_ids:
-                        setup_case_ids = setup_case_ids[0].strip().split(',')
-                else:
-                    self._process_condition(condition, robot_api_test)
-
-            if setup_case_ids:
-                robot_api_test.setup.config(
-                    name='execute_conditions_cases_with_transformer',
-                    args=[test_case['TCID'], setup_case_ids]
-                )
-
     def _process_condition(self, condition: str, robot_api_test) -&gt; None:
-        """Process a single condition for setup or teardown."""
         try:
             condition_mapping = {
                 '[TestSetup]': (robot_api_test.setup, 'Test setup'),
                 '[TestTeardown]': (robot_api_test.teardown, 'Test teardown'),
-                '[SuiteSetup]': (self.api_suite.setup, 'Suite setup'),  # Assuming self.api_suite exists
-                '[SuiteTeardown]': (self.api_suite.teardown, 'Suite teardown')  # Assuming self.api_suite exists
+                '[SuiteSetup]': (self.api_suite.setup, 'Suite setup'),
+                '[SuiteTeardown]': (self.api_suite.teardown, 'Suite teardown')
             }
+
             for condition_type, (config_object, condition_name) in condition_mapping.items():
                 if condition_type in condition:
-                    case_ids_str = condition.replace(condition_type, '').strip()
-                    if case_ids_str:  # handle empty string after condition type
-                        case_ids = [case_id.strip() for case_id in case_ids_str.split(',')]
-                        config_object.config(name='execute_conditions_cases', args=[case_ids])
-                        logging.info(f"{self.__class__.__name__}: Configured {condition_name} with case IDs: {case_ids}")
-                    break  # Exit loop after processing a condition
+                    case_ids = condition.strip(condition_type).split(',')
+                    config_object.config(
+                        name='execute_conditions_cases',
+                        args=[case_ids]
+                    )
+                    logging.info(f"{self.__class__.__name__}: Configured {condition_name} with case IDs: {case_ids}")
+
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error processing condition '{condition}': {str(e)}")
-            raise
-</pre>
+            raise</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_api_api_test_keywords_py">
@@ -1003,7 +969,6 @@ from libraries.api.response_handler import ResponseValidator, ResponseFieldSaver
 from libraries.api.api_test_loader import APITestLoader
 from robot.libraries.BuiltIn import BuiltIn
 from robot.api.deco import keyword, library
-from libraries.common.variable_transformer import VariableTransformer
 
 builtin_lib = BuiltIn()
 
@@ -1048,7 +1013,6 @@ class APITestKeywords:
         self.headers_generator: HeadersGenerator = HeadersGenerator(self.api_test_loader)
         self.api_response_validator: ResponseValidator = ResponseValidator(self.db_configs)
         self.response_field_saver: ResponseFieldSaver = ResponseFieldSaver()
-        self.variable_transformer = VariableTransformer()
         self.db_validator = DBValidator()
 
     @keyword
@@ -1073,22 +1037,6 @@ class APITestKeywords:
             result = self.execute_api_test_case(tcid)
             results[tcid] = result
         return results
-
-    @keyword
-    def execute_conditions_cases_with_transformer(self, original_tcid, setup_case_ids: List[str] = None):
-        self.execute_transform(original_tcid)
-        results = {}
-        for setup_id in setup_case_ids:
-            logging.info(f"{self.__class__.__name__}: Executing setup test case: {setup_id}")
-            result = self.execute_api_test_case(setup_id)
-            results[setup_id] = result
-        return results
-
-    @keyword
-    def execute_transform(self, original_tcid):
-        test_cases = APITestLoader(self.test_cases_path).get_api_test_cases()
-        test_case = test_cases.loc[test_cases['TCID'] == original_tcid].to_dict('records')[0]
-        self._transformer_handler(test_case)
 
     @keyword
     def execute_api_test_case(self, test_case_id: str, is_dynamic_check: bool = False):
@@ -1122,9 +1070,7 @@ class APITestKeywords:
     def _execute_single_test_case(self, test_case):
         response, execution_time = self.send_request(test_case)
         logging.info(f"{self.__class__.__name__}: Time taken to execute test case {test_case['TCID']}: {execution_time:.2f} seconds")
-        # self.api_response_validator.validate_response(test_case, response)
         self.response_field_saver.save_fields_to_robot_variables(response, test_case)
-        # self.validate_data_base(test_case)
         wait = float(test_case['Wait']) if test_case['Wait'] != '' else 0
         if wait &gt; 0:
             sleep(wait)
@@ -1168,19 +1114,6 @@ class APITestKeywords:
         response, execution_time = RequestSender.send_request(url, method, headers, body, format_type)
 
         return response, execution_time
-
-    def _transformer_handler(self, test_case: Dict[str, Any]) -&gt; None:
-        transformers = test_case.get('Variable Transform', '').splitlines()
-        transformers_data = []
-        for transformer in transformers:
-            match = re.findall(r'(\w*)\((.*?)\s*(?:,\s*(.*?))?\)', transformer.strip())
-            if match:
-                function_name, input_field, output_field = match[0]
-                transformers_data.append((function_name.strip(), input_field.strip(), output_field.strip() if output_field else None))
-
-        self.variable_transformer.transform(transformers_data, test_case)
-        logging.info(f"{self.__class__.__name__}: Transformed variables for test case {test_case['TCID']}.")
-        logging.info("=" * 100)
 </pre>
 </div>
 
@@ -1656,10 +1589,10 @@ import xmltodict
 from requests import Response
 from robot.libraries.BuiltIn import BuiltIn
 from robot.api import logger
-
 from libraries.common.db_validator import DBValidator
 from libraries.common.log_manager import ColorLogger
 from libraries.common.utility_helpers import UtilityHelpers
+from libraries.common.variable_transformer import VariableTransformer
 
 builtin_lib = BuiltIn()
 
@@ -1771,7 +1704,7 @@ class ResponseValidator(ResponseHandler):
             result = self._handle_response_checks(exp_result.strip(), response)
             results.append(result)
         elif exp_result.strip().startswith('db_'):  # Use 'db_' as prefix
-            result= self._handle_db_checks(exp_result.strip())
+            result = self._handle_db_checks(exp_result.strip())
             results.append(result)
         return results
 
@@ -1835,7 +1768,7 @@ class ResponseValidator(ResponseHandler):
                 if not db_config:
                     raise ValueError(f"No database configuration found for prefix: {prefix}")
                 self.db_validator.setup_database(db_config)
-                is_valid,msg = self.db_validator.validate_database_value(exp_result)
+                is_valid, msg = self.db_validator.validate_database_value(exp_result)
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Failed to validate database: {str(e)}")
         result = {"Result": "Pass" if is_valid else "Fail"}
@@ -1860,18 +1793,38 @@ class ResponseValidator(ResponseHandler):
 
 
 class ResponseFieldSaver(ResponseHandler):
+    def __init__(self):
+        super().__init__()
+        self.variable_transformer = VariableTransformer()
+
     def save_fields_to_robot_variables(self, response: Union[str, Response], test_case: dict) -&gt; None:
-        response_content, response_format = self.get_content_and_format(response)
+        response_content, _ = self.get_content_and_format(response)
         save_fields = test_case.get('Save Fields', '').splitlines()
+        # Regular expression to match patterns like: assign_value($.result.amount,my_amount) or assign_value($.result.amount)
+        transform_pattern = re.compile(r'^\s*(\w+)\(([^,]+)(?:,\s*([^)]+))?\)\s*$')
 
         for field in save_fields:
-            try:
-                value = self._extract_value_from_response(response_content, field)
-                field_name = f'{test_case["TCID"]}.{field.strip()}'
-                logger.info(ColorLogger.info(f"=&gt; {self.__class__.__name__}: Setting global variable ${{{field_name}}} to {value}."), html=True)
-                BuiltIn().set_global_variable(f'${{{field_name}}}', value)
-            except Exception as e:
-                logging.error(f"{self.__class__.__name__}: Failed to process field '{field}': {e}")
+            if not field.strip():
+                continue  # Skip empty lines
+            field = field.strip()
+            # Check if field matches transform format
+            match = transform_pattern.match(field)
+            if match:
+                method_name, input_field, output_field = match.groups()
+                # If no second parameter, use JSON Path as Robot variable name
+                if output_field is None:
+                    output_field = input_field
+                input_value = self._extract_value_from_response(response_content, input_field)
+                self.variable_transformer.transform_and_save(method_name, input_value, output_field)
+            else:
+                # Handle standard field format
+                try:
+                    value = self._extract_value_from_response(response_content, field)
+                    field_name = f'{test_case["TCID"]}.{field.strip()}'
+                    logger.info(ColorLogger.info(f"=&gt; {self.__class__.__name__}: Setting global variable ${{{field_name}}} to {value}."), html=True)
+                    BuiltIn().set_global_variable(f'${{{field_name}}}', value)
+                except Exception as e:
+                    logging.error(f"{self.__class__.__name__}: Failed to process field '{field}': {e}")
 </pre>
 </div>
 
@@ -1886,7 +1839,7 @@ import os
 from typing import Dict, Any
 from libraries.common.utility_helpers import PROJECT_ROOT
 from robot.libraries.BuiltIn import BuiltIn
-
+from libraries.common.variable_transformer import VariableTransformer
 
 builtin_lib = BuiltIn()
 
@@ -1895,6 +1848,7 @@ class SavedFieldsManager:
     def __init__(self, file_path: str = None) -&gt; None:
         self.project_root: str = PROJECT_ROOT
         self.file_path: str = file_path or os.path.join(self.project_root, 'configs', 'saved_fields.yaml')
+        self.variable_transformer = VariableTransformer()
 
     def clear_saved_fields(self):
         with open(self.file_path, 'w') as f:
@@ -1935,15 +1889,52 @@ class SavedFieldsManager:
 
     def apply_suite_variables(self, test_case) -&gt; None:
         try:
+            # Regular expression to match patterns like: assign_value($.result.amount,my_amount) or assign_value($.result.amount)
+            transform_pattern = re.compile(r'(\w+)\(([^,]+)(?:,\s*([^)]+))?\)')
+
             for key in ['Body Override', 'Exp Result']:
-                matches = re.findall(r'\$\{[^}]+\}', test_case[key])
-                for match in matches:
-                    replacement_value = builtin_lib.get_variable_value(match)
-                    test_case[key] = test_case[key].replace(match, str(replacement_value))
-                    logging.info(f"{self.__class__.__name__}: [{key}] Replaced {match} variable value {replacement_value}")
+                if key not in test_case or not test_case[key]:
+                    continue  # Skip empty fields
+
+                lines = test_case[key].splitlines()
+                updated_lines = []
+
+                for line in lines:
+                    if not line.strip():
+                        updated_lines.append(line)  # Preserve empty lines
+                        continue
+
+                    # Check if line matches transformation pattern
+                    match = transform_pattern.search(line.strip())
+                    if match:
+                        # Handle transformation format
+                        method_name, input_field, output_field = match.groups()
+                        # If no second parameter, use input field as output variable name
+                        if output_field is None:
+                            output_field = input_field
+
+                        # Extract input field value and transform it
+                        input_value = BuiltIn().get_variable_value(input_field)
+                        transformed_value = self.variable_transformer.transform(method_name, input_value)
+
+                        # Replace entire pattern with transformed value
+                        line = transform_pattern.sub(str(transformed_value), line)
+                        logging.info(f"{self.__class__.__name__}: [{key}] Replaced transform pattern {match.group(0)} with [{transformed_value}]")
+                    else:
+                        # Handle standard variable replacement
+                        matches = re.findall(r'\$\{[^}]+\}', line)
+                        for match in matches:
+                            replacement_value = BuiltIn().get_variable_value(match)
+                            line = line.replace(match, str(replacement_value))
+                            logging.info(f"{self.__class__.__name__}: [{key}] Replaced {match} with [{replacement_value}]")
+
+                    updated_lines.append(line)
+
+                # Update field content
+                test_case[key] = "\n".join(updated_lines)
 
         except Exception as e:
-            logging.error(f"{self.__class__.__name__}: [{key}] Replaced {match} with {replacement_value} failed: {str(e)}")
+            logging.error(f"{self.__class__.__name__}: Failed to apply suite variables: {str(e)}")
             raise
 </pre>
 </div>
@@ -2740,14 +2731,11 @@ class VariableGenerator:
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import re
 import datetime
-
 import pytz
 from robot.libraries.BuiltIn import BuiltIn
 from typing import Any, Dict
 from robot.api import logger
 from libraries.common.log_manager import ColorLogger
-from libraries.common.variable_generator import VariableGenerator
-
 
 class VariableTransformer:
     def __init__(self):
@@ -2761,41 +2749,17 @@ class VariableTransformer:
             'assign_value': lambda x: x,
         }
 
-    def transform(self, transformations, test_case: Dict[str, Any]) -&gt; None:
-        for function_name, input_field, output_field in transformations:
-            if output_field is None:
-                output_field = self._get_output_field(input_field)
-            input_value = self._get_input_value(input_field, test_case)
+    def transform(self, function_name, input_value) -&gt; Any:
+        if function_name not in self.functions:
+            raise ValueError(f"Unknown function: {function_name}")
+        output_value = self.functions[function_name](input_value)
+        return output_value
 
-            if function_name not in self.functions:
-                raise ValueError(f"Unknown function: {function_name}")
-
-            output_value = self.functions[function_name](input_value)
-
-            self._save_as_global_variable(output_field, output_value)
-
-    def _get_input_value(self, input_field: str, test_case: Dict[str, Any]) -&gt; Any:
-        if input_field.startswith('{{') and input_field.endswith('}}'):
-            # Generate dynamic value
-            dynamic_field = re.findall(r'{{(.*?)}}', input_field)[0]
-            return VariableGenerator.generate_dynamic_value(dynamic_field)
-        elif input_field.startswith('${') and input_field.endswith('}'):
-            # Get Robot Framework variable
-            return self.builtin.get_variable_value(input_field)
-        elif input_field in test_case:
-            # Get value from test case
-            return test_case[input_field]
-        else:
-            # Try to get it as a global variable
-            return self.builtin.get_variable_value(f"${{{input_field}}}")
-
-    def _get_output_field(self, input_field: str) -&gt; Any:
-        if input_field.startswith('{{') and input_field.endswith('}}'):
-            dynamic_field = re.findall(r'{{(.*?)}}', input_field)[0]
-            return dynamic_field
-        elif input_field.startswith('${') and input_field.endswith('}'):
-            field_name = re.findall(r'\$\{\s*(.*?)\s*\}', input_field)[0]
-            return field_name
+    def transform_and_save(self, function_name, input_value, output_field) -&gt; None:
+        if function_name not in self.functions:
+            raise ValueError(f"Unknown function: {function_name}")
+        output_value = self.functions[function_name](input_value)
+        self._save_as_global_variable(output_field, output_value)
 
     def _save_as_global_variable(self, output_field: str, value: Any) -&gt; None:
         logger.info(ColorLogger.info(f"=&gt; {self.__class__.__name__}: Setting global variable ${{{output_field}}} to {value}."), html=True)
@@ -6440,7 +6404,6 @@ class WebDriverFactory:
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import os
 import argparse
-
 from robot.libraries.BuiltIn import BuiltIn
 from robot.reporting import ResultWriter
 from libraries.common.utility_helpers import PROJECT_ROOT
@@ -7156,7 +7119,7 @@ function openInNewTab(url) {
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 70600.0
+        "CNY": 72900.0
     },
     "transactions": {
         "USD": {
@@ -7196,14 +7159,14 @@ function openInNewTab(url) {
             }
         },
         "CNY": {
-            "2025-01-20": {
+            "2025-01-22": {
                 "inbound": {
-                    "count": 110,
-                    "total_amount": 11000.0
+                    "count": 31,
+                    "total_amount": 3100.0
                 },
                 "outbound": {
-                    "count": 55,
-                    "total_amount": 5500.0
+                    "count": 17,
+                    "total_amount": 1700.0
                 }
             }
         }
