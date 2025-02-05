@@ -784,7 +784,7 @@ tags:
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import logging
 import os
-from typing import Dict, List, Any
+from typing import Dict, List
 import pandas as pd
 from libraries.api.api_test_loader import APITestLoader
 from libraries.common.config_manager import ConfigManager
@@ -834,15 +834,15 @@ class APIRobotCasesGenerator:
         if not os.path.exists(self.test_cases_path):
             logging.error(f"{self.__class__.__name__}: Test cases file not found at {self.test_cases_path}")
             raise FileNotFoundError(f"{self.__class__.__name__}: Test cases file does not exist: {self.test_cases_path}")
-
+        logging.info(f"{self.__class__.__name__}: Test cases file {self.test_cases_path} located successfully")
         self.test_cases_df = APITestLoader(self.test_cases_path)
         logging.info(f"{self.__class__.__name__}: Components initialized successfully")
 
     def create_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None, test_suite=None) -&gt; TestSuite:
         self.api_suite = test_suite if test_suite else TestSuite('API TestSuite')
-        self.api_suite.teardown.config(name='clear_saved_fields', args=[])
+        self.api_suite.teardown.config(name='suite_teardown', args=[])
 
-        self._configure_test_resources()
+        self._configure_test_resources(self.api_suite)
 
         tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
         tags = tags or self.test_config.get('tags', [])
@@ -853,22 +853,6 @@ class APIRobotCasesGenerator:
 
         logging.info(f"{self.__class__.__name__}: Test suite created successfully")
         return self.api_suite
-
-    def _add_report_generation_test(self):
-        report_test = self.api_suite.tests.create(
-            name="Generate API Test Report",
-            doc="Generates the API test report after all tests have been executed"
-        )
-        report_test.body.create_keyword(name='generate_report', args=[])
-
-    def _configure_test_resources(self) -&gt; None:
-        """Configure the test resources for the test suite."""
-        test_cases_path_arg = os.path.normpath(self.test_cases_path).replace(os.path.sep, '/')
-        logging.info(f"{self.__class__.__name__}: Using test cases from {test_cases_path_arg}")
-        self.api_suite.resource.imports.library(
-            'libraries.api.api_test_keywords.APITestKeywords',
-            args=[None, test_cases_path_arg]
-        )
 
     def _filter_cases(self, tc_id_list: List[str], tags: List[str]) -&gt; pd.DataFrame:
         """Filter test cases based on the provided TC ID list and tags."""
@@ -881,24 +865,42 @@ class APIRobotCasesGenerator:
     def _create_test_cases(self, filtered_cases: pd.DataFrame) -&gt; None:
         """Create test cases in the provided test suite."""
         try:
-            for _, test_case in filtered_cases.iterrows():
-                self._create_single_test_case(test_case)
+            # Iterate through the filtered cases in order
+            for index, row in filtered_cases.iterrows():
+                suite_name = row['Suite']
+
+                # If the suite doesn't exist yet, create it
+                if suite_name not in [suite.name for suite in self.api_suite.suites]:
+                    suite = self.api_suite.suites.create(name=suite_name)
+                    self._configure_test_resources(suite)
+
+                # Create the test case within the correct suite
+                self._create_single_test_case(row, suite)
+
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error creating test cases: {str(e)}")
             raise
 
-    def _create_single_test_case(self, test_case: pd.Series) -&gt; None:
+    def _configure_test_resources(self, suite) -&gt; None:
+        """Configure the test resources for the test suite."""
+        test_cases_path_arg = os.path.normpath(self.test_cases_path).replace(os.path.sep, '/')
+        suite.resource.imports.library(
+            'libraries.api.api_test_keywords.APITestKeywords',
+            args=[None, test_cases_path_arg]
+        )
+
+    def _create_single_test_case(self, test_case: pd.Series, suite: TestSuite) -&gt; None:
         """Create a single test case in the test suite."""
         try:
             robot_api_test_name = f"API.{test_case['TCID']}"
-            robot_api_test = self.api_suite.tests.create(
+            robot_api_test = suite.tests.create(
                 name=robot_api_test_name,
                 doc=test_case['Descriptions']
             )
             robot_api_test.body.create_keyword(name='api_sanity_check', args=[])
             self._add_test_tags(robot_api_test, test_case)
             robot_api_test.body.create_keyword(name='execute_api_test_case', args=[test_case['TCID']])
-            self._configure_test_conditions(robot_api_test, test_case)
+            self._configure_test_conditions(suite, robot_api_test, test_case)
             logging.info(f"{self.__class__.__name__}: Test case {test_case['TCID']} created successfully")
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error creating test case {test_case.get('TCID', 'Unknown')}: {str(e)}")
@@ -915,23 +917,23 @@ class APIRobotCasesGenerator:
             logging.error(f"{self.__class__.__name__}: Error adding tags to test case: {str(e)}")
             raise
 
-    def _configure_test_conditions(self, robot_api_test, test_case) -&gt; None:
+    def _configure_test_conditions(self, suite, robot_api_test, test_case) -&gt; None:
         try:
             if pd.notna(test_case['Conditions']):
                 conditions = test_case['Conditions'].splitlines()
                 for condition in conditions:
-                    self._process_condition(condition, robot_api_test)
+                    self._process_condition(condition, suite, robot_api_test)
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error configuring test conditions: {str(e)}")
             raise
 
-    def _process_condition(self, condition: str, robot_api_test) -&gt; None:
+    def _process_condition(self, condition: str, suite, robot_api_test) -&gt; None:
         try:
             condition_mapping = {
                 '[TestSetup]': (robot_api_test.setup, 'Test setup'),
                 '[TestTeardown]': (robot_api_test.teardown, 'Test teardown'),
-                '[SuiteSetup]': (self.api_suite.setup, 'Suite setup'),
-                '[SuiteTeardown]': (self.api_suite.teardown, 'Suite teardown')
+                '[SuiteSetup]': (suite.setup, 'Suite setup'),
+                '[SuiteTeardown]': (suite.teardown, 'Suite teardown')
             }
 
             for condition_type, (config_object, condition_name) in condition_mapping.items():
@@ -1024,7 +1026,10 @@ class APITestKeywords:
             logging.info(f"{self.__class__.__name__}: Sanity check succeeded, continuing with the test.")
 
     @keyword
-    def clear_saved_fields(self):
+    def suite_teardown(self):
+        self.clear_save_fields()
+
+    def clear_save_fields(self):
         if self.test_config.get('clear_saved_fields_after_test', False):
             self.saved_fields_manager.clear_saved_fields()
             logging.info(f"{self.__class__.__name__}: Cleared saved fields")
@@ -1083,7 +1088,7 @@ class APITestKeywords:
         if pd.isna(conditions):
             return []
 
-        check_with_match = re.search(r'\[Checkwith\](.*)', conditions)
+        check_with_match = re.search(r'\[CheckWith\](.*)', conditions)
         if check_with_match:
             return [tcid.strip() for tcid in check_with_match.group(1).split(',')]
         return []
@@ -1209,7 +1214,7 @@ class APITestLoader:
             validation_methods[sheet_name](df)
 
     def _validate_api_sheet(self, df: pd.DataFrame):
-        required_columns = ['TCID', 'Run', 'Endpoint', 'Body Template', 'Body Default', 'Body Override', 'Headers', 'Exp Result']
+        required_columns = ['TCID', 'Run', 'Suite', 'Endpoint', 'Body Template', 'Body Default', 'Body Override', 'Headers', 'Exp Result']
         self._check_required_columns(df, required_columns, 'API')
 
         if df['TCID'].duplicated().any():
@@ -1259,9 +1264,9 @@ class APITestLoader:
 
         for _, row in df.iterrows():
             try:
-                json.loads(row['Content'])
-            except json.JSONDecodeError:
-                raise ValueError(f"Invalid JSON in BodyDefaults sheet for Name: {row['Name']}")
+                yaml.safe_load(row['Content'])
+            except yaml.YAMLError as e:
+                raise ValueError(f"Invalid YAML in BodyDefaults sheet for Name: {row['Name']}. Error: {e}")
 
     def _validate_headers_sheet(self, df: pd.DataFrame):
         required_columns = ['HeaderName', 'Content']
@@ -1308,6 +1313,9 @@ import logging
 import re
 
 from typing import Any, Dict, Union
+
+import yaml
+
 from libraries.common.utility_helpers import UtilityHelpers
 from libraries.api.template_renderer import TemplateRenderer
 from libraries.common.variable_generator import VariableGenerator
@@ -1362,15 +1370,18 @@ class BodyGenerator:
             default = defaults[defaults['Name'] == default_name]
             if default.empty:
                 raise ValueError(f"Default values '{default_name}' not found.")
-            return json.loads(default.iloc[0]['Content'])
-        except Exception as e:
+            return yaml.safe_load(default.iloc[0]['Content'])
+        except yaml.YAMLError as e:
             logging.error(f"Error loading default values: {e}")
             raise
 
     def parse_user_defined_fields(self, field_string):
+        if field_string is None or field_string.strip() == "":
+            return {}
         try:
-            return json.loads(field_string)
-        except json.JSONDecodeError as e:
+            field_string = field_string.replace(":", ": ")
+            return yaml.safe_load(field_string)
+        except yaml.YAMLError as e:
             logging.error(f"Error parsing user-defined fields: {e}")
             raise
 
@@ -1786,7 +1797,7 @@ class ResponseValidator(ResponseHandler):
         case_type = 'Sub Test'
         if self.is_main_test:
             case_type = 'Main Test'
-        logging.info(f"{self.__class__.__name__}: {message}")
+        logging.debug(f"{self.__class__.__name__}: {message}")
         logger.info(
             ColorLogger.success(f"{case_type}=&gt; {self.__class__.__name__}: {message}") if success else ColorLogger.error(f"{case_type}=&gt; {self.__class__.__name__}: {message}"),
             html=True)
@@ -2773,7 +2784,7 @@ class VariableTransformer:
     # e.g. 2023-01-01 -&gt; 20230101
     def _iso_to_compact_date(self, value: str) -&gt; str:
         date_obj = datetime.datetime.strptime(value, "%Y-%m-%d")
-        return date_obj.strftime("%Y%m%d")
+        return date_obj.strftime("%y%m%d")
 
     # e.g. 2023-10-05T12:00:00.000Z -&gt; 2023-10-05T14:00:00+02:00
     def _utc_to_poland_iso_datetime(self, utc_datetime_str: str) -&gt; str:
@@ -2864,6 +2875,7 @@ class E2ERobotCasesGenerator:
         try:
             # Create main test suite
             self.robot_suite = TestSuite('End To End TestSuite')
+            self._import_required_libraries(self.robot_suite)
 
             # Filter test cases
             tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
@@ -2873,11 +2885,18 @@ class E2ERobotCasesGenerator:
             if test_cases.empty:
                 logging.warning(f"{self.__class__.__name__}: No test cases found matching criteria.")
                 return self.robot_suite
-
-            # Iterate through test cases and generate tests
+            # Iterate through test cases in order
             for _, test_case in test_cases.iterrows():
-                self.create_test_case(test_case)
+                # Add a new sub-suite for each unique 'Suite' value
+                suite_name = test_case['Suite']
+                if suite_name not in [suite.name for suite in self.robot_suite.suites]:
+                    self.sub_suite = self.robot_suite.suites.create(name=suite_name)
+                    self._import_required_libraries(self.sub_suite)
 
+                self.create_test_case(test_case)  # Create test case within the sub-suite
+
+            # Configure suite teardown
+            self.robot_suite.teardown.config(name='close_browser', args=[])
             return self.robot_suite
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error creating test suite: {str(e)}")
@@ -2892,76 +2911,67 @@ class E2ERobotCasesGenerator:
 
             # Create empty data set if none exists
             if not test_data_sets:
+                logging.warning(f"{self.__class__.__name__}: No data sets found for test case {case_id}. Using empty data")
                 test_data_sets = [{}]
 
-            # Create child test suite
-            self.child_suite = TestSuite(name=case_id, doc=test_case['Descriptions'])
-            self.robot_suite.suites.append(self.child_suite)
-
-            # Import required libraries
-            self._import_required_libraries()
-
-            # Iterate through data sets and generate tests
+            # Generate tests for each data set
             for data_set_index, data_set in enumerate(test_data_sets, 1):
                 test_name = f"UI.{case_id}.{data_set_index}"
-                robot_ui_test = self.child_suite.tests.create(name=test_name)
-                robot_ui_test.body.create_keyword(name='sanity_check', args=[])
+                robot_test = self.sub_suite.tests.create(name=test_name, doc=test_case['Descriptions'])
+                robot_test.body.create_keyword(name='sanity_check', args=[])
 
                 # Add tags
                 if 'Tags' in test_case and pd.notna(test_case['Tags']):
                     tags = [tag.strip() for tag in test_case['Tags'].split(',')]
                     for tag in tags:
-                        robot_ui_test.tags.add(tag)
+                        robot_test.tags.add(tag)
 
                 # Create test steps
-                self.create_test_steps(robot_ui_test, test_steps, data_set)
+                self.create_test_steps(robot_test, test_steps, data_set)
                 logging.info(f"{self.__class__.__name__}: Test case {case_id}.{data_set_index} created successfully.")
 
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error creating test case {test_case.get('Case ID', 'Unknown')}: {str(e)}")
             raise
 
-    def _import_required_libraries(self):
+    def _import_required_libraries(self, suite):
         try:
             test_config_path_arg = os.path.normpath(self.test_config_path).replace(os.path.sep, '/')
             test_cases_path_arg = os.path.normpath(self.test_cases_path).replace(os.path.sep, '/')
-            self.child_suite.resource.imports.library(
-                'libraries.web.page_object.PageObject', args=[test_config_path_arg, test_cases_path_arg]
-            )
+            suite.resource.imports.library('libraries.web.page_object.PageObject', args=[test_config_path_arg, test_cases_path_arg])
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error importing required libraries: {str(e)}")
             raise
 
-    def create_test_steps(self, robot_ui_test, test_steps: List[Dict], data_set: Dict):
+    def create_test_steps(self, robot_test, test_steps: List[Dict], data_set: Dict):
         try:
             for _, step in test_steps.iterrows():
-                # Get step information
-                page_name = step['Page Name']
-                module_name = step['Module Name']
+                if step['Run'] == 'Y':
+                    # Get step information
+                    page_name = step['Page Name']
+                    module_name = step['Module Name']
 
                 # Generate steps based on module type
                 if module_name == 'API':
-                    self._generate_api_step(step, robot_ui_test)
+                    self._generate_api_step(step, robot_test)
                 else:
-                    self._generate_ui_step(robot_ui_test, step, page_name, module_name, data_set)
+                    self._generate_ui_step(robot_test, step, page_name, module_name, data_set)
 
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error creating test steps: {str(e)}")
             raise
 
-    def _generate_api_step(self, step, robot_ui_test):
+    def _generate_api_step(self, step, robot_test):
         try:
-            self.child_suite.tests.remove(robot_ui_test)
-            self.child_suite.name = f"APISubSuite.{step['Page Name']}.{step['Case ID']}"
+            self.sub_suite.tests.remove(robot_test)
             tc_id_list = step['APIs'].split(',')
-            self.api_robot_generator.create_test_suite(tc_id_list, None, self.child_suite)
+            self.api_robot_generator.create_test_suite(tc_id_list, None, self.sub_suite)
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error generating API step: {str(e)}")
             raise
 
     def _generate_ui_step(self, robot_ui_test, step, page_name, module_name, params):
         try:
-            self.child_suite.name = f"UISubSuite.{page_name}.{step['Case ID']}"
             robot_ui_test.body.create_keyword(name='execute_module', args=[page_name, module_name, params])
             # self.child_suite.teardown.config(name='close_browser', args=[])
         except Exception as e:
@@ -3821,7 +3831,7 @@ class CustomResultVisitor(ResultVisitor):
     <pre>import codecs
 import logging
 import os
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Generator
 from jinja2 import FileSystemLoader, Environment, TemplateNotFound
 from pandas import DataFrame
 from robot.api import ExecutionResult
@@ -3840,16 +3850,22 @@ class SummaryReportGenerator:
         try:
             result = ExecutionResult(self.output_xml_path)
             all_results = []
-
-            for test in result.suite.tests:
-                test_results = self._extract_results_from_test(test)
-                all_results.extend(test_results)
-
+            self._traverse_suite(result.suite, all_results)
             return all_results
 
         except Exception as e:
-            logging.error(f"HTMLReportGenerator: Error parsing Robot output.xml: {e}")
+            logging.error(f"SummaryReportGenerator: Error parsing Robot output.xml: {e}")
             return []
+
+    def _traverse_suite(self, suite, all_results: List[Dict]):
+        """Recursively traverses suites to extract all test results in order."""
+        # Process tests in the current suite in order
+        for test in suite.tests:
+            test_results = self._extract_results_from_test(test)
+            all_results.extend(test_results)
+        # Recursively process child suites
+        for child_suite in suite.suites:
+            self._traverse_suite(child_suite, all_results)
 
     def _extract_results_from_test(self, test) -&gt; List[Dict]:
         """Extracts all test results from a robot test case."""
@@ -3859,23 +3875,39 @@ class SummaryReportGenerator:
                 test_case_id = keyword.args[0]
 
                 for log_msg in keyword.messages:
-                     if "Main Test=&gt; ResponseValidator: Asserting" in log_msg.message:
-                        test_results.append(self._parse_assertion_log(log_msg.message, test_case_id, test.doc))
+                    if "Main Test=&gt; ResponseValidator: Asserting" in log_msg.message:
+                        parsed = self._parse_assertion_log(log_msg.message, test_case_id, test.doc)
+                        if parsed:
+                            test_results.append(parsed)
 
-                     elif "Main Test=&gt; ResponseValidator: Dynamic check" in log_msg.message:
-                         test_results.append(self._parse_dynamic_check_log(log_msg.message, test_case_id, test.doc))
+                    elif "Main Test=&gt; ResponseValidator: Dynamic check" in log_msg.message:
+                        parsed = self._parse_dynamic_check_log(log_msg.message, test_case_id, test.doc)
+                        if parsed:
+                            test_results.append(parsed)
 
-                     elif "Main Test=&gt; ResponseValidator: Postcheck" in log_msg.message:
-                          test_results.append(
-                              self._parse_pre_post_check_log(log_msg.message, "Postcheck", test_case_id, test.doc))
+                    elif "Main Test=&gt; ResponseValidator: Postcheck" in log_msg.message:
+                        parsed = self._parse_pre_post_check_log(log_msg.message, "Postcheck", test_case_id, test.doc)
+                        if parsed:
+                            test_results.append(parsed)
 
-                     elif "Main Test=&gt; ResponseValidator: Precheck" in log_msg.message:
-                         test_results.append(
-                             self._parse_pre_post_check_log(log_msg.message, "Precheck", test_case_id, test.doc))
-                     elif "Main Test=&gt; ResponseValidator: Database validation" in log_msg.message:
-                         test_results.append(self._parse_database_validation_log(log_msg.message, test_case_id, test.doc))
+                    elif "Main Test=&gt; ResponseValidator: Precheck" in log_msg.message:
+                        parsed = self._parse_pre_post_check_log(log_msg.message, "Precheck", test_case_id, test.doc)
+                        if parsed:
+                            test_results.append(parsed)
+
+                    elif "Main Test=&gt; ResponseValidator: Database validation" in log_msg.message:
+                        parsed = self._parse_database_validation_log(log_msg.message, test_case_id, test.doc)
+                        if parsed:
+                            test_results.append(parsed)
+            elif keyword.name == 'Execute Module':
+                test_case_id = test.name.split('.')[1]
+                page = keyword.args[0]
+                for log_msg in keyword.messages:
+                    if "UI Verification: Asserting" in log_msg.message:
+                        parsed = self._parse_ui_verification_log(log_msg.message, test_case_id,page, test.doc)
+                        if parsed:
+                            test_results.append(parsed)
         return test_results
-
 
     def _parse_assertion_log(self, log_message, tcid, description):
         parts = re.split(r"Main Test=&gt; ResponseValidator: Asserting:\s*(.*?),\s*Expected:\s*(.*?),\s*Actual:\s*([^&lt;]*)", log_message,
@@ -3893,9 +3925,9 @@ class SummaryReportGenerator:
              "Field": field,
              "Pre Value": '',
              "Post Value": '',
-             "Expected": expected.strip(),
-             "Actual": actual.strip(),
-             "Result": "Pass" if actual.strip() == expected.strip() else "Fail",
+             "Expected": expected,
+             "Actual": actual,
+             "Result": "Pass" if actual == expected else "Fail",
          }
 
     def _parse_dynamic_check_log(self, log_message, tcid, description):
@@ -3933,21 +3965,22 @@ class SummaryReportGenerator:
 
         return {
             "TCID": tcid,
-             "Description": description,
+            "Description": description,
             "Type": f"{check_type}",
             "Field": field,
             "Pre Value": '',
             "Post Value": '',
-            "Expected": expected_value.strip(),
-            "Actual": actual_value.strip(),
-            "Result": "Pass" if actual_value.strip() == expected_value.strip() else "Fail",
+            "Expected": expected_value,
+            "Actual": actual_value,
+            "Result": "Pass" if actual_value == expected_value else "Fail",
         }
 
     def _parse_database_validation_log(self, log_message, tcid, description):
         """Parses the database validation log message."""
         parts = re.split(
             r"Main Test=&gt; ResponseValidator: Database validation for '([^']*)' in table '([^']*)'\. Expected: '([^']*)', Actual: '([^']*)'\.",
-            log_message, flags=re.DOTALL | re.MULTILINE
+            log_message,
+            flags=re.DOTALL | re.MULTILINE
         )
 
         if len(parts) != 6:
@@ -3967,6 +4000,33 @@ class SummaryReportGenerator:
             "Actual": actual_value,
             "Result": "Pass" if actual_value == expected_value else "Fail",
         }
+
+    def _parse_ui_verification_log(self, log_message, tcid,page, description):
+        parts = re.split(r"UI Verification: Asserting:\s*(.*?),\s*(.*?),\s*Expected:\s*(.*?),\s*Actual:\s*([^&lt;]*)", log_message)
+        if len(parts) != 6:
+            logging.error(f"Could not parse UI verification log message: {log_message}")
+            return {}
+
+        field, field_type, expected, actual = parts[1].strip(), parts[2].strip(), parts[3].strip(), parts[4].strip()
+
+        result = self._evaluate_ui_verification_result(field_type, expected, actual)
+
+        return {
+            "TCID": tcid,
+            "Description": description,
+            "Type": field_type,
+            "Field": field,
+            "Expected": expected,
+            "Actual": actual,
+            "Result": "Pass" if result else "Fail",
+        }
+
+    def _evaluate_ui_verification_result(self, field_type, expected, actual):
+        if 'contains' in field_type.lower():
+            return expected in actual
+        else:
+            return actual == expected
+
     def generate_html_report(self) -&gt; str:
         """
         Generates the HTML report content.
@@ -3976,7 +4036,7 @@ class SummaryReportGenerator:
             env = Environment(loader=file_loader)
             template = env.get_template('test_summary_template.html')
 
-            flattened_data = self._flatten_results(self.test_results)
+            flattened_data = list(self._flatten_results(self.test_results))
             if not flattened_data:  # Check if flattened_data is empty
                 return "No test results to display."
 
@@ -3997,7 +4057,7 @@ class SummaryReportGenerator:
             ]
             df = df[[col for col in columns_to_order if col in df.columns]]
 
-            # Create the HTML table with merged cells and color-coded results
+            # Create the HTML table with ordered rows and color-coded results
             html_table = self._create_html_table(df)
             html_content = template.render(html_table=html_table)
 
@@ -4006,18 +4066,18 @@ class SummaryReportGenerator:
             os.makedirs(os.path.dirname(report_file), exist_ok=True)  # Ensure the directory exists
             with codecs.open(report_file, "w", encoding="utf-8") as f:
                 f.write(html_content)
-            logging.info(f"HTMLReportGenerator: Test report saved to: {report_file}")
+            logging.info(f"SummaryReportGenerator: Test report saved to: {report_file}")
 
         except TemplateNotFound as e:
-            logging.error(f"HTMLReportGenerator: Template not found: {e}")
+            logging.error(f"SummaryReportGenerator: Template not found: {e}")
             raise
         except Exception as e:
-            logging.error(f"HTMLReportGenerator: Error generating HTML report: {e}")
+            logging.error(f"SummaryReportGenerator: Error generating HTML report: {e}")
             raise
 
-    def _flatten_results(self, test_results: List[Dict]):
+    def _flatten_results(self, test_results: List[Dict]) -&gt; Generator[Dict, None, None]:
         """
-        Flattens the test results data.
+        Flattens the test results data while maintaining the original order.
         """
         for result in test_results:
             row = {
@@ -4040,9 +4100,9 @@ class SummaryReportGenerator:
         html_table += '&lt;tr&gt;\n'
         for col in df.columns:
             if col == "Description":
-                html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;" class="description-cell"&gt;{col}&lt;/th&gt;\n'
+                html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;{col}&lt;/th&gt;\n'
             elif col == "Field":
-                html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Field&lt;/th&gt;\n'
+                html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;{col}&lt;/th&gt;\n'
             else:
                 html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;{col}&lt;/th&gt;\n'
         html_table += '&lt;/tr&gt;\n'
@@ -4063,6 +4123,8 @@ class SummaryReportGenerator:
                         html_table += f'&lt;td style="text-align: center; color: {color};"&gt;{row[col]}&lt;/td&gt;\n'
                     elif col == "Field":
                         html_table += f'&lt;td class="field-cell" title="{row[col]}"&gt;{row[col]}&lt;/td&gt;\n'
+                    elif col == "Type":
+                        html_table += f'&lt;td class="type-cell"&gt;{row[col]}&lt;/td&gt;\n'
                     else:
                         html_table += f'&lt;td style="text-align: center;"&gt;{row[col]}&lt;/td&gt;\n'
                 html_table += '&lt;/tr&gt;\n'
@@ -4076,7 +4138,7 @@ class SummaryReportGenerator:
                     )
                     html_table = html_table.replace(
                         f'&lt;td rowspan="placeholder_description"&gt;{current_description}&lt;/td&gt;',
-                        f'&lt;td rowspan="{description_rowspan}" style="text-align: center; vertical-align: middle;" class="description-cell"&gt;{current_description}&lt;/td&gt;',
+                        f'&lt;td rowspan="{description_rowspan}" style="text-align: left; vertical-align: middle;" class="description-cell"&gt;{current_description}&lt;/td&gt;',
                         1
                     )
                 current_tcid = row["TCID"]
@@ -4092,6 +4154,8 @@ class SummaryReportGenerator:
                         html_table += f'&lt;td style="text-align: center; color: {color};"&gt;{row[col]}&lt;/td&gt;\n'
                     elif col == "Field":
                         html_table += f'&lt;td class="field-cell" title="{row[col]}"&gt;{row[col]}&lt;/td&gt;\n'
+                    elif col == "Type":
+                        html_table += f'&lt;td class="type-cell"&gt;{row[col]}&lt;/td&gt;\n'
                     else:
                         html_table += f'&lt;td style="text-align: center;"&gt;{row[col]}&lt;/td&gt;\n'
                 html_table += '&lt;/tr&gt;\n'
@@ -4105,12 +4169,13 @@ class SummaryReportGenerator:
             )
             html_table = html_table.replace(
                 f'&lt;td rowspan="placeholder_description"&gt;{current_description}&lt;/td&gt;',
-                f'&lt;td rowspan="{description_rowspan}" style="text-align: center; vertical-align: middle;" class="description-cell"&gt;{current_description}&lt;/td&gt;',
+                f'&lt;td rowspan="{description_rowspan}" style="text-align: left; vertical-align: middle;" class="description-cell"&gt;{current_description}&lt;/td&gt;',
                 1
             )
 
         html_table += '&lt;/table&gt;'
-        return html_table</pre>
+        return html_table
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web___init___py">
@@ -4338,6 +4403,7 @@ class PageObject:
             wait = action_info['wait']
             locator = self.page_elements[page_name][element_name] if element_name else None
             action_params = self._extract_parameters(data_set, action_info['parameter_names'])
+            element_desc = f'{page_name}.{module_name}.{element_name}' if element_name else f'{page_name}.{module_name}'
 
             logging.info(
                 f"{self.__class__.__name__}: Executing action:[{action}] on page:[{page_name}] module:[{module_name}]"
@@ -4346,9 +4412,9 @@ class PageObject:
             )
 
             if highlight:
-                self.web_actions.highlight_element(locator)
+                self.web_actions.highlight_element(locator, element_desc=element_desc)
 
-            self._execute_action(action, locator, *action_params)
+            self._execute_action(action, locator, element_desc, *action_params)
 
             if wait:
                 try:
@@ -4363,8 +4429,9 @@ class PageObject:
 
             logging.info("=" * 80)
 
-    def _execute_action(self, action: str, locator, *args, **kwargs):
-        action_map = {
+    def _execute_action(self, action: str, locator, element_desc, *args, **kwargs):
+        # 定义需要页面元素的操作映射
+        element_actions = {
             # ElementActions
             'send_keys': self.web_actions.send_keys,
             'click': self.web_actions.click,
@@ -4375,37 +4442,51 @@ class PageObject:
             'hover': self.web_actions.hover,
             'double_click': self.web_actions.double_click,
             'right_click': self.web_actions.right_click,
-            'scroll_into_view': self.web_actions.scroll_into_view,
-            'scroll_to_element': self.web_actions.scroll_to_element,
             'get_text': self.web_actions.get_text,
             'get_attribute': self.web_actions.get_attribute,
             'select_radio_by_value': self.web_actions.select_radio_by_value,
 
-            # VerificationActions
+            # VerificationActions（需要传入element_name用于错误提示或日志记录）
             'verify_text_is': self.web_actions.verify_text_is,
             'verify_figure_is': self.web_actions.verify_figure_is,
             'verify_text_contains': self.web_actions.verify_text_contains,
             'verify_figure_text_contains': self.web_actions.verify_figure_text_contains,
             'verify_title_is': self.web_actions.verify_title_is,
             'verify_title_contains': self.web_actions.verify_title_contains,
-            'check_element_exists': self.web_actions.check_element_exists,
-            'check_element_visible': self.web_actions.check_element_visible,
-            'check_element_invisible': self.web_actions.check_element_invisible,
-            'check_element_clickable': self.web_actions.check_element_clickable,
-            'check_element_selected': self.web_actions.check_element_selected,
-            'check_element_enabled': self.web_actions.check_element_enabled,
+            'verify_element_exists': self.web_actions.verify_element_exists,
+            'verify_element_visible': self.web_actions.verify_element_visible,
+            'verify_element_invisible': self.web_actions.verify_element_invisible,
+            'verify_element_clickable': self.web_actions.verify_element_clickable,
+            'verify_element_selected': self.web_actions.verify_element_selected,
+            'verify_element_enabled': self.web_actions.verify_element_enabled,
             'get_text_save_to_variable': self.web_actions.get_text_save_to_variable,
-            'verify_value_changed_by': self.web_actions.verify_value_changed_by,
+            'verify_element_value_diff': self.web_actions.verify_element_value_diff,
 
-            # WaitActions
+            # WaitActions（部分等待操作依赖于页面元素）
             'wait_for_element_present': self.web_actions.wait_for_element_present,
             'wait_for_element_visible': self.web_actions.wait_for_element_visible,
             'wait_for_element_invisible': self.web_actions.wait_for_element_invisible,
             'wait_for_element_clickable': self.web_actions.wait_for_element_clickable,
             'wait_for_text_present_in_element': self.web_actions.wait_for_text_present_in_element,
             'wait_for_staleness_of': self.web_actions.wait_for_staleness_of,
-            'wait': self.web_actions.wait,
 
+            # JavaScriptActions
+            'fill_by_js': self.web_actions.fill_by_js,
+            'click_by_js': self.web_actions.click_by_js,
+            'js_click': self.web_actions.js_click,
+            'js_send_keys': self.web_actions.js_send_keys,
+            'js_clear': self.web_actions.js_clear,
+            'js_scroll_into_view': self.web_actions.js_scroll_into_view,
+            'js_scroll_to_element': self.web_actions.js_scroll_to_element,
+            'js_select_option': self.web_actions.js_select_option,
+            'js_hover': self.web_actions.js_hover,
+
+            # UtilsActions
+            'highlight_element': self.web_actions.highlight_element,
+        }
+
+        # 定义不依赖页面元素的操作映射
+        non_element_actions = {
             # WindowActions
             'switch_to_frame': self.web_actions.switch_to_frame,
             'switch_to_default_content': self.web_actions.switch_to_default_content,
@@ -4420,14 +4501,6 @@ class PageObject:
             # JavaScriptActions
             'execute_script': self.web_actions.execute_script,
             'execute_async_script': self.web_actions.execute_async_script,
-            'fill_by_js': self.web_actions.fill_by_js,
-            'click_by_js': self.web_actions.click_by_js,
-            'js_click': self.web_actions.js_click,
-            'js_send_keys': self.web_actions.js_send_keys,
-            'js_clear': self.web_actions.js_clear,
-            'js_scroll_into_view': self.web_actions.js_scroll_into_view,
-            'js_select_option': self.web_actions.js_select_option,
-            'js_hover': self.web_actions.js_hover,
 
             # AlertActions
             'accept_alert': self.web_actions.accept_alert,
@@ -4447,7 +4520,7 @@ class PageObject:
             'go_forward': self.web_actions.go_forward,
             'get_current_url': self.web_actions.get_current_url,
 
-            # TableActions
+            # TableActions（假定表格相关操作不需要传入element_name）
             'verify_table_exact': self.web_actions.verify_table_exact,
             'verify_table_row_exact': self.web_actions.verify_table_row_exact,
             'verify_specific_cell_exact': self.web_actions.verify_specific_cell_exact,
@@ -4467,33 +4540,36 @@ class PageObject:
 
             # UtilsActions
             'capture_screenshot': self.web_actions.capture_screenshot,
-            'highlight_element': self.web_actions.highlight_element,
+
+            # WaitActions（全局等待，不依赖具体的元素）
+            'wait': self.web_actions.wait,
         }
 
-        if action not in action_map and action not in self.custom_action_executor.custom_actions:
-            raise ValueError(f"{self.__class__.__name__}: Unsupported web_action: {action}")
-
-        # Create a new list to store the modified arguments
+        # 先对传入的参数进行变量替换
         new_args = []
         for arg in args:
             if isinstance(arg, str):
-                # Use regex to find all occurrences of ${...} in the string
+                # 使用正则匹配所有 ${...} 格式的变量
                 matches = re.findall(r'\$\{([^}]+)\}', arg)
                 if matches:
                     for match in matches:
-                        # Retrieve the actual value for the variable using builtin_lib
                         replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
-                        # Replace the ${...} placeholder with the actual value
                         arg = arg.replace(f'${{{match}}}', str(replacement_value))
-
                         logging.info(f"{self.__class__.__name__}: Replaced {match} with value: {replacement_value} for web_action: {action}")
-
-            # Add the processed (or original) argument to the new list
             new_args.append(arg)
 
-        if action in action_map:
-            return action_map[action](locator, *new_args, **kwargs) if locator else action_map[action](*new_args, **kwargs)
+        # 判断该动作是否在 element_actions 中，如果在，则加入element_name信息
+        if action in element_actions:
+            kwargs['element_desc'] = element_desc
+            if locator:
+                return element_actions[action](locator, *new_args, **kwargs)
+            else:
+                # 如果 locator 不存在时，可选择报错或者直接调用（取决于具体需求）
+                return element_actions[action](*new_args, **kwargs)
+        elif action in non_element_actions:
+            return non_element_actions[action](*new_args, **kwargs)
         elif action in self.custom_action_executor.custom_actions:
+            # 如果是自定义操作，继续原有的处理逻辑
             return self.custom_action_executor.execute_custom_action(action, locator, self.web_actions, *new_args, **kwargs)
         else:
             raise ValueError(f"{self.__class__.__name__}: Unsupported web_action: {action}")
@@ -4522,7 +4598,8 @@ class PageObject:
             return parameters
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: PageObject: Error extracting parameters: {str(e)}")
-            raise</pre>
+            raise
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action___init___py">
@@ -4569,12 +4646,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from libraries.web.web_action.table_verifier import TableVerifier
 
+
 class Base:
     def __init__(self, driver: WebDriver, default_timeout: int = 60):
         self.driver = driver
         self.default_timeout = default_timeout
         self.table_verifier = TableVerifier(self.driver)
-
 
     def _get_element_description(self, element):
         if isinstance(element, WebElement):
@@ -4605,12 +4682,17 @@ class Base:
         else:
             return str(element)
 
-    def wait_for_element(self, locator, condition="presence", timeout=None):
+    def _resolve_element(self, element, element_desc, condition, timeout=None):
+        """ 解析元素，若传入的是 locator 元组，则等待元素加载 """
+        if isinstance(element, tuple):
+            return self.wait_for_element(element, element_desc, condition=condition, timeout=timeout)
+        return element
+
+    def wait_for_element(self, locator, element_desc=None, condition="presence", timeout=None):
         if timeout is None:
             timeout = self.default_timeout
 
-        logging.info(
-            f"{self.__class__.__name__}: Waiting for element with locator {locator}, condition: {condition}, timeout: {timeout}")
+        logging.debug(f"{self.__class__.__name__}: Waiting for element {element_desc} with locator {locator}, condition: {condition}, timeout: {timeout}")
         wait = WebDriverWait(self.driver, timeout)
 
         try:
@@ -4625,12 +4707,13 @@ class Base:
             else:
                 raise ValueError(f"{self.__class__.__name__}: Unsupported condition: {condition}")
 
-            element_desc = self._get_element_description(result)
-            logging.info(f"{self.__class__.__name__}: Element found successfully: {element_desc}")
+            element_desc = element_desc or self._get_element_description(result)
+            logging.info(f"{self.__class__.__name__}: Element found {element_desc} with locator {locator}, condition: {condition}.")
             return result
         except TimeoutException:
-            logging.error(f"{self.__class__.__name__}: Timeout waiting for element: {locator}, condition: {condition}")
-            raise</pre>
+            logging.error(f"{self.__class__.__name__}: Timeout waiting for element {element_desc} with locator {locator}, condition: {condition}, timeout: {timeout}")
+            raise
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_cookie_actions_py">
@@ -4693,155 +4776,99 @@ from .base import Base
 
 
 class ElementActions(Base):
-
-    def send_keys(self, element, value, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Sending keys to element: {element_desc}")
-        logging.info(f"{self.__class__.__name__}: Value to be sent: {value}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def send_keys(self, locator, value, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Sending keys to element [ {element_desc}:{locator} ] with value: [ {value} ].")
         element.send_keys(value)
-        logging.info(f"{self.__class__.__name__}: Keys sent successfully to element: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Sent keys to element [ {element_desc}:{locator} ] with value: [ {value} ] successfully.")
 
-    def click(self, element, condition="clickable"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Clicking element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def click(self, locator, element_desc=None, condition="clickable"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Clicking element [ {element_desc}:{locator} ].")
         element.click()
-        logging.info(f"{self.__class__.__name__}: Element clicked successfully: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Clicked element [ {element_desc}:{locator} ] successfully.")
 
-    def clear(self, element, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Clearing element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def clear(self, locator, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Clearing element [ {element_desc}:{locator} ].")
         element.clear()
-        logging.info(f"{self.__class__.__name__}: Element cleared successfully: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Cleared element [ {element_desc}:{locator} ] successfully.")
 
-    def get_text(self, element, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Getting text from element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def get_text(self, locator, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Getting text from element [ {element_desc}:{locator} ].")
         text = element.text
-        logging.info(f"{self.__class__.__name__}: Text retrieved: '{text}' from element: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Got text '{text}' from element [ {element_desc}:{locator} ] successfully.")
         return text
 
-    def get_attribute(self, element, attribute_name, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Getting attribute '{attribute_name}' from element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def get_attribute(self, locator, attribute_name, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Getting attribute '{attribute_name}' from element [ {element_desc}:{locator} ].")
         attribute_value = element.get_attribute(attribute_name)
-        logging.info(f"{self.__class__.__name__}: Attribute '{attribute_name}' value: '{attribute_value}' for element: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Got attribute '{attribute_name}'='{attribute_value}' from element [ {element_desc}:{locator} ] successfully.")
         return attribute_value
 
-    def select_by_value(self, element, value, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Selecting option by value: {value} for element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def select_by_value(self, locator, value, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Selecting option by value '{value}' for element [ {element_desc}:{locator} ].")
         Select(element).select_by_value(value)
-        logging.info(f"{self.__class__.__name__}: Option selected successfully: {value} for element: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Selected option by value '{value}' for element [ {element_desc}:{locator} ] successfully.")
 
-    def select_by_visible_text(self, element, text, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Selecting option by visible text: {text} for element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def select_by_visible_text(self, locator, text, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Selecting option by visible text '{text}' for element [ {element_desc}:{locator} ].")
         Select(element).select_by_visible_text(text)
-        logging.info(f"{self.__class__.__name__}: Option selected successfully: {text} for element: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Selected option by visible text '{text}' for element [ {element_desc}:{locator} ] successfully.")
 
-    def select_by_index(self, element, index, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Selecting option by index: {index} for element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def select_by_index(self, locator, index, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Selecting option at index '{index}' for element [ {element_desc}:{locator} ].")
         Select(element).select_by_index(int(index))
-        logging.info(f"{self.__class__.__name__}: Option selected successfully at index: {index} for element: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Selected option at index '{index}' for element [ {element_desc}:{locator} ] successfully.")
 
-    def hover(self, element, condition="visibility"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Hovering over element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def hover(self, locator, element_desc=None, condition="visibility"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Hovering over element [ {element_desc}:{locator} ].")
         ActionChains(self.driver).move_to_element(element).perform()
-        logging.info(f"{self.__class__.__name__}: Hovered over element successfully: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Hovered over element [ {element_desc}:{locator} ] successfully.")
 
-    def double_click(self, element, condition="clickable"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Double clicking element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def double_click(self, locator, element_desc=None, condition="clickable"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Double clicking element [ {element_desc}:{locator} ].")
         ActionChains(self.driver).double_click(element).perform()
-        logging.info(f"{self.__class__.__name__}: Double clicked element successfully: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Double clicked element [ {element_desc}:{locator} ] successfully.")
 
-    def right_click(self, element, condition="clickable"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Right clicking element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def right_click(self, locator, element_desc=None, condition="clickable"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Right clicking element [ {element_desc}:{locator} ].")
         ActionChains(self.driver).context_click(element).perform()
-        logging.info(f"{self.__class__.__name__}: Right clicked element successfully: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Right clicked element [ {element_desc}:{locator} ] successfully.")
 
-    def scroll_into_view(self, element, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Scrolling element into view: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
-        self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
-        logging.info(f"{self.__class__.__name__}: Scrolled element into view successfully: {element_desc}")
-
-    def scroll_to_element(self, element, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Scrolling to element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({behavior: 'smooth', block: 'center', inline: 'nearest'});", element)
-        logging.info(f"{self.__class__.__name__}: Scrolled to element successfully: {element_desc}")
-
-    def select_radio(self, element, condition="clickable"):
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
+    def select_radio(self, locator, element_desc=None, condition="clickable"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Selecting radio button [ {element_desc}:{locator} ].")
         element.click()
+        logging.info(f"{self.__class__.__name__}: Selected radio button [ {element_desc}:{locator} ] successfully.")
 
-    def select_radio_by_value(self, element, value, condition="clickable"):
-        logging.info(f"{self.__class__.__name__}: Selecting radio button with value '{value}' in radio group: {element}")
-        locator_type, locator = element
-        locator = locator.format(value)
-        element = (locator_type, locator)
-
-        element = self.wait_for_element(element, condition=condition)
-        self.select_radio(element)
-        logging.info(f"{self.__class__.__name__}: Selected radio button with value '{value}'")
+    def select_radio_by_value(self, locator, value, element_desc=None, condition="clickable"):
+        formatted_locator = (locator[0], locator[1].format(value))
+        element = self._resolve_element(formatted_locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(formatted_locator)
+        logging.debug(f"{self.__class__.__name__}: Selecting radio button with value '{value}' in radio group [ {element_desc}:{formatted_locator} ].")
+        element.click()
+        logging.info(f"{self.__class__.__name__}: Selected radio button with value '{value}' in radio group [ {element_desc}:{formatted_locator} ] successfully.")
 </pre>
 </div>
 
@@ -4851,93 +4878,77 @@ class ElementActions(Base):
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from .base import Base
 import logging
-
 from .js import click_by_js_script, fill_by_js_script
 
 
 class JavaScriptActions(Base):
     def execute_script(self, script, *args):
-        logging.info(f"{self.__class__.__name__}: Executing JavaScript: {script}, Arguments: {args}")
+        logging.debug(f"{self.__class__.__name__}: Executing JavaScript: {script}, Arguments: {args}")
         result = self.driver.execute_script(script, *args)
         logging.info(f"{self.__class__.__name__}: JavaScript executed successfully, Result: {result}")
         return result
 
     def execute_async_script(self, script, *args):
-        logging.info(f"{self.__class__.__name__}: Executing asynchronous JavaScript: {script}, Arguments: {args}")
+        logging.debug(f"{self.__class__.__name__}: Executing asynchronous JavaScript: {script}, Arguments: {args}")
         result = self.driver.execute_async_script(script, *args)
         logging.info(f"{self.__class__.__name__}: Asynchronous JavaScript executed successfully, Result: {result}")
         return result
 
-    def click_by_js(self, element, condition="clickable"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Clicking element: {element_desc}")
+    def js_scroll_into_view(self, locator, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Scrolling element [ {element_desc}:{locator} ] into view using JavaScript.")
+        self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
+        logging.info(f"{self.__class__.__name__}: Scrolled element [ {element_desc}:{locator} ] into view using JavaScript successfully.")
 
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
+    def js_scroll_to_element(self, locator, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Scrolling to element [ {element_desc}:{locator} ] with smooth behavior using JavaScript.")
+        self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center', inline: 'nearest'});", element)
+        logging.info(f"{self.__class__.__name__}: Scrolled to element [ {element_desc}:{locator} ] with smooth behavior using JavaScript successfully.")
 
+    def click_by_js(self, locator, element_desc=None, condition="clickable"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Clicking element [ {element_desc}:{locator} ] using JavaScript.")
         js = click_by_js_script
         self.driver.execute_script(js, element)
-        logging.info(f"{self.__class__.__name__}: Element clicked successfully: {element_desc} by js")
+        logging.info(f"{self.__class__.__name__}: Clicked element [ {element_desc}:{locator} ] using JavaScript successfully.")
 
-    def fill_by_js(self, element, value, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Sending keys to element: {element_desc}")
-        logging.info(f"{self.__class__.__name__}: Value to be sent: {value}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def fill_by_js(self, locator, value, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Sending keys to element [ {element_desc}:{locator} ] using JavaScript with value: [ {value} ].")
         js = fill_by_js_script.format(text=value)
         self.driver.execute_script(js, element)
-        logging.info(f"{self.__class__.__name__}: Keys sent successfully to element: {element_desc} by js")
+        logging.info(f"{self.__class__.__name__}: Sent keys to element [ {element_desc}:{locator} ] using JavaScript with value: [ {value} ] successfully.")
 
-    def js_click(self, element, condition="clickable"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Clicking element using JavaScript: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def js_click(self, locator, element_desc=None, condition="clickable"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Clicking element [ {element_desc}:{locator} ] using JavaScript.")
         self.driver.execute_script("arguments[0].click();", element)
-        logging.info(f"{self.__class__.__name__}: Element clicked successfully using JavaScript: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Clicked element [ {element_desc}:{locator} ] using JavaScript successfully.")
 
-    def js_send_keys(self, element, value, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Sending keys to element using JavaScript: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def js_send_keys(self, locator, value, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Sending keys to element [ {element_desc}:{locator} ] using JavaScript with value: [ {value} ].")
         self.driver.execute_script(f"arguments[0].value = '{value}';", element)
-        logging.info(f"{self.__class__.__name__}: Keys sent successfully using JavaScript: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Sent keys to element [ {element_desc}:{locator} ] using JavaScript with value: [ {value} ] successfully.")
 
-    def js_clear(self, element, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Clearing element using JavaScript: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def js_clear(self, locator, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Clearing element [ {element_desc}:{locator} ] using JavaScript.")
         self.driver.execute_script("arguments[0].value = '';", element)
-        logging.info(f"{self.__class__.__name__}: Element cleared successfully using JavaScript: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Cleared element [ {element_desc}:{locator} ] using JavaScript successfully.")
 
-    def js_scroll_into_view(self, element, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Scrolling element into view using JavaScript: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
-        self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
-        logging.info(f"{self.__class__.__name__}: Element scrolled into view successfully using JavaScript: {element_desc}")
-
-    def js_select_option(self, select_element, option_text, condition="presence"):
-        element_desc = self._get_element_description(select_element)
-        logging.info(f"{self.__class__.__name__}: Selecting option '{option_text}' using JavaScript: {element_desc}")
-
-        if isinstance(select_element, tuple):
-            select_element = self.wait_for_element(select_element, condition=condition)
-
+    def js_select_option(self, locator, option_text, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Selecting option [ {option_text} ] for element [ {element_desc}:{locator} ] using JavaScript.")
         self.driver.execute_script(
             "var select = arguments[0];"
             "for(var i = 0; i &lt; select.options.length; i++) {"
@@ -4947,17 +4958,14 @@ class JavaScriptActions(Base):
             "    select.dispatchEvent(event);"
             "    break;"
             "  }"
-            "}", select_element, option_text
+            "}", element, option_text
         )
-        logging.info(f"{self.__class__.__name__}: Option selected successfully using JavaScript: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Selected option [ {option_text} ] for element [ {element_desc}:{locator} ] using JavaScript successfully.")
 
-    def js_hover(self, element, condition="visibility"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Hovering over element using JavaScript: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def js_hover(self, locator, element_desc=None, condition="visibility"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Hovering over element [ {element_desc}:{locator} ] using JavaScript.")
         self.driver.execute_script(
             "var event = new MouseEvent('mouseover', {"
             "  'view': window,"
@@ -4966,7 +4974,7 @@ class JavaScriptActions(Base):
             "});"
             "arguments[0].dispatchEvent(event);", element
         )
-        logging.info(f"{self.__class__.__name__}: Hovered over element successfully using JavaScript: {element_desc}")
+        logging.info(f"{self.__class__.__name__}: Hovered over element [ {element_desc}:{locator} ] using JavaScript successfully.")
 </pre>
 </div>
 
@@ -5556,26 +5564,19 @@ class UtilsActions(Base):
             logging.error(f"{self.__class__.__name__}: Failed to capture screenshot: {str(e)}")
             BuiltIn().log(f"{self.__class__.__name__}: Failed to capture screenshot: {str(e)}", level="ERROR")
 
-    def highlight_element(self, element, duration=2, color="lightgreen", border="3px solid red", condition="visibility"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Highlighting element: {element_desc}")
-
-        # Wait for element to be visible
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def highlight_element(self, locator, duration=2, color="lightgreen", border="3px solid red", element_desc=None, condition="visibility"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Highlighting element [ {element_desc}:{locator} ] using JavaScript.")
         def apply_style(s):
             self.driver.execute_script("arguments[0].setAttribute('style', arguments[1]);", element, s)
-
         original_style = element.get_attribute('style')
-
         for _ in range(int(duration)):
             apply_style(f"background: {color}; border: {border};")
             time.sleep(0.25)
             apply_style(original_style)
             time.sleep(0.25)
-
-        logging.info(f"{self.__class__.__name__}: Finished highlighting element: {element_desc}")</pre>
+        logging.info(f"{self.__class__.__name__}: Highlighted element [ {element_desc}:{locator} ] using JavaScript successfully.")</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_verification_actions_py">
@@ -5587,166 +5588,176 @@ from selenium.common import NoSuchElementException, TimeoutException
 from robot.libraries.BuiltIn import BuiltIn
 from .base import Base
 import logging
+from robot.api import logger
+from libraries.common.log_manager import ColorLogger
 
 
 class VerificationActions(Base):
-    def verify_text_is(self, element, expected_text, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element text matches expected: {element_desc}, expected text: '{expected_text}'")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def verify_text_is(self, locator, expected_text, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Checking if element text matches expected: {element_desc}, expected text: '{expected_text}'")
         actual_text = element.text
-        assert actual_text == expected_text, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not matching actual text: '{actual_text}'"
-        logging.info(f"{self.__class__.__name__}: Element text matches expected: '{expected_text}', Actual text: '{actual_text}'")
+        result = actual_text == expected_text
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_text_is, Expected: {expected_text}, Actual: {actual_text}"
+        self._log_result(result, log_message)
+        assert result, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not matching actual text: '{actual_text}'"
 
-    def verify_figure_is(self, element, expected_figure, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element figure matches expected: {element_desc}, expected figure: '{expected_figure}'")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
-        expected_figure = float(expected_figure.replace(",", "").strip())
-        actual_figure = float(element.text.replace(",", "").strip())
-        assert around(actual_figure, decimals=2) == around(expected_figure, decimals=2), \
-            f"{self.__class__.__name__}: Expected figure: '{expected_figure}' is not matching actual figure: '{actual_figure}'"
-        logging.info(f"{self.__class__.__name__}: Element figure matches expected: '{expected_figure}', Actual figure: '{actual_figure}'")
-
-    def verify_text_contains(self, element, expected_text, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element text contains expected: {element_desc}, expected text: '{expected_text}'")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
-        actual_text = element.text
-        assert expected_text in actual_text, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not in actual text: '{actual_text}'"
-        logging.info(f"{self.__class__.__name__}: Element text contains expected: '{expected_text}', Actual text: '{actual_text}'")
-
-    def verify_figure_text_contains(self, element, expected_text, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element figure to text contains expected: {element_desc}, expected text: '{expected_text}'")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
-        expected_text = expected_text.replace(",", "").strip()
-        actual_text = element.text.replace(",", "").strip()
-        assert expected_text in actual_text, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not in actual text: '{actual_text}'"
-        logging.info(f"{self.__class__.__name__}: Element text contains expected: '{expected_text}', Actual text: '{actual_text}'")
-
-    def verify_title_is(self, expected_title):
-        logging.info(f"{self.__class__.__name__}: Checking if page title matches expected: '{expected_title}'")
-        actual_title = self.driver.title
-        assert actual_title == expected_title, f"{self.__class__.__name__}: Expected title: '{expected_title}' is not matching actual title: '{actual_title}'"
-        logging.info(f"{self.__class__.__name__}: Title matches expected: '{expected_title}', Actual title: '{actual_title}'")
-
-    def verify_title_contains(self, expected_title):
-        logging.info(f"{self.__class__.__name__}: Checking if page title contains expected: '{expected_title}'")
-        actual_title = self.driver.title
-        assert expected_title in actual_title, f"{self.__class__.__name__}: Expected title: '{expected_title}' is not in actual title: '{actual_title}'"
-        logging.info(f"{self.__class__.__name__}: Title contains expected: '{expected_title}', Actual title: '{actual_title}'")
-
-    def check_element_exists(self, locator):
-        logging.info(f"{self.__class__.__name__}: Checking if element is present: {locator}")
+    def verify_figure_is(self, locator, expected_figure, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Checking if element figure matches expected: {element_desc}, expected figure: '{expected_figure}'")
         try:
-            element = self.driver.find_element(*locator)
-            element_desc = self._get_element_description(element)
-            logging.info(f"{self.__class__.__name__}: Element exists: {element_desc}")
-            return True
+            expected_value = float(expected_figure.replace(",", "").strip())
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error converting expected figure to float: {expected_figure}")
+            raise e
+        try:
+            actual_value = float(element.text.replace(",", "").strip())
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error converting actual figure to float from element text: {element.text}")
+            raise e
+        result = around(actual_value, decimals=2) == around(expected_value, decimals=2)
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_figure_is, Expected: {expected_value}, Actual: {actual_value}"
+        self._log_result(result, log_message)
+        assert result, f"{self.__class__.__name__}: Expected figure: '{expected_value}' is not matching actual figure: '{actual_value}'"
+
+    def verify_text_contains(self, locator, expected_text, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Checking if element text contains expected: {element_desc}, expected text: '{expected_text}'")
+        actual_text = element.text
+        result = expected_text in actual_text
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_text_contains, Expected: {expected_text}, Actual: {actual_text}"
+        self._log_result(result, log_message)
+        assert result, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not in actual text: '{actual_text}'"
+
+    def verify_figure_text_contains(self, locator, expected_text, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Checking if element figure text contains expected: {element_desc}, expected text: '{expected_text}'")
+        expected_text_clean = expected_text.replace(",", "").strip()
+        actual_text_clean = element.text.replace(",", "").strip()
+        result = expected_text_clean in actual_text_clean
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_figure_text_contains, Expected: {expected_text_clean}, Actual: {actual_text_clean}"
+        self._log_result(result, log_message)
+        assert result, f"{self.__class__.__name__}: Expected text: '{expected_text_clean}' is not in actual text: '{actual_text_clean}'"
+
+    def verify_title_is(self, expected_title, element_desc="Page Title"):
+        logging.debug(f"{self.__class__.__name__}: Checking if page title matches expected: '{expected_title}'")
+        actual_title = self.driver.title
+        result = actual_title == expected_title
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_title_is, Expected: {expected_title}, Actual: {actual_title}"
+        self._log_result(result, log_message)
+        assert result, f"{self.__class__.__name__}: Expected title: '{expected_title}' is not matching actual title: '{actual_title}'"
+
+    def verify_title_contains(self, expected_title, element_desc="Page Title"):
+        logging.debug(f"{self.__class__.__name__}: Checking if page title contains expected: '{expected_title}'")
+        actual_title = self.driver.title
+        result = expected_title in actual_title
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_title_contains, Expected: {expected_title}, Actual: {actual_title}"
+        self._log_result(result, log_message)
+        assert result, f"{self.__class__.__name__}: Expected title: '{expected_title}' is not in actual title: '{actual_title}'"
+
+    def verify_element_exists(self, locator, element_desc=None):
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Checking if element exists: {element_desc}")
+        try:
+            self._resolve_element(locator, element_desc, condition="presence")
+            result = True
         except NoSuchElementException:
-            logging.info(f"{self.__class__.__name__}: Element does not exist: {locator}")
-            return False
+            result = False
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_element_exists, Expected: True, Actual: {result}"
+        self._log_result(result, log_message)
+        return result
 
-    def check_element_visible(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Checking if element is visible: {locator}, timeout: {timeout}")
+    def verify_element_visible(self, locator, timeout=None, element_desc=None):
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Checking if element is visible: {element_desc}, timeout: {timeout}")
         try:
-            element = self.wait_for_element(locator, condition="visibility", timeout=timeout)
-            element_desc = self._get_element_description(element)
-            logging.info(f"{self.__class__.__name__}: Element is visible: {element_desc}")
-            return True
+            self.wait_for_element(locator, condition="visibility", timeout=timeout)
+            result = True
         except TimeoutException:
-            logging.info(f"{self.__class__.__name__}: Element is not visible: {locator}")
-            return False
+            result = False
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_element_visible, Expected: True, Actual: {result}"
+        self._log_result(result, log_message)
+        return result
 
-    def check_element_invisible(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Checking if element is invisible: {locator}, timeout: {timeout}")
+    def verify_element_invisible(self, locator, timeout=None, element_desc=None):
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Checking if element is invisible: {element_desc}, timeout: {timeout}")
         try:
-            element = self.wait_for_element(locator, condition="invisibility", timeout=timeout)
-            element_desc = self._get_element_description(element)
-            logging.info(f"{self.__class__.__name__}: Element is invisible: {element_desc}")
-            return True
+            self.wait_for_element(locator, condition="invisibility", timeout=timeout)
+            result = True
         except TimeoutException:
-            logging.info(f"{self.__class__.__name__}: Element is not invisible: {locator}")
-            return False
+            result = False
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_element_invisible, Expected: True, Actual: {result}"
+        self._log_result(result, log_message)
+        return result
 
-    def check_element_clickable(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Checking if element is clickable: {locator}, timeout: {timeout}")
+    def verify_element_clickable(self, locator, timeout=None, element_desc=None):
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Checking if element is clickable: {element_desc}, timeout: {timeout}")
         try:
-            element = self.wait_for_element(locator, condition="clickable", timeout=timeout)
-            element_desc = self._get_element_description(element)
-            logging.info(f"{self.__class__.__name__}: Element is clickable: {element_desc}")
-            return True
+            self.wait_for_element(locator, condition="clickable", timeout=timeout)
+            result = True
         except TimeoutException:
-            logging.info(f"{self.__class__.__name__}: Element is not clickable: {locator}")
-            return False
+            result = False
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_element_clickable, Expected: True, Actual: {result}"
+        self._log_result(result, log_message)
+        return result
 
-    def check_element_selected(self, element, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element is selected: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def verify_element_selected(self, locator, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Checking if element is selected: {element_desc}")
         is_selected = element.is_selected()
-        logging.info(f"{self.__class__.__name__}: Element selected status: {is_selected} for element: {element_desc}")
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_element_selected, Expected: True, Actual: {is_selected}"
+        self._log_result(is_selected, log_message)
+        assert is_selected, f"{self.__class__.__name__}: Element {element_desc} is not selected as expected."
         return is_selected
 
-    def check_element_enabled(self, element, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Checking if element is enabled: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def verify_element_enabled(self, locator, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Checking if element is enabled: {element_desc}")
         is_enabled = element.is_enabled()
-        logging.info(f"{self.__class__.__name__}: Element enabled status: {is_enabled} for element: {element_desc}")
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_element_enabled, Expected: True, Actual: {is_enabled}"
+        self._log_result(is_enabled, log_message)
+        assert is_enabled, f"{self.__class__.__name__}: Element {element_desc} is not enabled as expected."
         return is_enabled
 
-    def get_text_save_to_variable(self, element, variable_name, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Capturing value from element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def get_text_save_to_variable(self, locator, variable_name, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Capturing text from element: {element_desc}")
         value = element.text
         BuiltIn().set_global_variable(f"${{{variable_name}}}", value)
-        logging.info(f"{self.__class__.__name__}: Saved value '{value}' to variable ${{{variable_name}}}")
+        logging.debug(f"{self.__class__.__name__}: Captured text: {value}")
         return value
 
-    def verify_value_changed_by(self, element, initial_value_variable, expected_change, condition="presence"):
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Asserting value change for element: {element_desc}")
-
-        if isinstance(element, tuple):
-            element = self.wait_for_element(element, condition=condition)
-
+    def verify_element_value_diff(self, locator, initial_value_variable, expected_change, element_desc=None, condition="presence"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Checking value difference for element: {element_desc}")
         initial_value = float(BuiltIn().get_variable_value(f"${{{initial_value_variable}}}"))
         current_value = float(element.text)
-        actual_change = around(current_value - initial_value, 2)
-        expected_change = float(expected_change)
-
-        logging.info(f"{self.__class__.__name__}: Actual change: {actual_change}, Expected change: {expected_change}")
-
-        if not self._compare_diff(actual_change, expected_change):
-            raise AssertionError(f"{self.__class__.__name__}: Value change verification failed for element: {element_desc}")
-
+        actual_change = around(current_value - initial_value, decimals=2)
+        expected_change_float = float(expected_change)
+        result = self._compare_diff(actual_change, expected_change_float)
+        log_message = f"UI Verification: Asserting: {element_desc}, verify_element_value_diff, Expected Change: {expected_change_float}, Actual Change: {actual_change}"
+        self._log_result(result, log_message)
+        assert result, f"{self.__class__.__name__}: Expected change: '{expected_change_float}' does not match actual change: '{actual_change}' for element {element_desc}"
 
     def _compare_diff(self, actual, expected):
-        return around(actual, decimals=2) == around(expected, decimals=2)</pre>
+        return around(actual, decimals=2) == around(expected, decimals=2)
+
+    def _log_result(self, success: bool, message: str):
+        """Logs the result of a check with appropriate color."""
+        logging.debug(f"{self.__class__.__name__}: {message}")
+        logger.info(
+            ColorLogger.success(f"=&gt; {message}") if success else ColorLogger.error(f"=&gt; {message}"), html=True)
+</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_action_wait_actions_py">
@@ -5762,52 +5773,93 @@ import time
 
 
 class WaitActions(Base):
-    def wait_for_element_present(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Waiting for element to be present: {locator}")
-        return self.wait_for_element(locator, condition="presence", timeout=timeout)
 
-    def wait_for_element_visible(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Waiting for element to be visible: {locator}")
-        return self.wait_for_element(locator, condition="visibility", timeout=timeout)
+    def wait_for_element_present(self, locator, element_desc=None, timeout=None):
+        """
+        Waits until the element is present in the DOM.
+        """
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.info(f"{self.__class__.__name__}: Waiting for element to be present: [ {element_desc}:{locator} ].")
+        element = self._resolve_element(locator, element_desc, condition="presence", timeout=timeout)
+        return element
 
-    def wait_for_element_invisible(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Waiting for element to be invisible: {locator}")
-        return self.wait_for_element(locator, condition="invisibility", timeout=timeout)
+    def wait_for_element_visible(self, locator, element_desc=None, timeout=None):
+        """
+        Waits until the element is visible on the page.
+        """
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.info(f"{self.__class__.__name__}: Waiting for element to be visible: [ {element_desc}:{locator} ].")
+        element = self._resolve_element(locator, element_desc, condition="visibility", timeout=timeout)
+        return element
 
-    def wait_for_element_clickable(self, locator, timeout=None):
-        logging.info(f"{self.__class__.__name__}: Waiting for element to be clickable: {locator}")
-        return self.wait_for_element(locator, condition="clickable", timeout=timeout)
+    def wait_for_element_clickable(self, locator, element_desc=None, timeout=None):
+        """
+        Waits until the element is clickable.
+        """
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.info(f"{self.__class__.__name__}: Waiting for element to be clickable: [ {element_desc}:{locator} ].")
+        element = self._resolve_element(locator, element_desc, condition="clickable", timeout=timeout)
+        return element
 
-    def wait_for_text_present_in_element(self, locator, text, timeout=None):
+    def wait_for_element_invisible(self, locator, element_desc=None, timeout=None):
+        """
+        Waits until the element becomes invisible.
+        Note: This expected condition returns a boolean.
+        """
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.info(f"{self.__class__.__name__}: Waiting for element to become invisible: [ {element_desc}:{locator} ].")
         if timeout is None:
             timeout = self.default_timeout
-        logging.info(f"{self.__class__.__name__}: Waiting for text '{text}' to be present in element: {locator}")
+        wait = WebDriverWait(self.driver, timeout)
         try:
-            wait = WebDriverWait(self.driver, timeout)
-            element = wait.until(EC.text_to_be_present_in_element(locator, text))
+            result = wait.until(EC.invisibility_of_element_located(locator))
+            logging.info(f"{self.__class__.__name__}: Element is now invisible: [ {element_desc}:{locator} ].")
+            return result
+        except TimeoutException:
+            logging.error(f"{self.__class__.__name__}: Timeout waiting for element to become invisible: [ {element_desc}:{locator} ].")
+            raise
+
+    def wait_for_text_present_in_element(self, locator, text, element_desc=None, timeout=None):
+        """
+        Waits until the given text is present in the specified element.
+        """
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.info(f"{self.__class__.__name__}: Waiting for text '{text}' to be present in element: [ {element_desc}:{locator} ].")
+        if timeout is None:
+            timeout = self.default_timeout
+        wait = WebDriverWait(self.driver, timeout)
+        try:
+            result = wait.until(EC.text_to_be_present_in_element(locator, text))
+            element = self.driver.find_element(*locator)
             element_desc = self._get_element_description(element)
-            logging.info(f"{self.__class__.__name__}: Text '{text}' is present in element: {element_desc}")
+            logging.info(f"{self.__class__.__name__}: Text '{text}' is present in element: [ {element_desc}:{locator} ].")
             return element
         except TimeoutException:
-            logging.error(f"{self.__class__.__name__}: Text '{text}' not present in element: {locator}")
+            logging.error(f"{self.__class__.__name__}: Timeout waiting for text '{text}' in element: [ {element_desc}:{locator} ].")
             raise
 
     def wait_for_staleness_of(self, element, timeout=None):
+        """
+        Waits until the element is no longer attached to the DOM.
+        """
+        element_desc = self._get_element_description(element)
+        logging.info(f"{self.__class__.__name__}: Waiting for staleness of element: [ {element_desc} ].")
         if timeout is None:
             timeout = self.default_timeout
-        element_desc = self._get_element_description(element)
-        logging.info(f"{self.__class__.__name__}: Waiting for staleness of element: {element_desc}")
+        wait = WebDriverWait(self.driver, timeout)
         try:
-            wait = WebDriverWait(self.driver, timeout)
             wait.until(EC.staleness_of(element))
-            logging.info(f"{self.__class__.__name__}: Element is stale: {element_desc}")
+            logging.info(f"{self.__class__.__name__}: Element is stale: [ {element_desc} ].")
             return True
         except TimeoutException:
-            logging.error(f"{self.__class__.__name__}: Element not stale: {element_desc}")
+            logging.error(f"{self.__class__.__name__}: Timeout waiting for element to become stale: [ {element_desc} ].")
             return False
 
     def wait(self, seconds):
-        logging.info(f"{self.__class__.__name__}: Waiting for {seconds} seconds")
+        """
+        Pauses execution for the given number of seconds.
+        """
+        logging.info(f"{self.__class__.__name__}: Waiting for {seconds} seconds.")
         time.sleep(int(seconds))
 </pre>
 </div>
@@ -5966,7 +6018,7 @@ class WebUIRobotCasesGenerator:
         try:
             # Create main test suite
             self.robot_suite = TestSuite('Web UI TestSuite')
-            self._import_required_libraries()
+            self._import_required_libraries(self.robot_suite)
 
             # Filter test cases
             tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
@@ -5977,9 +6029,17 @@ class WebUIRobotCasesGenerator:
                 logging.warning(f"{self.__class__.__name__}: No test cases found matching criteria")
                 return self.robot_suite
 
-            # Create test cases
+            # Iterate through test cases in order
             for _, test_case in test_cases.iterrows():
-                self.create_test_case(test_case)
+                suite_name = test_case['Suite']
+
+                # If the suite doesn't exist yet, create it
+                if suite_name not in [suite.name for suite in self.robot_suite.suites]:
+                    sub_suite = self.robot_suite.suites.create(name=suite_name)
+                    self._import_required_libraries(sub_suite)
+
+                # Create the test case within the correct suite
+                self.create_test_case(sub_suite, test_case)
 
             # Configure suite teardown
             self.robot_suite.teardown.config(name='close_browser', args=[])
@@ -5988,7 +6048,7 @@ class WebUIRobotCasesGenerator:
             logging.error(f"{self.__class__.__name__}: Error creating test suite: {str(e)}")
             raise RuntimeError(f"Failed to create test suite: {str(e)}")
 
-    def create_test_case(self, test_case: Dict):
+    def create_test_case(self, suite, test_case: Dict):
         try:
             # Load test steps and data sets
             case_id = test_case['Case ID']
@@ -6003,7 +6063,7 @@ class WebUIRobotCasesGenerator:
             # Generate tests for each data set
             for data_set_index, data_set in enumerate(test_data_sets, 1):
                 test_name = f"UI.{case_id}.{data_set_index}"
-                robot_test = self.robot_suite.tests.create(name=test_name, doc=test_case['Descriptions'])
+                robot_test = suite.tests.create(name=test_name, doc=test_case['Descriptions'])
                 robot_test.body.create_keyword(name='sanity_check', args=[])
 
                 # Add tags
@@ -6020,9 +6080,9 @@ class WebUIRobotCasesGenerator:
             logging.error(f"{self.__class__.__name__}: Error creating test case {test_case.get('Case ID', 'Unknown')}: {str(e)}")
             raise
 
-    def _import_required_libraries(self):
+    def _import_required_libraries(self, suite):
         try:
-            self.robot_suite.resource.imports.library('libraries.web.page_object.PageObject')
+            suite.resource.imports.library('libraries.web.page_object.PageObject')
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error importing required libraries: {str(e)}")
             raise
@@ -6034,7 +6094,6 @@ class WebUIRobotCasesGenerator:
                     # Get step information
                     page_name = step['Page Name']
                     module_name = step['Module Name']
-
                     # Create UI test step
                     self._generate_ui_step(robot_test, page_name, module_name, data_set)
 
@@ -6047,9 +6106,7 @@ class WebUIRobotCasesGenerator:
             robot_test.body.create_keyword(name='execute_module', args=[page_name, module_name, params])
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error generating UI step for {page_name}.{module_name}: {str(e)}")
-            raise
-
-</pre>
+            raise</pre>
 </div>
 
 <div class="code-container" id="C:_Users_vhuang1_PycharmProjects_api_test_framework_libraries_web_web_test_loader_py">
@@ -6482,7 +6539,7 @@ if __name__ == "__main__":
     elif args.performance:
         suite_to_run = create_performance_suite()
     else:
-        suite_to_run = create_api_suite()
+        suite_to_run = create_web_suite()
 
     run_test_suite(suite_to_run)
 </pre>
@@ -7101,6 +7158,13 @@ function openInNewTab(url) {
         text-overflow: ellipsis;
         font-size: 0.8em;
         }
+        .type-cell {
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.8em;
+        }
     &lt;/style&gt;
 &lt;/head&gt;
 &lt;body&gt;
@@ -7119,7 +7183,7 @@ function openInNewTab(url) {
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 72900.0
+        "CNY": 77300.0
     },
     "transactions": {
         "USD": {
@@ -7159,14 +7223,14 @@ function openInNewTab(url) {
             }
         },
         "CNY": {
-            "2025-01-22": {
+            "2025-02-04": {
                 "inbound": {
-                    "count": 31,
-                    "total_amount": 3100.0
+                    "count": 2,
+                    "total_amount": 200.0
                 },
                 "outbound": {
-                    "count": 17,
-                    "total_amount": 1700.0
+                    "count": 2,
+                    "total_amount": 200.0
                 }
             }
         }
