@@ -11,249 +11,270 @@ tags:
 ---
 
 
-下面是完整的代码实现，包括数据库接口、各数据库的具体实现以及一个使用示例：
+当然可以。我会基于您之前提供的代码，重新设计一个完整的 DynamicTestSuiteGenerator 类。这个新的实现将整合 WebUIRobotCasesGenerator 和 PageObject 的功能，并使用命令模式和注册式工厂来提高灵活性和可扩展性。以下是新的实现：
 
 ```python
-from typing import List, Dict, Any
+import logging
+import os
+from typing import Dict, List
+import pandas as pd
+from robot.api import TestSuite
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from abc import ABC, abstractmethod
-import cx_Oracle
-import mysql.connector
-import psycopg2
-from psycopg2.extras import RealDictCursor
 
-class Database(ABC):
+from libraries.common.config_manager import ConfigManager
+from libraries.common.utility_helpers import PROJECT_ROOT
+from libraries.web.web_test_loader import WebTestLoader
+
+class Command(ABC):
     @abstractmethod
-    def connect(self, **kwargs) -> None:
+    def execute(self, context):
         pass
 
-    @abstractmethod
-    def disconnect(self) -> None:
-        pass
+class ClickCommand(Command):
+    def __init__(self, locator):
+        self.locator = locator
 
-    @abstractmethod
-    def execute_query(self, query: str, fields: List[str] = None) -> List[Dict]:
-        pass
-
-    @abstractmethod
-    def update(self, table: str, values: Dict, where: str = None) -> bool:
-        pass
-
-    @abstractmethod
-    def insert(self, table: str, data: List[Dict]) -> int:
-        pass
-
-class OracleDatabase(Database):
-    def __init__(self):
-        self.connection = None
-
-    def connect(self, user: str, password: str, host: str, port: int, service_name: str):
-        self.dsn = cx_Oracle.makedsn(host, port, service_name=service_name)
-        self.connection = cx_Oracle.connect(user=user, password=password, dsn=self.dsn)
-
-    def disconnect(self):
-        if self.connection:
-            self.connection.close()
-            self.connection = None
-
-    def execute_query(self, query: str, fields: List[str] = None) -> List[Dict]:
-        with self.connection.cursor() as cursor:
-            cursor.execute(query)
-            if fields:
-                return [{field: row[fields.index(field)] for field in fields} for row in cursor]
-            else:
-                return [dict(zip([desc[0] for desc in cursor.description], row)) for row in cursor.fetchall()]
-
-    def update(self, table: str, values: Dict, where: str = None) -> bool:
-        update_clause = ", ".join([f"{key} = :{key}" for key in values.keys()])
-        query = f"UPDATE {table} SET {update_clause}"
-        if where:
-            query += f" WHERE {where}"
-        
-        with self.connection.cursor() as cursor:
-            try:
-                cursor.execute(query, values)
-                self.connection.commit()
-                return True
-            except cx_Oracle.Error:
-                self.connection.rollback()
-                return False
-
-    def insert(self, table: str, data: List[Dict]) -> int:
-        if not data:
-            return 0
-
-        columns = ', '.join(data[0].keys())
-        placeholders = ', '.join([':' + key for key in data[0].keys()])
-        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
-
-        with self.connection.cursor() as cursor:
-            try:
-                cursor.executemany(query, [row for row in data])
-                self.connection.commit()
-                return cursor.rowcount
-            except cx_Oracle.Error:
-                self.connection.rollback()
-                return 0
-
-class MySQLDatabase(Database):
-    def __init__(self):
-        self.connection = None
-
-    def connect(self, user: str, password: str, host: str, port: int, database: str):
-        self.connection = mysql.connector.connect(
-            user=user, password=password, host=host, port=port, database=database
+    def execute(self, context):
+        element = WebDriverWait(context.driver, 10).until(
+            EC.element_to_be_clickable(self.locator)
         )
+        element.click()
 
-    def disconnect(self):
-        if self.connection:
-            self.connection.close()
-            self.connection = None
+class InputCommand(Command):
+    def __init__(self, locator, text):
+        self.locator = locator
+        self.text = text
 
-    def execute_query(self, query: str, fields: List[str] = None) -> List[Dict]:
-        with self.connection.cursor(dictionary=True) as cursor:
-            cursor.execute(query)
-            if fields:
-                return [{field: row[field] for field in fields if field in row} for row in cursor.fetchall()]
-            else:
-                return cursor.fetchall()
-
-    def update(self, table: str, values: Dict, where: str = None) -> bool:
-        update_clause = ", ".join([f"{key} = %({key})s" for key in values.keys()])
-        query = f"UPDATE {table} SET {update_clause}"
-        if where:
-            query += f" WHERE {where}"
-        
-        with self.connection.cursor() as cursor:
-            try:
-                cursor.execute(query, values)
-                self.connection.commit()
-                return True
-            except mysql.connector.Error as err:
-                self.connection.rollback()
-                print(f"Error: {err}")
-                return False
-
-    def insert(self, table: str, data: List[Dict]) -> int:
-        if not data:
-            return 0
-
-        columns = ', '.join(data[0].keys())
-        placeholders = ', '.join(['%(' + key + ')s' for key in data[0].keys()])
-        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
-
-        with self.connection.cursor() as cursor:
-            try:
-                cursor.executemany(query, data)
-                self.connection.commit()
-                return cursor.rowcount
-            except mysql.connector.Error as err:
-                self.connection.rollback()
-                print(f"Error: {err}")
-                return 0
-
-class PostgreSQLDatabase(Database):
-    def __init__(self):
-        self.connection = None
-
-    def connect(self, user: str, password: str, host: str, port: int, database: str):
-        self.connection = psycopg2.connect(
-            user=user, password=password, host=host, port=port, database=database
+    def execute(self, context):
+        element = WebDriverWait(context.driver, 10).until(
+            EC.presence_of_element_located(self.locator)
         )
+        element.clear()
+        element.send_keys(self.text)
 
-    def disconnect(self):
-        if self.connection:
-            self.connection.close()
-            self.connection = None
+class VerifyTextCommand(Command):
+    def __init__(self, locator, expected_text):
+        self.locator = locator
+        self.expected_text = expected_text
 
-    def execute_query(self, query: str, fields: List[str] = None) -> List[Dict]:
-        with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute(query)
-            if fields:
-                return [dict((k, row[k]) for k in fields if k in row) for row in cursor.fetchall()]
-            else:
-                return cursor.fetchall()
+    def execute(self, context):
+        element = WebDriverWait(context.driver, 10).until(
+            EC.presence_of_element_located(self.locator)
+        )
+        actual_text = element.text
+        assert actual_text == self.expected_text, f"Expected text: '{self.expected_text}', but got: '{actual_text}'"
 
-    def update(self, table: str, values: Dict, where: str = None) -> bool:
-        update_clause = ", ".join([f"{key} = %({key})s" for key in values.keys()])
-        query = f"UPDATE {table} SET {update_clause}"
-        if where:
-            query += f" WHERE {where}"
-        
-        with self.connection.cursor() as cursor:
-            try:
-                cursor.execute(query, values)
-                self.connection.commit()
-                return True
-            except psycopg2.Error as err:
-                self.connection.rollback()
-                print(f"Error: {err}")
-                return False
+class CommandFactory:
+    def __init__(self):
+        self.commands = {
+            'click': ClickCommand,
+            'input': InputCommand,
+            'verify_text': VerifyTextCommand,
+        }
 
-    def insert(self, table: str, data: List[Dict]) -> int:
-        if not data:
-            return 0
+    def create(self, command_name, *args):
+        if command_name not in self.commands:
+            raise ValueError(f"Unknown command: {command_name}")
+        return self.commands[command_name](*args)
 
-        columns = ', '.join(data[0].keys())
-        placeholders = ', '.join(['%(' + key + ')s' for key in data[0].keys()])
-        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+class PageObject:
+    def __init__(self, driver):
+        self.driver = driver
 
-        with self.connection.cursor() as cursor:
-            try:
-                cursor.executemany(query, data)
-                self.connection.commit()
-                return cursor.rowcount
-            except psycopg2.Error as err:
-                self.connection.rollback()
-                print(f"Error: {err}")
-                return 0
+class LoginPage(PageObject):
+    username_input = (By.ID, "username")
+    password_input = (By.ID, "password")
+    login_button = (By.ID, "login")
 
-def use_database(db_type: str, **kwargs):
-    if db_type == 'oracle':
-        db = OracleDatabase()
-    elif db_type == 'mysql':
-        db = MySQLDatabase()
-    elif db_type == 'postgresql':
-        db = PostgreSQLDatabase()
-    else:
-        raise ValueError("Unsupported database type")
+class HomePage(PageObject):
+    welcome_message = (By.ID, "welcome")
 
-    db.connect(**kwargs)
-    
-    try:
-        # 执行一些数据库操作
-        results = db.execute_query("SELECT * FROM some_table LIMIT 5")
-        for row in results:
-            print(row)
+class PageObjectFactory:
+    def __init__(self):
+        self.page_objects = {
+            'LoginPage': LoginPage,
+            'HomePage': HomePage,
+        }
 
-        # 执行更新操作
-        update_result = db.update('some_table', {'column1': 'new_value'}, 'id = 1')
-        print(f"Update result: {'Success' if update_result else 'Failed'}")
+    def create(self, page_name, driver):
+        if page_name not in self.page_objects:
+            raise ValueError(f"Unknown page object: {page_name}")
+        return self.page_objects[page_name](driver)
 
-        # 执行批量插入
-        data = [{'column1': 'value1', 'column2': 1}, {'column1': 'value2', 'column2': 2}]
-        inserted_rows = db.insert('some_table', data)
-        print(f"Rows inserted: {inserted_rows}")
+class DynamicTestSuiteGenerator:
+    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
+        self.project_root: str = PROJECT_ROOT
+        self.test_config_path: str = test_config_path
+        self.test_cases_path: str = test_cases_path
+        self.command_factory = CommandFactory()
+        self.page_object_factory = PageObjectFactory()
+        self.driver = None
 
-    finally:
-        db.disconnect()
+        self._load_configuration()
+        self._initialize_components()
 
-# 使用示例
+    def _load_configuration(self):
+        try:
+            self.test_config_path = (
+                os.path.join(self.project_root, 'configs', 'web_test_config.yaml')
+                if self.test_config_path is None
+                else self.test_config_path
+            )
+            self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
+        except FileNotFoundError:
+            logging.error(f"{self.__class__.__name__}: Config file not found at {self.test_config_path}")
+            raise
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error loading configuration: {str(e)}")
+            raise
+
+    def _initialize_components(self):
+        try:
+            default_test_cases_path: str = os.path.join('test_cases', 'web_test_cases.xlsx')
+            self.test_cases_path: str = (
+                os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+                if self.test_cases_path is None
+                else self.test_cases_path
+            )
+
+            if not os.path.exists(self.test_cases_path):
+                logging.error(f"{self.__class__.__name__}: Test cases file not found at {self.test_cases_path}")
+                raise FileNotFoundError(f"Test cases file does not exist: {self.test_cases_path}")
+
+            self.web_test_loader = WebTestLoader(self.test_cases_path, self.test_config)
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error initializing components: {str(e)}")
+            raise
+
+    def create_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None) -> TestSuite:
+        try:
+            robot_suite = TestSuite('Web UI TestSuite')
+            self._import_required_libraries(robot_suite)
+
+            robot_suite.setup.config(name='set_environment_variables', args=[])
+
+            tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
+            tags = tags or self.test_config.get('tags', [])
+            test_cases = self.web_test_loader.filter_cases(tc_id_list, tags)
+
+            if test_cases.empty:
+                logging.warning(f"{self.__class__.__name__}: No test cases found matching criteria")
+                return robot_suite
+
+            for _, test_case in test_cases.iterrows():
+                suite_name = test_case['Suite']
+                if suite_name not in [suite.name for suite in robot_suite.suites]:
+                    sub_suite = robot_suite.suites.create(name=suite_name)
+                    self._import_required_libraries(sub_suite)
+
+                self._create_test_case(sub_suite, test_case)
+
+            robot_suite.teardown.config(name='close_browser', args=[])
+            return robot_suite
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error creating test suite: {str(e)}")
+            raise RuntimeError(f"Failed to create test suite: {str(e)}")
+
+    def _create_test_case(self, suite, test_case: Dict):
+        try:
+            case_id = test_case['Case ID']
+            test_steps = self.web_test_loader.get_test_steps(case_id)
+            test_data_sets = self.web_test_loader.get_test_data(case_id)
+
+            if not test_data_sets:
+                logging.warning(f"{self.__class__.__name__}: No data sets found for test case {case_id}. Using empty data")
+                test_data_sets = [{}]
+
+            for data_set_index, data_set in enumerate(test_data_sets, 1):
+                test_name = f"UI.{case_id}.{data_set_index}"
+                robot_test = suite.tests.create(name=test_name, doc=test_case['Descriptions'])
+                robot_test.body.create_keyword(name='sanity_check', args=[])
+
+                if 'Tags' in test_case and pd.notna(test_case['Tags']):
+                    tags = [tag.strip() for tag in test_case['Tags'].split(',')]
+                    for tag in tags:
+                        robot_test.tags.add(tag)
+
+                self._create_test_steps(robot_test, test_steps, data_set)
+                logging.info(f"{self.__class__.__name__}: Test case {case_id}.{data_set_index} created successfully.")
+
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error creating test case {test_case.get('Case ID', 'Unknown')}: {str(e)}")
+            raise
+
+    def _import_required_libraries(self, suite):
+        try:
+            suite.resource.imports.library('SeleniumLibrary')
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error importing required libraries: {str(e)}")
+            raise
+
+    def _create_test_steps(self, robot_test, test_steps: List[Dict], data_set: Dict):
+        try:
+            for _, step in test_steps.iterrows():
+                if step['Run'] == 'Y':
+                    page_name = step['Page Name']
+                    module_name = step['Module Name']
+                    self._generate_ui_step(robot_test, page_name, module_name, data_set)
+
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error creating test steps: {str(e)}")
+            raise
+
+    def _generate_ui_step(self, robot_test, page_name: str, module_name: str, params: Dict):
+        try:
+            robot_test.body.create_keyword(name='execute_module', args=[page_name, module_name, params])
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error generating UI step for {page_name}.{module_name}: {str(e)}")
+            raise
+
+    def execute_module(self, page_name: str, module_name: str, params: Dict):
+        page_object = self.page_object_factory.create(page_name, self.driver)
+        module_actions = self.web_test_loader.get_module_actions(page_name, module_name)
+
+        for action in module_actions:
+            command = self.command_factory.create(
+                action['action'],
+                getattr(page_object, action['element']),
+                params.get(action['parameter'], '')
+            )
+            command.execute(self)
+
+    def set_environment_variables(self):
+        self.web_test_loader.set_global_variables()
+
+    def open_browser(self):
+        self.driver = webdriver.Chrome()  # You might want to make this configurable
+
+    def close_browser(self):
+        if self.driver:
+            self.driver.quit()
+
+    def sanity_check(self):
+        # Implement your sanity check logic here
+        pass
+
 if __name__ == "__main__":
-    # Oracle 示例
-    use_database('oracle', user='your_user', password='your_password', host='your_host', port=1521, service_name='your_service_name')
-
-    # MySQL 示例
-    use_database('mysql', user='your_user', password='your_password', host='your_host', port=3306, database='your_database')
-
-    # PostgreSQL 示例
-    use_database('postgresql', user='your_user', password='your_password', host='your_host', port=5432, database='your_database')
+    generator = DynamicTestSuiteGenerator()
+    test_suite = generator.create_test_suite()
+    # Here you would typically use Robot Framework's API to run the test suite
+    print(f"Generated test suite with {len(test_suite.tests)} tests")
 ```
 
-这个实现包括了Oracle、MySQL和PostgreSQL的数据库操作接口和具体实现。请注意：
+这个新的 DynamicTestSuiteGenerator 类整合了之前 WebUIRobotCasesGenerator 和 PageObject 的功能，并引入了命令模式和工厂模式来提高灵活性和可扩展性。主要变化包括：
 
-- **替换数据库连接信息**：在实际使用时，请将`your_user`, `your_password`, `your_host`, `your_port`, `your_service_name` 或 `your_database` 替换为实际的数据库连接信息。
-- **错误处理**：每个数据库的实现都包含了基本的错误处理逻辑，但你可能需要根据实际需求进行更详细的错误处理。
-- **事务管理**：在`update`和`insert`方法中，我们手动管理事务，使用`commit`来提交更改，使用`rollback`来回滚在发生错误时的事务。
-- **字段处理**：`execute_query`方法中，我们使用了字段过滤来返回指定的字段。如果不指定字段，方法会返回所有字段的数据。
+1. 引入了 Command 类和具体的命令实现（ClickCommand, InputCommand, VerifyTextCommand）。
+2. 创建了 CommandFactory 来管理和创建命令对象。
+3. 重构了 PageObject 类，并为特定页面创建了子类（如 LoginPage, HomePage）。
+4. 添加了 PageObjectFactory 来管理和创建页面对象。
+5. 在 DynamicTestSuiteGenerator 中，使用这些新组件来生成和执行测试用例。
 
-此外，MySQL和PostgreSQL的`update`和`insert`方法的参数化查询方式有所不同，使用了`%s`和`%(key)s`来防止SQL注入。记得根据你的需求和数据库的实际结构来调整SQL查询。
+这个设计允许您轻松地添加新的命令和页面对象，而不需要修改核心逻辑。它还提供了更好的封装和更清晰的职责分离。
+
+要使用这个新的实现，您需要相应地更新您的测试用例 Excel 文件，确保它包含正确的页面名称、模块名称和操作。您可能还需要调整 WebTestLoader 类以适应新的数据结构。
+
+这个实现为您提供了一个更加灵活和可扩展的框架来生成和执行 Robot Framework 测试用例。
