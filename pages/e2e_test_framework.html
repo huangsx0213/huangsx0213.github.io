@@ -4348,33 +4348,25 @@ class Base:
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from .base import Base
-from robot.api.deco import keyword, library
 import logging
 
-@library
 class CookieActions(Base):
-    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
-
-    @keyword
     def add_cookie(self, cookie_dict):
         logging.info(f"{self.__class__.__name__}: Adding cookie: {cookie_dict}")
         self.driver.add_cookie(cookie_dict)
         logging.info(f"{self.__class__.__name__}: Cookie added successfully")
 
-    @keyword
     def get_cookie(self, name):
         logging.info(f"{self.__class__.__name__}: Getting cookie with name: '{name}'")
         cookie = self.driver.get_cookie(name)
         logging.info(f"{self.__class__.__name__}: Cookie retrieved: {cookie}")
         return cookie
 
-    @keyword
     def delete_cookie(self, name):
         logging.info(f"{self.__class__.__name__}: Deleting cookie with name: '{name}'")
         self.driver.delete_cookie(name)
         logging.info(f"{self.__class__.__name__}: Cookie deleted successfully")
 
-    @keyword
     def delete_all_cookies(self):
         logging.info(f"{self.__class__.__name__}: Deleting all cookies")
         self.driver.delete_all_cookies()
@@ -4406,14 +4398,11 @@ def timer(func):
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from selenium.webdriver import ActionChains
 from selenium.webdriver.support.select import Select
-from robot.api.deco import keyword, library
 import logging
 from .base import Base
 
-@library
+
 class ElementActions(Base):
-    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
-    @keyword
     def send_keys(self, locator, value, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4421,7 +4410,6 @@ class ElementActions(Base):
         element.send_keys(value)
         logging.info(f"{self.__class__.__name__}: Sent keys to element [ {element_desc}:{locator} ] with value: [ {value} ] successfully.")
 
-    @keyword
     def click(self, locator, element_desc=None, condition="clickable"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4429,7 +4417,6 @@ class ElementActions(Base):
         element.click()
         logging.info(f"{self.__class__.__name__}: Clicked element [ {element_desc}:{locator} ] successfully.")
 
-    @keyword
     def clear(self, locator, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4437,7 +4424,6 @@ class ElementActions(Base):
         element.clear()
         logging.info(f"{self.__class__.__name__}: Cleared element [ {element_desc}:{locator} ] successfully.")
 
-    @keyword
     def get_text(self, locator, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4446,7 +4432,6 @@ class ElementActions(Base):
         logging.info(f"{self.__class__.__name__}: Got text '{text}' from element [ {element_desc}:{locator} ] successfully.")
         return text
 
-    @keyword
     def get_attribute(self, locator, attribute_name, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4455,7 +4440,6 @@ class ElementActions(Base):
         logging.info(f"{self.__class__.__name__}: Got attribute '{attribute_name}'='{attribute_value}' from element [ {element_desc}:{locator} ] successfully.")
         return attribute_value
 
-    @keyword
     def select_by_value(self, locator, value, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4463,7 +4447,6 @@ class ElementActions(Base):
         Select(element).select_by_value(value)
         logging.info(f"{self.__class__.__name__}: Selected option by value '{value}' for element [ {element_desc}:{locator} ] successfully.")
 
-    @keyword
     def select_by_visible_text(self, locator, text, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4471,7 +4454,6 @@ class ElementActions(Base):
         Select(element).select_by_visible_text(text)
         logging.info(f"{self.__class__.__name__}: Selected option by visible text '{text}' for element [ {element_desc}:{locator} ] successfully.")
 
-    @keyword
     def select_by_index(self, locator, index, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4479,7 +4461,6 @@ class ElementActions(Base):
         Select(element).select_by_index(int(index))
         logging.info(f"{self.__class__.__name__}: Selected option at index '{index}' for element [ {element_desc}:{locator} ] successfully.")
 
-    @keyword
     def hover(self, locator, element_desc=None, condition="visibility"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4487,7 +4468,6 @@ class ElementActions(Base):
         ActionChains(self.driver).move_to_element(element).perform()
         logging.info(f"{self.__class__.__name__}: Hovered over element [ {element_desc}:{locator} ] successfully.")
 
-    @keyword
     def double_click(self, locator, element_desc=None, condition="clickable"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4495,7 +4475,6 @@ class ElementActions(Base):
         ActionChains(self.driver).double_click(element).perform()
         logging.info(f"{self.__class__.__name__}: Double clicked element [ {element_desc}:{locator} ] successfully.")
 
-    @keyword
     def right_click(self, locator, element_desc=None, condition="clickable"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4503,7 +4482,6 @@ class ElementActions(Base):
         ActionChains(self.driver).context_click(element).perform()
         logging.info(f"{self.__class__.__name__}: Right clicked element [ {element_desc}:{locator} ] successfully.")
 
-    @keyword
     def select_radio(self, locator, element_desc=None, condition="clickable"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4511,7 +4489,6 @@ class ElementActions(Base):
         element.click()
         logging.info(f"{self.__class__.__name__}: Selected radio button [ {element_desc}:{locator} ] successfully.")
 
-    @keyword
     def select_radio_by_value(self, locator, value, element_desc=None, condition="clickable"):
         formatted_locator = (locator[0], locator[1].format(value))
         element = self._resolve_element(formatted_locator, element_desc, condition)
@@ -4529,27 +4506,21 @@ class ElementActions(Base):
     <pre>from .base import Base
 import logging
 from .js import click_by_js_script, fill_by_js_script
-from robot.api.deco import keyword, library
 
-@library
+
 class JavaScriptActions(Base):
-    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
-
-    @keyword
     def execute_script(self, script, *args):
         logging.debug(f"{self.__class__.__name__}: Executing JavaScript: {script}, Arguments: {args}")
         result = self.driver.execute_script(script, *args)
         logging.info(f"{self.__class__.__name__}: JavaScript executed successfully, Result: {result}")
         return result
 
-    @keyword
     def execute_async_script(self, script, *args):
         logging.debug(f"{self.__class__.__name__}: Executing asynchronous JavaScript: {script}, Arguments: {args}")
         result = self.driver.execute_async_script(script, *args)
         logging.info(f"{self.__class__.__name__}: Asynchronous JavaScript executed successfully, Result: {result}")
         return result
 
-    @keyword
     def js_scroll_into_view(self, locator, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4557,7 +4528,6 @@ class JavaScriptActions(Base):
         self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
         logging.info(f"{self.__class__.__name__}: Scrolled element [ {element_desc}:{locator} ] into view using JavaScript successfully.")
 
-    @keyword
     def js_scroll_to_element(self, locator, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4565,7 +4535,6 @@ class JavaScriptActions(Base):
         self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center', inline: 'nearest'});", element)
         logging.info(f"{self.__class__.__name__}: Scrolled to element [ {element_desc}:{locator} ] with smooth behavior using JavaScript successfully.")
 
-    @keyword
     def click_by_js(self, locator, element_desc=None, condition="clickable"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4574,7 +4543,6 @@ class JavaScriptActions(Base):
         self.driver.execute_script(js, element)
         logging.info(f"{self.__class__.__name__}: Clicked element [ {element_desc}:{locator} ] using JavaScript successfully.")
 
-    @keyword
     def fill_by_js(self, locator, value, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4583,7 +4551,6 @@ class JavaScriptActions(Base):
         self.driver.execute_script(js, element)
         logging.info(f"{self.__class__.__name__}: Sent keys to element [ {element_desc}:{locator} ] using JavaScript with value: [ {value} ] successfully.")
 
-    @keyword
     def js_click(self, locator, element_desc=None, condition="clickable"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4591,7 +4558,6 @@ class JavaScriptActions(Base):
         self.driver.execute_script("arguments[0].click();", element)
         logging.info(f"{self.__class__.__name__}: Clicked element [ {element_desc}:{locator} ] using JavaScript successfully.")
 
-    @keyword
     def js_send_keys(self, locator, value, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4599,7 +4565,6 @@ class JavaScriptActions(Base):
         self.driver.execute_script(f"arguments[0].value = '{value}';", element)
         logging.info(f"{self.__class__.__name__}: Sent keys to element [ {element_desc}:{locator} ] using JavaScript with value: [ {value} ] successfully.")
 
-    @keyword
     def js_clear(self, locator, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4607,7 +4572,6 @@ class JavaScriptActions(Base):
         self.driver.execute_script("arguments[0].value = '';", element)
         logging.info(f"{self.__class__.__name__}: Cleared element [ {element_desc}:{locator} ] using JavaScript successfully.")
 
-    @keyword
     def js_select_option(self, locator, option_text, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4625,7 +4589,6 @@ class JavaScriptActions(Base):
         )
         logging.info(f"{self.__class__.__name__}: Selected option [ {option_text} ] for element [ {element_desc}:{locator} ] using JavaScript successfully.")
 
-    @keyword
     def js_hover(self, locator, element_desc=None, condition="visibility"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -4693,39 +4656,30 @@ click_by_js_script = '''
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from .base import Base
-from robot.api.deco import keyword, library
 import logging
 
-@library
 class NavigationActions(Base):
-    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
-
-    @keyword
     def open_url(self, url):
         logging.info(f"{self.__class__.__name__}: Opening URL: {url}")
         # self.driver.maximize_window()
         self.driver.get(url)
         logging.info(f"{self.__class__.__name__}: URL opened successfully: {url}")
 
-    @keyword
     def refresh_page(self):
         logging.info(f"{self.__class__.__name__}: Refreshing the current page")
         self.driver.refresh()
         logging.info(f"{self.__class__.__name__}: Page refreshed successfully")
 
-    @keyword
     def go_back(self):
         logging.info(f"{self.__class__.__name__}: Navigating back in browser history")
         self.driver.back()
         logging.info(f"{self.__class__.__name__}: Navigated back successfully")
 
-    @keyword
     def go_forward(self):
         logging.info(f"{self.__class__.__name__}: Navigating forward in browser history")
         self.driver.forward()
         logging.info(f"{self.__class__.__name__}: Navigated forward successfully")
 
-    @keyword
     def get_current_url(self):
         logging.info(f"{self.__class__.__name__}: Getting current URL")
         url = self.driver.current_url
@@ -4740,14 +4694,9 @@ class NavigationActions(Base):
     <pre>from .base import Base
 from typing import Union, List, Dict
 from selenium.webdriver.remote.webelement import WebElement
-from robot.api.deco import keyword, library
 import logging
 
-@library
 class TableActions(Base):
-    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
-
-    @keyword
     def verify_table_exact(self, table_locator: Union[tuple, WebElement], expected_data: List[Dict[str, str]]):
         logging.info(f"{self.__class__.__name__}: Verifying entire table with exact match")
         table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
@@ -4755,7 +4704,6 @@ class TableActions(Base):
         self.table_verifier.verify_table(table_element, expected_data, match_type='exact')
         logging.info(f"{self.__class__.__name__}: Table verification (exact match) completed for table: {table_desc}")
 
-    @keyword
     def verify_table_row_exact(self, table_locator: Union[tuple, WebElement], row_index: int, expected_data: Dict[str, str]):
         logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with exact match")
         table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
@@ -4763,7 +4711,6 @@ class TableActions(Base):
         self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='exact')
         logging.info(f"{self.__class__.__name__}: Table row verification (exact match) completed for table: {table_desc}, row: {row_index}")
 
-    @keyword
     def verify_specific_cell_exact(self, table_locator: Union[tuple, WebElement], row_index: int, column: Union[str, int], expected_value: str):
         logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with exact match")
         table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
@@ -4771,7 +4718,6 @@ class TableActions(Base):
         self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='exact')
         logging.info(f"{self.__class__.__name__}: Specific cell verification (exact match) completed for table: {table_desc}, row: {row_index}, column: {column}")
 
-    @keyword
     def verify_table_partial(self, table_locator: Union[tuple, WebElement], expected_data: List[Dict[str, str]]):
         logging.info(f"{self.__class__.__name__}: Verifying entire table with partial match")
         table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
@@ -4779,7 +4725,6 @@ class TableActions(Base):
         self.table_verifier.verify_table(table_element, expected_data, match_type='partial')
         logging.info(f"{self.__class__.__name__}: Table verification (partial match) completed for table: {table_desc}")
 
-    @keyword
     def verify_table_row_partial(self, table_locator: Union[tuple, WebElement], row_index: int, expected_data: Dict[str, str]):
         logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with partial match")
         table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
@@ -4787,7 +4732,6 @@ class TableActions(Base):
         self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='partial')
         logging.info(f"{self.__class__.__name__}: Table row verification (partial match) completed for table: {table_desc}, row: {row_index}")
 
-    @keyword
     def verify_specific_cell_partial(self, table_locator: Union[tuple, WebElement], row_index: int, column: Union[str, int], expected_value: str):
         logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with partial match")
         table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
@@ -4795,7 +4739,6 @@ class TableActions(Base):
         self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='partial')
         logging.info(f"{self.__class__.__name__}: Specific cell verification (partial match) completed for table: {table_desc}, row: {row_index}, column: {column}")
 
-    @keyword
     def verify_table_regex(self, table_locator: Union[tuple, WebElement], expected_data: List[Dict[str, str]]):
         logging.info(f"{self.__class__.__name__}: Verifying entire table with regex match")
         table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
@@ -4803,7 +4746,6 @@ class TableActions(Base):
         self.table_verifier.verify_table(table_element, expected_data, match_type='regex')
         logging.info(f"{self.__class__.__name__}: Table verification (regex match) completed for table: {table_desc}")
 
-    @keyword
     def verify_table_row_regex(self, table_locator: Union[tuple, WebElement], row_index: int, expected_data: Dict[str, str]):
         logging.info(f"{self.__class__.__name__}: Verifying table row at index {row_index} with regex match")
         table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
@@ -4811,7 +4753,6 @@ class TableActions(Base):
         self.table_verifier.verify_table_row(table_element, row_index, expected_data, match_type='regex')
         logging.info(f"{self.__class__.__name__}: Table row verification (regex match) completed for table: {table_desc}, row: {row_index}")
 
-    @keyword
     def verify_specific_cell_regex(self, table_locator: Union[tuple, WebElement], row_index: int, column: Union[str, int], expected_value: str):
         logging.info(f"{self.__class__.__name__}: Verifying specific cell at row {row_index}, column {column} with regex match")
         table_element = self.wait_for_element(table_locator) if isinstance(table_locator, tuple) else table_locator
@@ -4819,7 +4760,6 @@ class TableActions(Base):
         self.table_verifier.verify_specific_cell(table_element, row_index, column, expected_value, match_type='regex')
         logging.info(f"{self.__class__.__name__}: Specific cell verification (regex match) completed for table: {table_desc}, row: {row_index}, column: {column}")
 
-    @keyword
     def verify_table_is_empty(self, table_locator: Union[tuple, WebElement]):
         logging.info(f"{self.__class__.__name__}: Verifying table is empty")
         try:
@@ -4831,7 +4771,6 @@ class TableActions(Base):
             logging.error(f"{self.__class__.__name__}: Error verifying table is empty: {str(e)}")
             raise
 
-    @keyword
     def verify_unique_column_values(self, table_locator: Union[tuple, WebElement], column: Union[str, int]):
         logging.info(f"{self.__class__.__name__}: Verifying unique values in column: {column}")
         try:
@@ -4843,7 +4782,6 @@ class TableActions(Base):
             logging.error(f"{self.__class__.__name__}: Error verifying unique column values: {str(e)}")
             raise
 
-    @keyword
     def verify_value_in_table(self, table_locator: Union[tuple, WebElement], search_value: str):
         logging.info(f"{self.__class__.__name__}: Verifying value '{search_value}' exists in table")
         try:
@@ -4856,7 +4794,6 @@ class TableActions(Base):
             logging.error(f"{self.__class__.__name__}: Error verifying value in table: {str(e)}")
             raise
 
-    @keyword
     def verify_row_count(self, table_locator: Union[tuple, WebElement], expected_row_count: int):
         logging.info(f"{self.__class__.__name__}: Verifying row count: expected {expected_row_count}")
         try:
@@ -4868,7 +4805,6 @@ class TableActions(Base):
             logging.error(f"{self.__class__.__name__}: Error verifying row count: {str(e)}")
             raise
 
-    @keyword
     def verify_column_sorted(self, table_locator: Union[tuple, WebElement], column: Union[str, int], expected_order='ascending', strip_spaces=True):
         logging.info(f"{self.__class__.__name__}: Verifying column '{column}' is sorted in {expected_order} order")
         try:
@@ -4880,7 +4816,6 @@ class TableActions(Base):
             logging.error(f"{self.__class__.__name__}: Error verifying column sorting: {str(e)}")
             raise
 
-    @keyword
     def select_table_row_checkbox(self, table_locator: Union[tuple, WebElement], identifier_column: Union[str, int], identifier_value: str, checkbox_column: int = 1):
         logging.info(f"{self.__class__.__name__}: Selecting checkbox for row with {identifier_column}: {identifier_value}")
         try:
@@ -4892,7 +4827,6 @@ class TableActions(Base):
             logging.error(f"{self.__class__.__name__}: Error selecting checkbox: {str(e)}")
             raise
 
-    @keyword
     def select_multiple_table_row_checkboxes(self, table_locator: Union[tuple, WebElement], identifier_column: Union[str, int], identifier_values: List[str], checkbox_column: int = 1):
         logging.info(f"{self.__class__.__name__}: Selecting checkboxes for multiple rows with {identifier_column}: {identifier_values}")
         try:
@@ -5233,14 +5167,9 @@ import logging
 import time
 from PIL import Image
 from robot.libraries.BuiltIn import BuiltIn
-from robot.api.deco import keyword, library
 from .base import Base
 
-@library
 class UtilsActions(Base):
-    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
-
-    @keyword
     def capture_screenshot(self):
         try:
             if self.driver:
@@ -5262,7 +5191,6 @@ class UtilsActions(Base):
             logging.error(f"{self.__class__.__name__}: Failed to capture screenshot: {str(e)}")
             BuiltIn().log(f"{self.__class__.__name__}: Failed to capture screenshot: {str(e)}", level="ERROR")
 
-    @keyword
     def highlight_element(self, locator, duration=2, color="lightgreen", border="3px solid red", element_desc=None, condition="visibility"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -5288,14 +5216,10 @@ from robot.libraries.BuiltIn import BuiltIn
 from .base import Base
 import logging
 from robot.api import logger
-from robot.api.deco import keyword, library
 from libraries.common.log_manager import ColorLogger
 
-@library
-class VerificationActions(Base):
-    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
 
-    @keyword
+class VerificationActions(Base):
     def verify_text_is(self, locator, expected_text, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -5306,7 +5230,6 @@ class VerificationActions(Base):
         self._log_result(result, log_message)
         assert result, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not matching actual text: '{actual_text}'"
 
-    @keyword
     def verify_figure_is(self, locator, expected_figure, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -5326,7 +5249,6 @@ class VerificationActions(Base):
         self._log_result(result, log_message)
         assert result, f"{self.__class__.__name__}: Expected figure: '{expected_value}' is not matching actual figure: '{actual_value}'"
 
-    @keyword
     def verify_text_contains(self, locator, expected_text, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -5337,7 +5259,6 @@ class VerificationActions(Base):
         self._log_result(result, log_message)
         assert result, f"{self.__class__.__name__}: Expected text: '{expected_text}' is not in actual text: '{actual_text}'"
 
-    @keyword
     def verify_figure_text_contains(self, locator, expected_text, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -5349,7 +5270,6 @@ class VerificationActions(Base):
         self._log_result(result, log_message)
         assert result, f"{self.__class__.__name__}: Expected text: '{expected_text_clean}' is not in actual text: '{actual_text_clean}'"
 
-    @keyword
     def verify_title_is(self, expected_title, element_desc="Page Title"):
         logging.debug(f"{self.__class__.__name__}: Checking if page title matches expected: '{expected_title}'")
         actual_title = self.driver.title
@@ -5358,7 +5278,6 @@ class VerificationActions(Base):
         self._log_result(result, log_message)
         assert result, f"{self.__class__.__name__}: Expected title: '{expected_title}' is not matching actual title: '{actual_title}'"
 
-    @keyword
     def verify_title_contains(self, expected_title, element_desc="Page Title"):
         logging.debug(f"{self.__class__.__name__}: Checking if page title contains expected: '{expected_title}'")
         actual_title = self.driver.title
@@ -5367,7 +5286,6 @@ class VerificationActions(Base):
         self._log_result(result, log_message)
         assert result, f"{self.__class__.__name__}: Expected title: '{expected_title}' is not in actual title: '{actual_title}'"
 
-    @keyword
     def verify_element_exists(self, locator, element_desc=None):
         element_desc = element_desc or self._get_element_description(locator)
         logging.debug(f"{self.__class__.__name__}: Checking if element exists: {element_desc}")
@@ -5380,7 +5298,6 @@ class VerificationActions(Base):
         self._log_result(result, log_message)
         return result
 
-    @keyword
     def verify_element_visible(self, locator, timeout=None, element_desc=None):
         element_desc = element_desc or self._get_element_description(locator)
         logging.debug(f"{self.__class__.__name__}: Checking if element is visible: {element_desc}, timeout: {timeout}")
@@ -5393,7 +5310,6 @@ class VerificationActions(Base):
         self._log_result(result, log_message)
         return result
 
-    @keyword
     def verify_element_invisible(self, locator, timeout=None, element_desc=None):
         element_desc = element_desc or self._get_element_description(locator)
         logging.debug(f"{self.__class__.__name__}: Checking if element is invisible: {element_desc}, timeout: {timeout}")
@@ -5406,7 +5322,6 @@ class VerificationActions(Base):
         self._log_result(result, log_message)
         return result
 
-    @keyword
     def verify_element_clickable(self, locator, timeout=None, element_desc=None):
         element_desc = element_desc or self._get_element_description(locator)
         logging.debug(f"{self.__class__.__name__}: Checking if element is clickable: {element_desc}, timeout: {timeout}")
@@ -5419,7 +5334,6 @@ class VerificationActions(Base):
         self._log_result(result, log_message)
         return result
 
-    @keyword
     def verify_element_selected(self, locator, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -5430,7 +5344,6 @@ class VerificationActions(Base):
         assert is_selected, f"{self.__class__.__name__}: Element {element_desc} is not selected as expected."
         return is_selected
 
-    @keyword
     def verify_element_enabled(self, locator, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -5441,7 +5354,6 @@ class VerificationActions(Base):
         assert is_enabled, f"{self.__class__.__name__}: Element {element_desc} is not enabled as expected."
         return is_enabled
 
-    @keyword
     def get_text_save_to_variable(self, locator, variable_name, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -5451,7 +5363,6 @@ class VerificationActions(Base):
         logging.debug(f"{self.__class__.__name__}: Captured text: {value}")
         return value
 
-    @keyword
     def verify_element_value_diff(self, locator, initial_value_variable, expected_change, element_desc=None, condition="presence"):
         element = self._resolve_element(locator, element_desc, condition)
         element_desc = element_desc or self._get_element_description(locator)
@@ -5484,15 +5395,12 @@ class VerificationActions(Base):
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from robot.api.deco import keyword, library
 import logging
 import time
 
-@library
-class WaitActions(Base):
-    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
 
-    @keyword
+class WaitActions(Base):
+
     def wait_for_element_present(self, locator, element_desc=None, timeout=None):
         """
         Waits until the element is present in the DOM.
@@ -5502,7 +5410,6 @@ class WaitActions(Base):
         element = self._resolve_element(locator, element_desc, condition="presence", timeout=timeout)
         return element
 
-    @keyword
     def wait_for_element_visible(self, locator, element_desc=None, timeout=None):
         """
         Waits until the element is visible on the page.
@@ -5512,7 +5419,6 @@ class WaitActions(Base):
         element = self._resolve_element(locator, element_desc, condition="visibility", timeout=timeout)
         return element
 
-    @keyword
     def wait_for_element_clickable(self, locator, element_desc=None, timeout=None):
         """
         Waits until the element is clickable.
@@ -5522,7 +5428,6 @@ class WaitActions(Base):
         element = self._resolve_element(locator, element_desc, condition="clickable", timeout=timeout)
         return element
 
-    @keyword
     def wait_for_element_invisible(self, locator, element_desc=None, timeout=None):
         """
         Waits until the element becomes invisible.
@@ -5541,7 +5446,6 @@ class WaitActions(Base):
             logging.error(f"{self.__class__.__name__}: Timeout waiting for element to become invisible: [ {element_desc}:{locator} ].")
             raise
 
-    @keyword
     def wait_for_text_present_in_element(self, locator, text, element_desc=None, timeout=None):
         """
         Waits until the given text is present in the specified element.
@@ -5561,7 +5465,6 @@ class WaitActions(Base):
             logging.error(f"{self.__class__.__name__}: Timeout waiting for text '{text}' in element: [ {element_desc}:{locator} ].")
             raise
 
-    @keyword
     def wait_for_staleness_of(self, element, timeout=None):
         """
         Waits until the element is no longer attached to the DOM.
@@ -5579,7 +5482,6 @@ class WaitActions(Base):
             logging.error(f"{self.__class__.__name__}: Timeout waiting for element to become stale: [ {element_desc} ].")
             return False
 
-    @keyword
     def wait(self, seconds):
         """
         Pauses execution for the given number of seconds.
@@ -5594,14 +5496,9 @@ class WaitActions(Base):
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from .base import Base
-from robot.api.deco import keyword, library
 import logging
 
-@library
 class WindowActions(Base):
-    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
-
-    @keyword
     def switch_to_frame(self, element, condition="presence"):
         element_desc = self._get_element_description(element)
         logging.info(f"{self.__class__.__name__}: Switching to frame: {element_desc}")
@@ -5612,50 +5509,42 @@ class WindowActions(Base):
         self.driver.switch_to.frame(element)
         logging.info(f"{self.__class__.__name__}: Switched to frame successfully: {element_desc}")
 
-    @keyword
     def switch_to_default_content(self):
         logging.info(f"{self.__class__.__name__}: Switching to default content")
         self.driver.switch_to.default_content()
         logging.info(f"{self.__class__.__name__}: Switched to default content successfully")
 
-    @keyword
     def switch_to_window(self, window_handle):
         logging.info(f"{self.__class__.__name__}: Switching to window with handle: {window_handle}")
         self.driver.switch_to.window(window_handle)
         logging.info(f"{self.__class__.__name__}: Switched to window successfully")
 
-    @keyword
     def get_window_handles(self):
         logging.info(f"{self.__class__.__name__}: Getting all window handles")
         handles = self.driver.window_handles
         logging.info(f"{self.__class__.__name__}: Retrieved {len(handles)} window handles")
         return handles
 
-    @keyword
     def close_current_window(self):
         logging.info(f"{self.__class__.__name__}: Closing current window")
         self.driver.close()
         logging.info(f"{self.__class__.__name__}: Current window closed successfully")
 
-    @keyword
     def set_window_size(self, width, height):
         logging.info(f"{self.__class__.__name__}: Setting window size to {width}x{height}")
         self.driver.set_window_size(width, height)
         logging.info(f"{self.__class__.__name__}: Window size set successfully")
 
-    @keyword
     def maximize_window(self):
         logging.info(f"{self.__class__.__name__}: Maximizing window")
         self.driver.maximize_window()
         logging.info(f"{self.__class__.__name__}: Window maximized successfully")
 
-    @keyword
     def minimize_window(self):
         logging.info(f"{self.__class__.__name__}: Minimizing window")
         self.driver.minimize_window()
         logging.info(f"{self.__class__.__name__}: Window minimized successfully")
 
-    @keyword
     def fullscreen_window(self):
         logging.info(f"{self.__class__.__name__}: Setting window to full screen")
         self.driver.fullscreen_window()
@@ -6828,12 +6717,12 @@ function openInNewTab(url) {
         "CNY": {
             "2025-02-27": {
                 "inbound": {
-                    "count": 1,
-                    "total_amount": 100.0
+                    "count": 2,
+                    "total_amount": 200.0
                 },
                 "outbound": {
-                    "count": 1,
-                    "total_amount": 100.0
+                    "count": 2,
+                    "total_amount": 200.0
                 }
             }
         }
