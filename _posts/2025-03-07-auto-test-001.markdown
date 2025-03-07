@@ -1,0 +1,269 @@
+---
+layout:     post
+title:      "基于 Python 和 Robot Framework 的自动化测试框架"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2025-03-07 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+### **基于 Python 和 Robot Framework 的自动化测试框架**
+
+---
+
+这是一个基于Python和Robot Framework的自动化测试框架。我会为您整理出完整的文件结构，并简要说明每个文件的主要功能和逻辑。
+
+文件结构：
+
+```
+project_root/
+├── configs/
+│   ├── api_test_config.yaml
+│   ├── db_config.yaml
+│   ├── e2e_test_config.yaml
+│   ├── logging_config.yaml
+│   ├── saved_fields.yaml
+│   ├── web_pt_config.yaml
+│   └── web_test_config.yaml
+├── libraries/
+│   ├── api/
+│   │   ├── api_test_keywords.py
+│   │   ├── api_test_loader.py
+│   │   ├── body_generator.py
+│   │   ├── headers_generator.py
+│   │   ├── request_sender.py
+│   │   ├── response_handler.py
+│   │   ├── saved_fields_manager.py
+│   │   └── template_renderer.py
+│   ├── common/
+│   │   ├── config_manager.py
+│   │   ├── log_manager.py
+│   │   ├── utility_helpers.py
+│   │   ├── variable_generator.py
+│   │   └── variable_transformer.py
+│   ├── db/
+│   │   ├── db.py
+│   │   └── db_operator.py
+│   ├── performance/
+│   │   ├── web_pt.py
+│   │   ├── web_pt_loader.py
+│   │   ├── web_pt_reporter.py
+│   │   └── web_pt_robot_keyword.py
+│   ├── robot/
+│   │   ├── custom_action_executor.py
+│   │   ├── robot_test_executor.py
+│   │   └── case/
+│   │       ├── api_generator.py
+│   │       ├── base_generator.py
+│   │       ├── e2e_generator.py
+│   │       ├── unified_generator.py
+│   │       ├── web_generator.py
+│   │       └── web_pt_robot_generator.py
+│   └── web/
+│       ├── web_actions.py
+│       ├── web_test_loader.py
+│       ├── webdriver_factory.py
+│       └── web_action/
+│           ├── alert_actions.py
+│           ├── base.py
+│           ├── cookie_actions.py
+│           ├── decorators.py
+│           ├── element_actions.py
+│           ├── javascript_actions.py
+│           ├── js.py
+│           ├── navigation_actions.py
+│           ├── table_actions.py
+│           ├── table_verifier.py
+│           ├── utils_actions.py
+│           ├── verification_actions.py
+│           ├── wait_actions.py
+│           └── window_actions.py
+├── templates/
+│   ├── rf_report_template.html
+│   └── test_summary_template.html
+├── main.py
+├── README.md
+└── yaml_config_cli.py
+```
+
+I. 核心框架和配置
+
+1. main.py
+   - 作为整个框架的入口点
+   - 解析命令行参数，决定执行哪种类型的测试（API、Web UI、E2E或性能测试）
+   - 创建ExitOnFailureListener类，用于在sanity check失败时中断测试
+   - 定义run_test_suite函数，负责执行测试套件并生成报告
+   - 使用UnifiedRobotCaseGenerator来生成相应类型的测试用例
+   - 调用Robot Framework的API来运行测试套件
+
+2. yaml_config_cli.py
+   - 定义YamlConfigManager类，提供YAML配置文件的读写功能
+   - 实现命令行接口，允许用户通过命令行更新配置、添加或删除列表项
+   - 使用ruamel.yaml库来保持YAML文件的注释和格式
+
+3-9. configs/*.yaml
+   - 存储各种测试类型（API、Web UI、E2E、性能）的配置信息
+   - 包含数据库连接信息、日志配置、保存的字段等
+   - 使用YAML格式，便于读写和维护
+
+II. API测试模块
+
+10. libraries/api/api_test_keywords.py
+    - 定义APITestKeywords类，实现Robot Framework中使用的API测试关键字
+    - 加载配置、初始化测试组件（如请求发送器、响应验证器等）
+    - 实现执行API测试用例的核心逻辑，包括发送请求、验证响应、处理动态检查等
+    - 管理测试条件（如前置条件、后置条件）和保存的字段
+
+11. libraries/api/api_test_loader.py
+    - 定义APITestLoader类，负责从Excel文件加载API测试用例和相关数据
+    - 实现严格的数据验证，确保Excel文件结构和数据的完整性和正确性
+    - 提供方法来获取API测试用例、请求体模板、默认值、头部信息等
+
+12. libraries/api/body_generator.py
+    - 定义BodyGenerator类，用于生成API请求体
+    - 处理请求体模板的渲染，合并默认值和用户定义的值
+    - 支持动态值的生成和替换
+
+13. libraries/api/headers_generator.py
+    - 定义HeadersGenerator类，用于生成API请求头
+    - 处理头部模板，支持变量替换和动态值生成
+
+14. libraries/api/request_sender.py
+    - 定义RequestSender类，负责发送HTTP请求
+    - 支持各种HTTP方法（GET、POST、PUT、DELETE等）
+    - 处理不同的请求格式（JSON、XML）
+
+15. libraries/api/response_handler.py
+    - 定义ResponseHandler基类，处理API响应的解析
+    - 实现ResponseValidator类，验证API响应是否符合预期
+    - 实现ResponseFieldSaver类，保存响应中的特定字段值
+
+16. libraries/api/saved_fields_manager.py
+    - 定义SavedFieldsManager类，管理测试过程中需要保存的字段
+    - 提供方法来加载、保存和应用保存的字段值
+    - 支持在测试用例间共享数据
+
+17. libraries/api/template_renderer.py
+    - 定义TemplateRenderer类，用于渲染请求体模板
+    - 支持Jinja2模板语法
+    - 处理JSON和XML格式的模板
+
+III. Web UI测试模块
+
+37. libraries/web/web_actions.py
+    - 定义WebActions类，集成所有Web UI操作
+    - 继承各种具体操作类（如ElementActions、VerificationActions等）
+    - 提供统一的接口来执行Web UI测试操作
+
+38. libraries/web/web_test_loader.py
+    - 定义WebTestLoader类，从Excel文件加载Web UI测试用例
+    - 验证Excel文件结构和数据的完整性
+    - 提供方法来获取测试用例、页面对象、定位器等信息
+
+39. libraries/web/webdriver_factory.py
+    - 定义WebDriverFactory类，负责创建和配置WebDriver实例
+    - 支持不同的浏览器（Chrome、Edge等）
+    - 支持本地和远程WebDriver执行
+
+40. libraries/web/web_action/*.py
+    - 包含多个具体的Web UI操作类，如：
+      - AlertActions：处理浏览器弹窗
+      - ElementActions：执行元素点击、输入等基本操作
+      - JavaScriptActions：执行JavaScript相关操作
+      - NavigationActions：处理页面导航
+      - TableActions：处理表格相关操作
+      - VerificationActions：执行各种UI验证
+      - WaitActions：实现各种等待策略
+    - 每个类都继承自Base类，提供了统一的日志记录和元素处理方法
+
+IV. 性能测试模块
+
+25. libraries/performance/web_pt.py
+    - 定义WebPerformanceTester类，实现Web性能测试的核心逻辑
+    - 执行性能测试用例，收集响应时间和内存使用数据
+    - 管理WebDriver实例和测试步骤的执行
+
+26. libraries/performance/web_pt_loader.py
+    - 定义PerformanceTestLoader类，加载Web性能测试用例
+    - 验证性能测试Excel文件的结构和数据完整性
+
+27. libraries/performance/web_pt_reporter.py
+    - 定义WebPerformanceReporter类，生成Web性能测试报告
+    - 创建各种性能图表（如响应时间趋势、内存使用趋势）
+    - 生成性能统计数据和表格
+
+28. libraries/performance/web_pt_robot_keyword.py
+    - 定义RobotFrameworkWebTester类，提供Robot Framework关键字
+    - 封装Web性能测试的初始化、执行和报告生成过程
+
+V. 通用工具和数据库操作
+
+18. libraries/common/config_manager.py
+    - 定义ConfigManager类，用于加载和管理配置文件
+    - 支持JSON和YAML格式的配置文件
+    - 提供静态方法来加载配置和模板
+
+19. libraries/common/log_manager.py
+    - 定义Logger类，管理日志记录
+    - 提供ColorLogger类，用于生成带颜色的日志输出
+    - 配置日志格式、级别和输出位置
+
+20. libraries/common/utility_helpers.py
+    - 定义UtilityHelpers类，提供各种实用函数
+    - 包括文件格式判断、XML转义、JSON/XML格式化等功能
+    - 实现项目根目录查找等辅助功能
+
+21. libraries/common/variable_generator.py
+    - 定义VariableGenerator类，用于生成动态变量值
+    - 支持生成UUID、时间戳、消息ID等常用动态值
+
+22. libraries/common/variable_transformer.py
+    - 定义VariableTransformer类，用于变量转换
+    - 提供日期格式转换、大小写转换等功能
+    - 支持自定义转换函数的注册和使用
+
+23. libraries/db/db.py
+    - 定义Database抽象基类，规定数据库操作的接口
+    - 实现SQLAlchemyDatabase类，使用SQLAlchemy ORM实现具体的数据库操作
+    - 支持事务管理、查询、插入、更新和删除操作
+
+24. libraries/db/db_operator.py
+    - 定义DBOperator类，封装高级数据库操作
+    - 提供数据库验证、数据插入、更新和删除的便捷方法
+    - 支持动态SQL生成和参数替换
+
+VI. Robot Framework集成
+
+29. libraries/robot/custom_action_executor.py
+    - 定义CustomActionExecutor类，用于执行自定义动作
+    - 解析和执行用户定义的Python代码
+    - 实现安全检查，防止执行危险的代码
+
+30. libraries/robot/robot_test_executor.py
+    - 定义RobotTestExecutor类，执行Robot Framework测试
+    - 管理WebDriver实例的生命周期
+    - 实现测试模块和步骤的执行逻辑
+
+31-36. libraries/robot/case/*.py
+    - 包含多个测试用例生成器类，如APIRobotCaseGenerator、WebRobotCaseGenerator等
+    - 每个生成器负责创建特定类型的Robot Framework测试套件和用例
+    - UnifiedRobotCaseGenerator类提供统一的接口来生成不同类型的测试用例
+
+VII. 报告模板
+
+41. templates/rf_report_template.html
+    - Robot Framework测试报告的HTML模板
+    - 使用Bootstrap框架实现响应式设计
+    - 包含测试结果摘要、详细测试用例列表、统计图表等
+
+42. templates/test_summary_template.html
+    - 测试摘要报告的HTML模板
+    - 提供测试执行结果的简要总结
+    - 设计简洁，便于快速查看测试结果
+
+这个框架通过模块化设计，将不同功能分散到各个文件中，提高了代码的可维护性和可扩展性。它支持多种类型的测试（API、Web UI、端到端、性能），并提供了丰富的工具和辅助功能，如配置管理、日志记录、数据库操作等。通过与Robot Framework的集成，该框架能够生成详细的测试报告，便于分析测试结果和持续集成。
