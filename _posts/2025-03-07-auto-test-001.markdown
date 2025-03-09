@@ -15,13 +15,8 @@ tags:
 
 该框架基于 Python 与 Robot Framework 实现，支持多种测试类型（API、Web UI、端到端、性能）。框架采用模块化设计：配置文件统一管理各种参数、公共工具库封装常用函数与中间件、各测试类别的逻辑独立处理用例的加载、执行与验证，最终生成详细的 HTML 报告和日志。
 
----
 
-## 第一部分：项目结构与全局配置
-
-### 1. 项目目录结构示例
-
-假设项目根目录为 **project_root**，其基本目录结构如下：
+#### 1.1 目录结构示例
 
 ```
 project_root/
@@ -107,703 +102,824 @@ project_root/
 └── ...                           // 其它脚本、说明文档等
 ```
 
-### 2. 全局配置与初始化
-
-- **配置管理：**
-  所有环境、数据库、日志、测试用例路径等信息均存放于 `configs/` 目录下的 YAML 文件中；
-  模块 `common/config_manager.py` 负责加载这些配置文件，并提供全局接口，确保各个模块在初始化时能获取到正确的参数。
-
-- **全局变量设置：**
-  在测试启动前，各测试类型的生成器会根据配置（如当前激活环境 active_environment）设置 Robot Framework 全局变量（例如 `${active_environment}`），供后续测试用例、动态变量替换、环境区分时使用。
+**要点：**
+- `configs/` 目录统一管理所有测试所需的 YAML 配置文件。
+- `test_cases/` 存放不同类型的 Excel 用例文件，以区分 API、web UI、E2E、性能测试。
+- `libraries/` 下分门别类地存放各种功能模块，多数模块都有相应的“加载器”、“执行器”、以及“关键字”封装。
+- `templates/` 中的 HTML 模板用来生成更加美观、统计信息丰富的测试报告。
 
 ---
 
-## 第二部分：API 测试模块详细说明
+### 二、全局配置管理
 
+#### 2.1 配置文件
 
-### 1. 配置文件与初始化
+本框架采用 YAML 文件管理绝大部分配置，常见文件示例：
 
-- **配置文件（configs/api_test_config.yaml）：**
-  配置当前激活的环境（如 DEV、UAT）、测试用例 Excel 文件路径（例如 test_cases/api_test_cases.xlsx）、是否在每个用例执行后清空保存字段（clear_saved_fields_after_test）、以及可选的用例 ID 列表（tc_id_list）和标签（tags）过滤。
+1. **api_test_config.yaml**
+   - `active_environment`: 标记当前测试环境（DEV/UAT/RD）
+   - `test_cases_path`: 指定 API 用例 Excel 文件路径
+   - `clear_saved_fields_after_test`: 是否在每个测试结束后清空保存字段
+   - `tc_id_list` 和 `tags`: 用于筛选执行特定用例或带有某些标签的用例
 
-- **初始化流程：**
-  API 测试模块启动时，通过 `common/config_manager.py` 载入所有配置，将激活环境设置为 RF 全局变量（例如 `${active_environment}`），确保后续数据库切换、接口地址选择正确。
+2. **web_test_config.yaml**
+   - `active_environment`: 当前环境
+   - `test_cases_path`: 指定 Web UI 测试用例 Excel
+   - `tc_id_list`, `tags`: 同上
 
-### 2. Excel 文件加载与数据校验
+3. **e2e_test_config.yaml**
+   - 端到端测试逻辑的相同配置信息
 
-- **用例文件解析：**
-  模块 `libraries/api/api_test_loader.py` 负责加载 Excel 文件，将各个 Sheet（包括 API、BodyTemplates、BodyDefaults、Headers、Endpoints）内容加载到内存中。
+4. **web_pt_config.yaml**
+   - Web 性能测试相关的指定配置，如循环次数、是否远程执行、性能指标阈值等
 
-- **Excel 组织结构：**
-  1. **API Sheet**：主测试用例信息；
-  2. **BodyTemplates Sheet**：定义请求体模板（支持 Jinja2 语法）；
-  3. **BodyDefaults Sheet**：定义默认请求数据；
-  4. **Headers Sheet**：定义请求头模板；
-  5. **Endpoints Sheet**：根据环境定义接口的 HTTP 方法和 URL 路径。
+5. **db_config.yaml**
+   - 不同环境下数据库连接配置，包括 oracle、postgresql 等等
 
-- **数据校验：**
-  加载过程中，会校验各 Sheet 是否包含必须的列（例如 API Sheet 内需包含 TCID、Run、Endpoint、Body Template、Body Default、Headers、Exp Result 等），同时检查引用的模板名称在对应 Sheet 存在，避免因数据缺失或名称不匹配导致执行错误。
+#### 2.2 common/config_manager.py
 
-### 3. 请求生成与发送
+所有测试启动前，都会调用此模块读取对应的 YAML 文件，解析为 Python 字典对象并存储。**好处**：
+- 可随时在不同地方读取同一份配置文件，保证数据一致性
+- 配合 Robot Framework 的 `BuiltIn().set_global_variable`，可将配置推送成全局变量，如 `${active_environment}`
 
-- **生成请求体：**
-  利用 `libraries/api/body_generator.py`、`template_renderer.py`、以及 `Body Override` 字段：
-  1. 根据 API 用例中指定的 Body Template 和 Body Default 加载默认数据；
-  2. 通过 Jinja2 模板引擎结合用户在 Body Override 中提供的 JSON 字符串合并数据；
-  3. 在合并过程中，对其中的占位符（例如 `"{{timestamp}}"`、`${变量名}`）进行动态替换，调用 `variable_generator.py` 生成动态值（如当前时间戳、UUID 等）。
+#### 2.3 logging_config.yaml
 
-- **生成请求头：**
-  利用 `libraries/api/headers_generator.py` 根据 Headers 模板生成请求头，同时支持动态变量替换（例如在 Authorization 字段里引用 `${AUTH_TOKEN}`）。
-
-- **接口地址与方法：**
-  根据 API 用例中“Endpoint” 字段，在 Endpoints Sheet 中查找对应接口，结合激活环境确定 HTTP 方法（GET、POST 等）以及 URL 路径。如果接口不存在，则报错并中止当前用例执行。
-
-- **请求发送：**
-  通过 `libraries/api/request_sender.py` 封装对 requests 库的调用，发送 HTTP 请求（支持 JSON 或 XML 数据），并记录请求的执行时间等细节参数。
-
-### 4. 响应处理与数据验证
-
-- **响应验证：**
-  模块 `libraries/api/response_handler.py` 对响应体进行解析验证，常见验证方式：
-  - 使用 JSONPath 表达式提取响应数据，并与 API 用例中“Exp Result”定义的预期值做对比；
-  - 对于需要保存的字段（如 Token），通过 `ResponseFieldSaver` 提取后调用 `saved_fields_manager.py` 保存为全局变量，后续用例可直接引用。
-
-- **动态检查机制（CheckWith）：**
-  在 API 用例中，可在 `Conditions` 字段中定义“[CheckWith]TC002,TC003”，表示在当前用例前后调用指定的附加用例进行结果比对（例如对比数量是否增加）。
-
-### 5. 变量替换与 Sanity Check
-
-- **变量替换：**
-  框架支持两种替换规则：
-  1. 使用 Jinja2 语法（`{{ placeholder }}`）自动生成动态数据；
-  2. 使用 `${VARIABLE}` 格式从 Robot Framework 内部全局变量中获取数据。
-
-- **Sanity Check：**
-  如果 API 用例的 Tags 列中包含忽略大小写的“sanity check”，则此用例被视作关键接口测试。一旦执行失败，框架会设置全局变量 `${skip_on_sanity_check_failure}` 为 True，从而在后续调用关键词（例如 api_sanity_check）时跳过其他测试，避免时间浪费。
-
-### 6. API Excel 用例填写规范
-
-- **API Sheet（主用例表）：**
-  每一行对应一个测试用例，主要字段包括：
-  - **TCID**：唯一标识符，如 “TC001”；
-  - **Name**：用例名称，简述测试目的；
-  - **Descriptions**：详细描述用例背景和测试目标；
-  - **Run**：填写 “Y” 或 “N” 表示是否执行；
-  - **Suite**：用例所属测试模块（如 “User API”、“Payments”）；
-  - **Tags**：标签（用逗号分隔，如 “critical, regression”），支持 “sanity check” 判断关键测试；
-  - **Endpoint**：接口名称，必须与 Endpoints Sheet 中一致；
-  - **Body Template**：引用 BodyTemplates Sheet 中的模板名称；
-  - **Body Default**：引用 BodyDefaults Sheet 中的默认数据模板；
-  - **Body Override**：用于补充或覆盖默认数据的 JSON 字符串，支持动态变量，如 `{"user_id": "${USER_ID}", "timestamp": "{{timestamp}}"}`；
-  - **Headers**：引用 Headers Sheet 中的模板名称（内容格式参考 YAML 格式）；
-  - **Exp Result**：预期结果，通常以 JSONPath 表达式描述，如 `$.status.code=200`；
-  - **Save Fields**：指定响应中需要保存的字段，可直接写 JSONPath 或使用函数格式（如 assign_value($.response.token, my_token)）；
-  - **Conditions**：定义前置或后置操作，可使用 “[CheckWith]TC002,TC003” 等标记；
-  - **Wait**：操作完成后等待的秒数，支持留空或填写 “0”。
-
-- **其他 Sheet（BodyTemplates、BodyDefaults、Headers、Endpoints）：**
-  — 每个 Sheet 中必须保证必填项完整。例如：
-  • BodyTemplates Sheet 需提供模板名称、模板内容（支持 Jinja2 语法）、格式标识（json/xml）；
-  • Headers Sheet 需提供 HeaderName 与 YAML 格式的内容；
-  • Endpoints Sheet 包含环境、接口名称、请求方法及路径（路径中支持占位符，如 {user_id}）。
-
+决定日志输出格式、级别及目标位置（例如控制台和文件），框架会在启动时加载这个配置，调用 Python 原生 `logging.config.dictConfig`。
 
 ---
 
-## 第三部分：Web UI 测试模块详细说明
+### 三、main.py 主程序概述
 
-Web UI 测试主要基于 Selenium WebDriver 与 Robot Framework 实现，利用 Excel 文件定义页面对象、测试用例、操作步骤、数据驱动以及环境信息。系统在加载并校验 Excel 文件后，将各操作转换为 Robot Framework 测试用例，调用 WebActions 中封装的操作函数来实现页面验证与交互。下面详细描述其各个环节的工作流程与相关文件/模块说明。
+`main.py` 是整个框架的启动入口，通过命令行参数解析来选择执行的测试类型：
 
----
+- `--api`       (只执行 API 测试)
+- `--web`       (只执行 Web UI 测试)
+- `--e2e`       (执行端到端，用到 API + Web UI)
+- `--performance` (执行 Web 性能测试)
 
-### 1. 配置与初始化
-
-#### 1.1 配置加载
-
-- **配置文件：**
-  Web UI 测试相关配置存放于 `configs/web_test_config.yaml` 中，内容一般包括：
-  - `active_environment`：当前激活环境名称。
-  - `test_cases_path`：Web UI 测试用例 Excel 文件所在路径。
-  - `tc_id_list`：可选的用例ID过滤列表，用于只执行指定用例。
-  - `tags`：标签过滤条件（如只执行 “regression”、“critical” 的用例）。
-
-- **环境信息：**
-  环境相关数据不但保存在配置文件中，同时在 Web 用例 Excel 文件中还会有专门的 **WebEnvironments** Sheet。其中定义的信息包括：
-  - 环境名称（如 DEV、SIT、PROD 等，必须与配置文件中激活的环境匹配）；
-  - 目标 URL：待测试页面的地址；
-  - 浏览器类型：如 chrome、edge；
-  - 是否远程：布尔值，指示是否通过远程 WebDriver Hub 执行测试；
-  - 远程地址：当 `IsRemote` 为 True 时需提供该地址；
-  - 浏览器及驱动路径（如 ChromePath/ChromeDriverPath、EdgePath/EdgeDriverPath）；
-  - 浏览器选项：一般以 JSON 字符串给出（可以包含无头模式、窗口尺寸、各种启动参数）。
-
-- **全局变量设置：**
-  加载完配置文件后，测试生成器会在 Robot Framework 内设置全局变量（例如 `${active_environment}`），确保后续各个测试步骤所使用的环境数据、URL、浏览器设置以及变量能正确传递。
-
-#### 1.2 Excel 用例加载与数据验证
-
-- **核心加载模块：**
-  模块 `libraries/web/web_test_loader.py` 负责加载整个 Excel 文件，同时解析下面各个 Sheet 的数据。该模块不仅解析数据结构，还对各 Sheet 间的引用关系进行校验。
-
-- **加载的 Sheet 列表：**
-  1. **TestCases** Sheet
-     - 用于记录每个测试用例的基本信息（如用例ID、名称、描述、是否执行 Run、标签以及所属 Suite）。
-  2. **TestSteps** Sheet
-     - 定义具体的操作步骤，每行记录一个步骤，包括所属用例（Case ID）、步骤顺序（Step ID）、页面名称、模块名称、是否执行以及备注。
-  3. **TestData** Sheet
-     - 用于数据驱动测试。每条记录表示一个参数集合，字段包括：测试用例关联的 Case ID、数据集标识（Data Set）、参数名称（Parameter Name）、实际值（Value）及数据类型。
-  4. **Locators** Sheet
-     - 保存页面中的控件定位信息。主要字段包括 Page Name、Element Name、Locator Type（如 id、xpath、cssSelector 等）、Locator Value 以及描述说明。
-  5. **PageModules** Sheet
-     - 定义页面模块和功能区域。每个模块涉及页面名称、模块名称、操作时关联的元素名称、所调用的操作（Actions）、所需参数（Parameter Name，可有多个，用逗号分隔）、是否高亮（Highlight）、是否截屏（Screenshot）、等待时间（Wait）以及是否执行（Run）。
-  6. **WebEnvironments** Sheet
-     - 存放不同测试环境信息（参见上节环境信息说明），保证当前激活环境配置完整有效。
-  7. **CustomActions** Sheet（可选）
-     - 支持自定义操作扩展。当标准操作无法满足需求时，可通过此 Sheet 定义自定义 Python 脚本，自定义操作必须定义一个 `execute` 函数作为入口。
-  8. **EnvVariables**（可选）
-     - 用于定义全局环境变量，用于替换测试过程中动态数据。
-
-- **数据校验规则：**
-  模块加载后会对各 Sheet 进行数据完整性验证：
-  - **TestCases：** 检查必填字段（Case ID、Name、Run、Suite、Tags、Descriptions）是否存在。
-  - **TestSteps：** 每条操作步骤必须明确指明所属用例以及对应的页面和模块；并且严格按照 Step ID 的顺序排列。
-  - **PageModules 与 Locators：** 其中引用的页面名称、模块名称、元素名称需在对应 Sheet 中匹配，否则测试时将找不到调用对象。
-  - **WebEnvironments：** 必须包含当前激活环境所有必要的参数，否则创建 WebDriver 实例时会失败。
-  - **TestData：** 如果用例设计为数据驱动，则参数名称必须与页面模块中定义的参数一致，确保数据正确注入。
+**逻辑简要：**
+1. 解析命令行参数，把不同的布尔值（api, web, e2e, performance）存进一个字典。
+2. 找到第一个为 True 的测试类型，若都为 False 则默认执行 `e2e`。
+3. 调用 `UnifiedRobotCaseGenerator(test_type)` 生成 Robot Framework 测试套件，然后交给 `run_test_suite(suite)` 执行。
+4. `run_test_suite` 内部会执行：
+   - 将测试结果写入 `report/output.xml`
+   - 生成 HTML 报告 `report/report.html` 和 `report/log.html`
+   - 生成仪表盘统计信息（通过 DashboardGenerator, SummaryReportGenerator 等）
+5. 在测试过程中，若存在带有 `sanity check` 标签的用例失败，会自动跳过后续用例。
 
 ---
 
-### 2. 用例生成与测试执行
+### 四、整体执行流程（简要概览）
 
-#### 2.1 测试用例生成
+1. **配置加载**： 通过 `ConfigManager.load_yaml` 获取测试环境、测试用例路径等信息
+2. **首个初始化**： 在各测试模块（API / Web 等）启动时，设置 `${active_environment}` 并加载数据库、日志等全局工具
+3. **用例加载与校验**： 读取 Excel，用 DataFrame 形式存放（pandas），校验每个 Sheet 的完整度
+4. **生成测试套件**： 通过 `_generator.py` 文件（如 web_generator.py、api_generator.py 等）动态创建 Robot Framework 测试
+5. **执行测试**： 依次调用每个测试用例的关键词（如 `execute_api_test_case` 或 `execute_module`），期间会处理各种动态变量替换、前后置操作
+6. **生成报告**： 收集执行过程中的日志与错误信息，调用 Robot Framework 自带的 `ResultWriter` 或自定义模板插入统计图表等。
 
-- **生成器：**
-  模块 `libraries/robot/case/web_generator.py` 是 Web UI 用例生成器。该生成器按照以下步骤执行：
-  1. **解析 TestCases：**
-     根据 TestCases 表中记录的每个用例生成基本测试用例信息；
-  2. **构造测试步骤：**
-     遍历 TestSteps 表，根据每个步骤的 Page Name 与 Module Name 生成对应的 Robot Framework 调用语句。
-  3. **数据驱动：**
-     如果 TestData 表中存在对应数据集，那么对于一个 TestCase 会生成多个用例（每个数据集对应一组参数），保证数据替换与多轮测试。
-  4. **前后置操作：**
-     支持在 TestCases 中指定 TestSetup 与 TestTeardown（或通过特定标识在 TestSteps/Conditions 中调用），实现环境初始化、登录、登出、数据清理等逻辑。
-
-- **关键函数调用：**
-  - **WebActions 类：**
-    封装于 `libraries/web/web_actions.py` 中，整合所有操作函数（点击、输入、滚动、验证文本、等待操作等）。内部依赖各个子模块（例如 element_actions、javascript_actions、wait_actions、window_actions 等）。
-  - **Selenium WebDriver 调用：**
-    通过 `libraries/web/webdriver_factory.py` 根据环境配置创建 WebDriver 实例，并传递给 WebActions；支持远程和本地浏览器启动。
-
-#### 2.2 用例执行与验证
-
-- **操作执行：**
-  在生成的 Robot Framework 测试用例中，每一步测试语句会调用封装好的关键词（如 click、input、verify_text），这些关键词会被 WebActions 类内部调用并传入必要的参数。
-- **等待与验证：**
-  每个操作步骤后可设定等待时间（通过 TestSteps 中的 Wait 字段），确保页面资源加载与 AJAX 调用完成。
-- **验证逻辑：**
-  核心验证由 `verification_actions.py` 实现，支持验证页面标题、文本内容、元素状态（可见、启用、选中）、表格数据断言等；对于需要高精度验证的数据，也支持正则表达式匹配与部分匹配。
-- **日志记录：**
-  每一步操作无论成功与否都会记录日志，调用 `common/log_manager.py` 将日志写入文件，同时在控制台输出调试信息，方便后期追踪问题。
-
-- **前后置（Setup/Teardown）：**
-  支持在 TestCases 中配置专用的前置与后置操作，通过特殊标识让生成器自动调用对应的 Robot Framework 关键词。如登录前置操作、全局变量初始化、环境清理等逻辑。
+到此，第一部分主要介绍项目的整体结构与全局配置。下一部分将进入 API 测试模块的详细说明。
 
 ---
 
-### 3. Excel 用例文件填写要求与示例
+以下为自动化测试框架说明书的第二部分，重点介绍 API 测试模块的主要流程和 Excel 用例填写要点：
 
-#### 3.1 TestCases Sheet （用例基本信息）
+---
+## 第二部分：API 测试模块
 
-- **字段说明：**
-  - **Case ID：**
-    唯一标识符，例如 “UITC001”、“UITC002”，必须唯一。
-  - **Name：**
-    简要描述用例目的，如 “Login Test” 或 “User Registration”。
-  - **Descriptions：**
-    详细描述用例流程、预期效果及背景信息。
-  - **Run：**
-    是否执行该用例。填写 “Y” 表示执行，“N” 表示跳过。
-  - **Tags：**
-    用于用例分类及执行过滤，如 “regression, critical”，并可包含 “sanity check” 标签。
-  - **Suite：**
-    用例所属测试模块或套件名称，例如 “Login Module” 或 “User Module”。
+API 测试模块主要涵盖以下功能：
+1. **Excel 用例加载与数据校验**
+2. **请求体生成（Body Template + Body Default + Body Override）**
+3. **请求头生成（Headers Template）**
+4. **请求发送、响应解析、断言验证**
+5. **动态值与共享字段管理**
+6. **CheckWith、Sanity Check 等特殊标签和跳过逻辑**
 
-- **示例记录：**
-
-| Case ID | Name        | Descriptions               | Run | Tags               | Suite         |
-|---------|-------------|----------------------------|-----|--------------------|---------------|
-| UITC001 | Login Test  | 验证用户使用正确凭证登录     | Y   | regression, login  | Login Module  |
-| UITC002 | Logout Test | 测试退出登录功能是否正常      | Y   | regression         | Login Module  |
+下面将分别详述其实现和配置。
 
 ---
 
-#### 3.2 TestSteps Sheet （步骤定义）
+### 一、配置文件与初始化
 
-- **字段说明：**
-  - **Case ID：**
-    指明该步骤所属的测试用例，需与 TestCases 中的用例对应。
-  - **Step ID：**
-    执行顺序号，整数递增（如 1、2、3……）。
-  - **Page Name：**
-    页面名称，应与 PageModules 与 Locators 中的定义完全匹配，例如 “LoginPage”。
-  - **Module Name：**
-    指明使用的页面模块，如 “LoginForm”；测试用例生成器会根据 Page Name 与 Module Name 查找具体操作集合。
-  - **Run：**
-    指定该步骤是否执行，填写 “Y” 或 “N”。
-  - **备注：**（可选）
-    对当前步骤操作的说明和补充。
+框架对 API 测试的所有配置集中放在 `configs/api_test_config.yaml` 中，常用字段示例：
 
-- **示例记录：**
+```yaml
+active_environment: DEV
+test_cases_path: 'test_cases/api_test_cases.xlsx'
+clear_saved_fields_after_test: false
+# 额外可选字段
+tc_id_list:
+  - TC001
+tags:
+  - smoke
+```
 
-| Case ID | Step ID | Page Name  | Module Name | Run | 备注                  |
-|---------|---------|------------|-------------|-----|-----------------------|
-| UITC001 | 1       | LoginPage  | LoginForm   | Y   | 输入用户名与密码      |
-| UITC001 | 2       | LoginPage  | ClickLogin  | Y   | 单击登录按钮          |
+- **active_environment**：当前激活环境(DEV、SIT、UAT等)，会与 `db_config.yaml`、**Endpoints** 表结合。
+- **test_cases_path**：指定 Excel 用例文件路径，如 `test_cases/api_test_cases.xlsx`。
+- **clear_saved_fields_after_test**：在每次用例执行完后，是否清空已保存的字段（类似 Token、user_id 等）。
+- **tc_id_list** 和 **tags**：可选的过滤器，仅执行指定的用例 ID 或带某些标签的用例。
+
+#### 1.1 初始化流程
+
+1. **加载配置**：
+   调用 `load_yaml` 读取 `api_test_config.yaml`，同时载入数据库配置 `db_config.yaml`；
+2. **设置全局变量**：
+   将 `active_environment` 等值通过 Robot Framework 内部的 `BuiltIn().set_global_variable("${active_environment}", value)` 设为全局；
+3. **初始化组件**：
+   - 数据库连接初始化（见 `db_operator.py`）
+   - `api_test_loader` 解析 Excel 用例表
+   - 准备 BodyGenerator、HeadersGenerator、RequestSender、ResponseHandler 等执行核心
+
+只要执行 `APITestKeywords` 或在用例生成时导入 `libraries.api.api_test_keywords`，便会自动做上述初始化。
 
 ---
 
-#### 3.3 TestData Sheet （数据驱动测试数据）
+### 二、API Excel 用例结构与加载
 
-- **字段说明：**
-  - **Case ID：**
-    与 TestCases 中测试用例对应。
-  - **Data Set：**
-    数据集标识，如 “Set1”、“Set2”，用于区分同一用例的不同数据组合。
-  - **Parameter Name：**
-    页面操作关键词中所使用的参数名，例如 “username”、“password”。
-  - **Value：**
-    实际传入的值，如 “testuser”，“123456”。
-  - **Data Type：**
-    数据类型描述，如 string、integer、json 等，便于框架进行适当转换。
+本框架约定 `test_cases/api_test_cases.xlsx` 包含以下几个 Sheet：
 
-- **示例记录：**
+1. **API**
+2. **BodyTemplates**
+3. **BodyDefaults**
+4. **Headers**
+5. **Endpoints**
+
+其中：
+
+- **API (主用例表)**
+  存放所有待执行的接口用例信息，一行对应一个用例。
+- **BodyTemplates**
+  定义请求体模板，可包含 Jinja2 语法。
+- **BodyDefaults**
+  提供默认数据结构，通常与 BodyTemplates 结合使用。
+- **Headers**
+  定义可复用的请求头模板（yaml 格式）。
+- **Endpoints**
+  不同环境（DEV、SIT、UAT等）下接口的 URL 路径和请求方法。
+
+#### 2.1 API Sheet 主要字段说明
+
+| 字段            | 说明                                                         | 示例                                    |
+|-----------------|-------------------------------------------------------------|-----------------------------------------|
+| **TCID**        | 用例唯一标识                                               | "TC001"                                 |
+| **Name**        | 用例名称                                                   | “CreateUserAPI”                         |
+| **Descriptions**| 用例详细描述                                               | “验证创建用户的接口（必填字段校验等）”   |
+| **Run**         | 是否执行 ("Y"或"N")                                       | “Y”                                     |
+| **Suite**       | 用例归属分组                                             | “UserAPI”                               |
+| **Tags**        | 逗号分隔的标签列表（可包含 "sanity check"）                  | “critical, sanity check”                |
+| **Endpoint**    | 使用的接口名称，对应 Endpoints Sheet 的 Endpoint 字段        | “CreateUser”                            |
+| **Body Template** | BodyTemplates 表中的 TemplateName                           | “CreateUserTpl”                         |
+| **Body Default**  | BodyDefaults 表中的 Name                                   | “DefaultUserBody”                      |
+| **Body Override** | 用于覆盖或补充的 JSON 字符串，可含动态值占位符            | `{"username": "${USER_ID}"}`           |
+| **Headers**     | 对应 Headers 中的 HeaderName                               | “AuthHeader”                            |
+| **Exp Result**  | 预期结果或断言逻辑（JSONPath 断言、数据库检查等）          | `$.status=200` 或多行                |
+| **Save Fields** | 从响应中提取要保存的字段                                   | `assign_value($.token, MyToken)`       |
+| **Conditions**  | 预置条件（如 [CheckWith]TC002）或 [TestSetup] / [TestTeardown]   | “\[CheckWith\]TC002,TC003”             |
+| **Wait**        | 用例执行完成后等待>0秒                                     | “2”                                    |
+
+**注意**：
+- `sanity check`：用例标签中若包含该字符串（不区分大小写），则一旦该用例失败，后续其他用例自动跳过。
+- `Run` 为 “Y” 表示该用例会执行，若指定了 `tc_id_list` + `tags` 则只执行符合过滤条件的用例。
+- `Exp Result` 支持多行写法，每行可表示一个断言，如：
+  ```
+  $.result.code=0
+  $.data.username=${EXPECTED_USER}
+  db_dbname.Table.Column[Filter=a][OrderBy=CreateTime]=ExpectedVal
+  ```
+- `Conditions` 中常见标记：
+  - `[CheckWith]TC002`：执行当前用例前后都会执行 TC002，用于检查数据是否发生预期变化；
+  - `[TestSetup]TC003`：把 TC003 当做本用例 Setup
+  - `[TestTeardown]TC004`：把 TC004 当 Teardown
+
+---
+
+#### 2.2 BodyTemplates Sheet
+
+| 字段          | 说明                  | 示例                                   |
+|---------------|-----------------------|----------------------------------------|
+| TemplateName  | 模板名称             | "CreateUserTpl"                        |
+| Content       | 模板内容（JSON/XML） | `{ "username": "{{username}}", ... }`  |
+| Format        | "json"/"xml"         | "json"                                 |
+
+- **Content** 可使用 Jinja2 语法。
+- 若 `Format=json`，表示最终生成 JSON 请求体；若 `Format=xml`，则生成 XML 字符串并设置合适的 Content-Type。
+
+---
+
+#### 2.3 BodyDefaults Sheet
+
+| 字段 | 说明             | 示例                                         |
+|------|------------------|----------------------------------------------|
+| Name | 默认为一套数据  | "DefaultUserBody"                            |
+| Content | JSON 格式存储默认值 | `{ "age": 18, "country": "china"} `    |
+
+- 框架会将 `Body Default` 中的内容和 `Body Override` JSON 合并，用后者覆盖前者的同名字段，再跟 BodyTemplates 进行渲染，得到最终请求体。
+
+---
+
+#### 2.4 Headers Sheet
+
+| 字段       | 说明                            | 示例                                              |
+|------------|---------------------------------|---------------------------------------------------|
+| HeaderName | 模板名称                        | "AuthHeader"                                      |
+| Content    | YAML 格式的 Header 内容         | `Content-Type: application/json\nAuthorization: Bearer ${MyToken}` |
+
+- 支持在 `Content` 中使用 `${VAR_NAME}` 做动态替换，也能用 `{{ placeholder }}` 生成动态值。
+
+---
+
+#### 2.5 Endpoints Sheet
+
+| 字段         | 说明                                                      | 示例                                  |
+|--------------|-----------------------------------------------------------|---------------------------------------|
+| Environment  | 环境名称(DEV/UAT等)，与 `api_test_config.yaml` 一致       | "DEV"                                  |
+| Endpoint     | 接口名称，需与 API Sheet 的 Endpoint 匹配                 | "CreateUser"                           |
+| Method       | HTTP 方法 (GET/POST/PUT/DELETE/PATCH)                    | “POST”                                 |
+| Path         | URL 路径（可含公共域名或仅是 path，视需求而定）           | "/api/v1/users/create"                |
+
+- 测试时根据 `active_environment` 和给定的 Endpoint 名字，找到所需的 URL + Method；若找不到则会报错。
+- 对于完整域名，可以把 Path 写成 `https://dev.xxx.com/api/v1/...`，也能结合通用域名前缀等方式自行扩展。
+
+---
+
+### 三、请求生成与执行
+
+#### 3.1 Body 生成
+
+在执行每个用例时，框架会依次进行：
+
+1. **读取 Body Template**（在 BodyTemplates 中找 TemplateName 匹配）
+2. **读 Body Default**（BodyDefaults 根据 Name 匹配）
+3. **应用 Body Override**（将 Override 与默认值合并）
+4. **渲染模板**： 用 TemplateRenderer（Jinja2）将最终字典数据套进模板 `Content`；
+5. **动态值替换**：
+   - `{{xxx}}` -> variable_generator.py 生成动态值(如 uuid4、timestamp等)
+   - `${VAR_NAME}` -> Robot 全局变量
+生成完成后，若 `Format=json` 则会调用 `json.loads` 来得到 dict；若是 `xml` 则保留字符串。
+
+---
+
+#### 3.2 Headers 生成
+
+同理：
+
+1. **通过 HeadersGenerator** 找到 Headers Sheet 中对应的 HeaderName
+2. **读取 Content(YAML)** 并解析成字典
+3. **替换**：
+   - `${VAR_NAME}` -> Robot 全局变量（如 `${MyToken}`）
+   - `{{xxx}}` -> variable_generator.py 生成动态值
+4. 合并进请求头
+
+---
+
+#### 3.3 请求发送
+
+调用 `request_sender.py` 中的 `send_request(url, method, headers, body, format_type)` 发出 HTTP 请求。
+- 若 format_type="json"，则 `requests` 会用 `json=body` 方式；
+- 若 format_type="xml"，则 `headers['Content-Type'] = 'application/xml'` 并使用 `data=body`。
+
+捕获错误日志并记录执行时间 `execution_time`。
+
+---
+
+### 四、响应处理与校验
+
+1. **获取响应并解析**
+   - 若是 JSON，会自动 `json.loads`；若是 XML，会 `xmltodict.parse` 转成 JSON
+2. **Exp Result** 中指定的断言逐行解析
+   - `$.status=200` 表示 JSONPath 找到 `status` 字段等于200
+   - `db_xxx.table.column[...] = val` 表示数据库断言
+   - `TC02.$xxx=+1` 表示动态 Diff 检查（CheckWith 场景），对比前后值是否差1 等
+3. **保存字段**
+   - 在 `Save Fields` 一列中，如 `assign_value($.token, MyToken)`，会把 JSONPath `$.token` 提取到变量 `MyToken`，并写入 `configs/saved_fields.yaml`
+   - 后续用例中如 `Body Override` = `{"Authorization": "Bearer ${MyToken}"}` 就能自动替换
+
+---
+
+### 五、CheckWith 与 Sanity Check
+
+#### 5.1 [CheckWith] 机制
+
+在 `Conditions` 列写 `[CheckWith]TC002` 表示执行该用例前后，都会额外执行一次 TC002：
+
+- **前置检查**：获取初始数据库/接口状态
+- **主用例执行**：对被测接口做操作
+- **后置检查**：再次运行 TC002，用以对比前后数据差异（比如数量变化）
+
+在断言时可用 `TC002.$response.data.count=+1` 判断该用例执行前后计数差是否符合预期。
+
+#### 5.2 Sanity Check 跳过逻辑
+
+如果某个用例标签中含 `sanity check`，且其执行结果失败，则会在 `end_test` 时设置 `${skip_on_sanity_check_failure}=True`。后续用例在执行时，若检测到此标志，则 `BuiltIn().skip("Skipping...")` 跳过。
+
+---
+
+### 六、Excel 用例示例
+
+**示例：**
+假设在 API Sheet 中有记录：
+
+| TCID  | Name          | Suite      | Run | Tags               | Endpoint       | Body Template | Body Default   | Body Override                       | Headers     | Exp Result                 | Save Fields                     | Conditions           | Wait |
+|-------|--------------|------------|-----|--------------------|---------------|---------------|---------------|-------------------------------------|------------|---------------------------|----------------------------------|----------------------|------|
+| TC001 | Create User   | UserAPI    | Y   | critical           | CreateUser    | CreateUserTpl | DefaultUserBody| {"name": "${USER_NAME}", "age": 30} | AuthHeader | $.status=201<br/>$.id!="" | assign_value($.token,UserToken) | [CheckWith]TC900     | 0    |
+| TC002 | Sanity Check  | UserAPI    | Y   | sanity check       | HealthCheck   | HealthTpl     | DefaultHealth  |                                     | BasicHeader| $.status=200             |                                  |                      | 0    |
+| TC900 | Check Counts  | UserAPI    | N   |                    | CountUser     | CountTpl      | DefaultCount   |                                     | AuthHeader | $.status=200<br/>         | assign_value($.countCountUsers)  |                      | 0    |
+
+- `TC001`：主用例，创建用户，执行前后都要跑一次 `TC900`；断言 `status=201` 并保存 token 到 `UserToken`。
+- `TC002`：一个健康检查接口带 `sanity check` 标签，一旦此用例失败，就跳过其他任何用例。
+- `TC900`：用来做 CheckWith 的辅助用例，此处 Run=N，一般不直接执行；用来统计用户数或做校验对比。
+
+**Headers 示例** (Headers Sheet):
+| HeaderName | Content                                            |
+|------------|----------------------------------------------------|
+| AuthHeader | Content-Type: application/json<br/>Authorization: Bearer ${UserToken} |
+
+**Endpoints 示例** (Endpoints Sheet):
+| Environment | Endpoint    | Method | Path                           |
+|------------|-------------|--------|--------------------------------|
+| DEV        | CreateUser  | POST   | https://dev.example.com/api/v1/users/create  |
+| DEV        | HealthCheck | GET    | https://dev.example.com/api/v1/health        |
+| DEV        | CountUser   | GET    | https://dev.example.com/api/v1/users/count   |
+
+---
+
+### 七、生成与执行
+
+1. **用例生成**： `APIRobotCaseGenerator` 会筛选出 Run=Y 的用例（或符合 `tc_id_list` / `tags`），为其创建 Robot Framework 测试，内部关键步骤如 `execute_api_test_case(TCID)`。
+2. **存储逻辑**： 若 `clear_saved_fields_after_test`=true，则每个用例执行完后都会清空 `saved_fields.yaml`。
+3. **日志与报告**：
+   - 对于请求和响应内容，会记录在 `report/robot_testing.log` 中；
+   - 最终生成 `report/output.xml -> report.html/log.html`，并可加 dashboards。
+
+**执行方式**： 
+```bash
+python main.py --api
+```
+或直接指定 `--e2e`、`--web`，若优先发现 `--api=True` 则跑 API 测试。
+
+---
+
+**到此结束：** API 测试部分主要介绍了配置文件、Excel 用例组织方式、请求体/头生成与动态变量替换、CheckWith 以及 Sanity Check 特性等。
+
+以下为本自动化测试框架的第三部分说明，重点介绍 **Web UI 测试模块** 的原理、Excel 用例格式以及执行流程。请在阅读前确保已通读前两部分，以便对全局结构和配置有充分了解。
+
+---
+
+## 第三部分：Web UI 测试模块
+
+Web UI 测试通过 Selenium WebDriver 驱动浏览器，根据 Excel 中对页面元素、测试步骤、数据参数的描述动态生成 Robot Framework 测试用例。其核心目标是实现以下功能：
+1. **使用 Page Object 模式提升可维护性**
+2. **多环境支持**：可在 DEV、SIT、UAT 等不同环境间快速切换
+3. **数据驱动**：同一套测试逻辑可结合多组数据重复执行
+4. **关键操作自动封装**：点击、输入、滚动、等待、截图、断言等
+5. **灵活扩展**：支持自定义操作（CustomActions），可编写自定义 Python 逻辑
+
+下文将详细说明 Web UI 测试的配置文件、Excel 用例结构，以及用例生成与执行过程。
+
+---
+
+### 一、配置文件与初始化
+
+#### 1.1 web_test_config.yaml
+
+与 API 类似，Web 测试配置信息保存在 `configs/web_test_config.yaml`（下列字段仅供参考，实际可根据项目需要调整）：
+
+```yaml
+active_environment: SIT
+test_cases_path : test_cases/web_test_cases.xlsx
+tc_id_list:           # 若要只执行某些用例ID，可在此填写
+tags:                 # 若要只执行带某些标签的用例，可在此填写
+```
+
+关键字段：
+- **active_environment**：指示当前环境，如 SIT、UAT、DEV 等。
+- **test_cases_path**：Web 测试用例 Excel 文件位置（默认 `test_cases/web_test_cases.xlsx`）。
+- **tc_id_list** / **tags**：和 API 测试类似，用于过滤执行特定用例或附带某些标签的用例。
+
+#### 1.2 Environment 说明
+
+另外，Web 环境中的浏览器设置、远程/本地执行、URL 等信息，一般在 WebEnvironments Sheet（详见后文）内指定。框架在加载时，会结合 `active_environment` 与 WebEnvironments 的配置来创建 WebDriver 实例。
+
+1. **二次初始化**
+   - 当 Web 用例正式执行时，会根据 `active_environment` 读取对应配置行内容（如 ChromePath, EdgePath, 是否 headless, 是否远程等）。
+   - 通过 `webdriver_factory.py` 选择合适浏览器并启动实例。
+
+2. **全局变量**
+   - 同步环境相关参数到 `${active_environment}` 并可能还会设置 `${BASE_URL}`、`${REMOTE_URL}` 等，通过 `BuiltIn().set_global_variable`。
+
+---
+
+### 二、Web UI 测试用例 Excel 结构
+
+默认框架要求 `test_cases_path` 指向的 Excel 文件包含以下几个核心 Sheet：
+
+1. **TestCases** (主测试用例信息)
+2. **TestSteps** (详细步骤)
+3. **TestData** (数据驱动参数)
+4. **Locators** (页面元素定位)
+5. **PageModules** (页面与模块逻辑)
+6. **WebEnvironments** (多环境配置信息)
+7. **CustomActions** (可选，自定义操作扩展)
+8. **EnvVariables** (可选，环境相关的额外变量)
+
+下面依次介绍各 Sheet 的目的和字段。
+
+---
+
+#### 2.1 TestCases Sheet
+
+记录 Web 测试用例的基本信息，每一行对应一个用例：
+
+| 字段          | 说明                                         | 示例                                   |
+|---------------|----------------------------------------------|----------------------------------------|
+| Case ID       | 用例唯一标识                                 | “UITC001”                              |
+| Name          | 用例名称                                     | “Login Test”                           |
+| Descriptions  | 用例详细描述                                 | “验证用户使用正确凭证能成功登录系统”    |
+| Run           | 是否执行 (“Y”/“N”)                           | “Y”                                    |
+| Tags          | 标签（逗号分隔），支持 “sanity check”         | “regression, sanity check”             |
+| Suite         | 测试所属套件/模块名称(可选)                  | “LoginModule”                          |
+
+**说明：**
+- *Case ID*：如 “UITC001”，必须唯一，后续与 `TestSteps`、`TestData` 等关联。
+- *Tags*：如果带 “sanity check”，则此用例失败后会跳过后续用例。
+- *Run*：如果为 “N”，此用例不生成测试。
+
+---
+
+#### 2.2 TestSteps Sheet
+
+每条记录代表测试用例中的某一步操作。主要字段：
+
+| 字段        | 说明                                                   | 示例                                                     |
+|-------------|--------------------------------------------------------|----------------------------------------------------------|
+| Case ID     | 与 TestCases 中相同                                   | “UITC001”                                                |
+| Step ID     | 步骤序号，决定执行顺序                                 | 1, 2, 3 …                                               |
+| Page Name   | 页面名称，对应 PageModules 或 Locators 中的 Page       | “LoginPage”                                              |
+| Module Name | 模块名称，对应 PageModules 中的 Module                | “LoginForm”                                              |
+| Run         | 是否执行此步骤 (“Y”/“N”)                              | “Y”                                                      |
+| 备注        | 可选，说明操作意图                                    | “输入用户名密码，点击登录”                               |
+
+**执行流程**：
+- 测试生成时，会依照 Step ID 顺序将每行操作转换为 Robot Framework 关键词调用，如 `execute_module("LoginPage", "LoginForm", data_set)`。
+- 若 `Module Name` = “API”，可在 E2E 测试场景里调用 API 逻辑。
+
+---
+
+#### 2.3 TestData Sheet
+
+用于数据驱动测试，一个用例可以有多行数据，每行代表一组参数：
+
+| 字段           | 说明                               | 示例                               |
+|----------------|------------------------------------|------------------------------------|
+| Case ID        | 与 TestCases 中的 Case ID 一致      | “UITC001”                          |
+| Data Set       | 区分同一用例下的多组数据           | “Set1” / “Set2”                    |
+| Parameter Name | 在 PageModules 里定义的参数名称     | “username”                          |
+| Value          | 实际传入值                         | “testuser1”                        |
+| Data Type      | 用于做类型转换（string, int, json等） | “string”                           |
+
+**生成后的结果**：
+- 如果某个用例有 2 组数据 (Data Set= “Set1”, “Set2”)，最终会生成 2 个子用例，如 “UITC001.Set1”、“UITC001.Set2”。
+- 在执行时，`execute_module` 或自定义关键字会把对应参数注入到操作里。
+
+---
+
+#### 2.4 Locators Sheet
+
+定位页面中每个元素，主要字段：
+
+| 字段         | 说明                                                | 示例                                  |
+|--------------|-----------------------------------------------------|---------------------------------------|
+| Page Name    | 页面名称，以区分不同页面或组件                       | “LoginPage”                           |
+| Element Name | 元素标识，在 PageModules 中引用                      | “username_field”、“login_button”      |
+| Locator Type | 定位方法：id、name、xpath、css 等                    | “id”                                  |
+| Locator Value| 具体定位表达式                                      | “username” 或 “//button[@id='login']” |
+| Description  | 对该元素的说明                                      | “用户名输入框”                         |
+
+**举例**：
+```
+Page Name | Element Name     | Locator Type | Locator Value            | Description
+LoginPage | username_field   | id           | username                | 用户名输入框
+LoginPage | password_field   | id           | password                | 密码输入框
+LoginPage | login_button     | xpath        | //button[text()='Login']| 登录按钮
+```
+
+---
+
+#### 2.5 PageModules Sheet
+
+把页面拆分为多个模块，每个模块包含若干操作。每条记录描述一个操作（或动作）：
+
+| 字段         | 说明                                         | 示例                                                  |
+|--------------|----------------------------------------------|-------------------------------------------------------|
+| Page Name    | 对应 Locators 中的 Page Name                 | “LoginPage”                                           |
+| Module Name  | 模块名称                                     | “LoginForm”                                           |
+| Element Name | 此操作涉及的元素名称 (可为空)                | “username_field”                                      |
+| Actions      | 具体动作，比如 click、input、verify_text 等    | “click”/“send_keys”/“highlight_element” 等            |
+| Parameter Name| 逗号分隔的参数列表                          | “username,password”                                   |
+| Highlight    | 是否在执行前高亮元素 ("Y"/"N")              | “Y”                                                   |
+| Screenshot   | 是否在执行后截图 ("Y"/"N")                   | “N”                                                   |
+| Wait         | 操作完成后等待多少秒                        | “1” 或 “2”，留空表示不等待                           |
+| Run          | 是否执行此动作 ("Y"/"N")                     | “Y”                                                   |
+
+**执行过程：**
+- 当用例在 TestSteps 中指定 “Page Name=LoginPage”、“Module Name=LoginForm”，框架会查找 PageModules 中相应记录，然后逐行执行 `Actions`。
+- `Element Name` 则映射到 Locators 中找真实定位器 `(By.ID, "username")` 等。
+- `Parameter Name`：若是 “username”，则从 `TestData` 里读取到具体值。
+
+---
+
+#### 2.6 WebEnvironments Sheet
+
+框架支持多环境切换，配置示例：
+
+| 字段         | 说明                                      | 示例                                     |
+|--------------|-------------------------------------------|------------------------------------------|
+| Environment  | 环境名称 (DEV, SIT, UAT, PROD 等)         | “SIT”                                    |
+| TargetURL    | 测试页面基 URL                           | “https://sit.example.com”               |
+| Rounds       | 若结合性能场景可用，多次执行次数（可选）   | “5”                                      |
+| LogDetails   | 是否详细记录调试信息 (“Y”/“N”)             | “Y”                                      |
+| Browser      | 浏览器类型 (“chrome”/“edge”)              | “chrome”                                 |
+| IsRemote     | 是否远程 (“True”/“False”)                 | “False”                                  |
+| RemoteURL    | 远程地址（IsRemote=True时必填）           | “http://127.0.0.1:4444/wd/hub”           |
+| ChromePath   | 本地 Chrome 浏览器可执行文件路径           | “C:\Program Files\Google\Chrome\...”     |
+| ChromeDriverPath | ChromeDriver 路径                     | “C:\Drivers\chromedriver.exe”            |
+| EdgePath     | Edge 浏览器可执行文件路径                 |                                          |
+| EdgeDriverPath| EdgeDriver 路径                          |                                          |
+| BrowserOptions| 各种启动参数，以 JSON 字符串表示         | `{"headless": true, "window-size": "1920,1080"}` |
+
+执行前，脚本会根据 `active_environment` 找到对应行，从而确定浏览器类型、本地或远程模式等。
+
+---
+
+#### 2.7 CustomActions Sheet（可选）
+
+当内建的操作不足以满足需求时，可在 `CustomActions` 表中编写自定义 Python 逻辑。字段示例：
+
+| 字段        | 说明                                  | 示例                                                                                                  |
+|-------------|---------------------------------------|-------------------------------------------------------------------------------------------------------|
+| Action Name | 自定义操作名称，在 PageModules 或 TestSteps 中调用 | “CustomScroll”                                                                                         |
+| Description | 对操作的简单描述                      | “页面滚动到底部”                                                                                       |
+| Python Code | 实际 Python 代码，需要定义 execute 函数 | `def execute(element, web_actions, *args, **kwargs):\n    web_actions.execute_script("window.scrollTo(0, document.body.scrollHeight)")` |
+
+**执行时**会调用 `custom_action_executor.py`，它会将 Python Code 动态解析、执行，进而实现自定义逻辑。
+
+---
+
+### 三、用例生成与执行过程
+
+1. **加载Excel**：
+   （在 `web_test_loader.py`）读取 TestCases、TestSteps、TestData、Locators、PageModules、WebEnvironments 等，校验引用关系、Run=“Y”标识等。
+2. **过滤用例**：
+   根据 `tc_id_list` 和 `tags` 筛选要执行的用例，如只执行标记为 “regression” 的测试。
+3. **创建测试套件**：
+   `WebRobotCaseGenerator`（或 E2E 场景则是 `E2ERobotCaseGenerator`）把筛选出的用例分组到 Robot Framework Suite 里，每个用例再根据 TestData 生成多个子用例。
+4. **生成关键步骤**：
+   对每个用例的 TestSteps，各步骤调用 `execute_module(PageName, ModuleName, data_set)`。
+   - `execute_module` 内部查询 PageModules 中该模块所有 `Run=Y` 的动作顺序，并根据 `Element Name` 找到 Locators。
+   - 执行 `Highlight`、`Screenshot`、`Wait`、`Actions` 等逻辑，若需要参数就从 data_set 里获取。
+5. **启动 WebDriver**：
+   - 根据 WebEnvironments 里对应行创建浏览器实例（Chrome/Edge/本地或远程），加载 URL 并开始执行步骤。
+   - 在执行完后 `suite.teardown` 会调用 `close_browser`。
+6. **断言与日志**：
+   - 对元素可见性、文本内容、标题、等待消失、表格检验等都可以调用 `VerificationActions` 中的方法；
+   - 如果发生异常，会记录日志并在 Robot Framework 报告中显示。
+7. **生成报告**：
+   与 API 一样，执行完后得到 `report.html`、`log.html`，并可查看每一步截屏或高亮等。
+
+---
+
+### 四、常见示例
+
+**Example**：以“登录测试”为例
+
+- `TestCases`：
+
+| Case ID  | Name                | Descriptions             | Run | Tags             | Suite         |
+|----------|---------------------|--------------------------|-----|------------------|---------------|
+| UITC001  | Login Test (Valid )| 测试合法账号登录成功     | Y   | regression, login | LoginModule   |
+
+- `TestSteps`：
+
+| Case ID | Step ID | Page Name  | Module Name | Run | 备注              |
+|---------|--------|------------|------------|-----|-------------------|
+| UITC001 | 1      | LoginPage  | LoginForm  | Y   | 输入用户名和密码  |
+| UITC001 | 2      | LoginPage  | ClickLogin | Y   | 点击登录按钮      |
+
+- `TestData`：
 
 | Case ID | Data Set | Parameter Name | Value      | Data Type |
-|---------|----------|----------------|------------|-----------|
-| UITC001 | Set1     | username       | testuser1  | string    |
-| UITC001 | Set1     | password       | 123456     | string    |
-| UITC001 | Set2     | username       | testuser2  | string    |
-| UITC001 | Set2     | password       | abcdef     | string    |
+|---------|---------|----------------|------------|----------|
+| UITC001 | Set1     | username       | testuser1  | string   |
+| UITC001 | Set1     | password       | 123456     | string   |
+| UITC001 | Set2     | username       | testuser2  | string   |
+| UITC001 | Set2     | password       | abcdef     | string   |
+
+- `Locators`：
+
+| Page Name | Element Name     | Locator Type | Locator Value         | Description        |
+|-----------|------------------|-------------|-----------------------|--------------------|
+| LoginPage | username_field   | id          | username             | 用户名输入框       |
+| LoginPage | password_field   | id          | password             | 密码输入框         |
+| LoginPage | login_button     | xpath       | //button[@id='login']| 登录按钮           |
+
+- `PageModules`：
+
+| Page Name | Module Name | Element Name     | Actions    | Parameter Name    | Highlight | Screenshot | Wait | Run |
+|-----------|------------|------------------|-----------|-------------------|-----------|-----------|------|-----|
+| LoginPage | LoginForm  | username_field   | send_keys | username         | Y         | N         | 0    | Y   |
+| LoginPage | LoginForm  | password_field   | send_keys | password         | Y         | N         | 0    | Y   |
+| LoginPage | ClickLogin | login_button     | click     |                  | Y         | Y         | 1    | Y   |
+
+**执行效果**：
+1. 生成由 `UITC001` 用例，结合 `Set1`、`Set2` 两组数据 -> “UITC001.Set1”，“UITC001.Set2”。
+2. 在“UITC001.Set1”里，会先以 username=testuser1, password=123456， 调用 `send_keys(username_field, "testuser1")`、`send_keys(password_field, "123456")`，再 `click(login_button)`。
+3. 如果 `Highlight=Y`，执行时元素会闪烁显示；若 `Screenshot=Y`，则自动在日志中插入截图。
+4. 等待 1 秒 (`Wait=1`) 后再进行下一步或结束。
 
 ---
 
-#### 3.4 Locators Sheet （元素定位信息）
+### 五、运行方式与日志报告
 
-- **字段说明：**
-  - **Page Name：**
-    页面名称，必须与 TestSteps 和 PageModules 中使用的一致。
-  - **Element Name：**
-    控件的唯一标识符，如 “username_field”、“login_button”。
-  - **Locator Type：**
-    定位方法（id、name、xpath、cssSelector、class 等）。
-  - **Locator Value：**
-    具体的定位表达式，如 `//input[@id='username']` 或 “username”。
-  - **Description：**
-    元素描述，有助于后期维护与理解。
-
-- **示例记录：**
-
-| Page Name | Element Name   | Locator Type | Locator Value                | Description       |
-|-----------|----------------|--------------|------------------------------|-------------------|
-| LoginPage | username_field | id           | username                     | 用户名输入框       |
-| LoginPage | password_field | id           | password                     | 密码输入框         |
-| LoginPage | login_button   | xpath        | //button[text()='Login']     | 登录按钮           |
+- 通过命令 `python main.py --web` 启动 Web 测试。如包含 `--api` / `--e2e` / `--performance` 参数，则分别执行另外的流程。
+- 测试结果将输出至 `report/` 文件夹：
+  - `report.html`、`log.html`：Robot Framework 的详细报告与执行日志；
+  - `robot_testing.log`：按照 `logging_config.yaml` 定义的日志文件，记录所有操作。
+- 若用例带有 “sanity check” 标签并失败，会跳过其他用例；若想只执行部分用例，可指定 `--api` 或 `--web` 并在 config 中设置 `tc_id_list` 或 `tags`。
 
 ---
 
-#### 3.5 PageModules Sheet （页面模块/功能区域定义）
+### 六、注意与扩展
 
-- **字段说明：**
-  - **Page Name：**
-    模块所在页面，同样需与 Locators 及 TestSteps 中的页面名称一致。
-  - **Module Name：**
-    模块名称，标识该操作集合，如 “LoginForm”。
-  - **Element Name：**
-    若操作中涉及特定元素，可在此指定（需要在 Locators 表中定义）；也可为空（部分操作可能内部不直接引用特定元素）。
-  - **Actions：**
-    具体操作关键词，如 “click”、“input”、“verify_text”，调用 WebActions 定义的关键词。
-  - **Parameter Name：**
-    如操作需要传入的参数，可用逗号分隔多个参数，例如 “username,password”或 “text”。
-  - **Highlight：**
-    操作时是否对元素进行高亮显示，填写 “Y” 或 “N”。
-  - **Screenshot：**
-    操作结束后是否截图，填写 “Y” 或 “N”。
-  - **Wait：**
-    辅助等待时间，单位秒，如 1、2、3 秒，可为空表示不等待。
-  - **Run：**
-    是否执行此模块，填写 “Y” 或 “N”。
-
-- **示例记录：**
-
-| Page Name | Module Name | Element Name   | Actions    | Parameter Name   | Highlight | Screenshot | Wait | Run |
-|-----------|-------------|----------------|------------|------------------|-----------|------------|------|-----|
-| LoginPage | LoginForm   | username_field | input      | username         | Y         | N          | 1    | Y   |
-| LoginPage | LoginForm   | password_field | input      | password         | Y         | N          | 1    | Y   |
-| LoginPage | ClickLogin  | login_button   | click      |                  | N         | Y          | 2    | Y   |
+1. **页面元素更新**：项目迭代时，如果 ID、xpath 等定位器改变，需要及时维护 Locators 与 PageModules，以免定位失败。
+2. **数据驱动**：使用 TestData 可大幅减少重复编辑，建议采用多个 `Data Set` 提升测试覆盖。
+3. **自定义操作**：通过 CustomActions Sheet 与 `custom_action_executor.py`，可以定义任何 Python 逻辑，比如复杂 JS 注入、文件上传下载、或多步骤操作封装。
+4. **断言**：常见断言在 `verification_actions.py`，包含 text校验、element可见性、是否选中等；也可写自定义断言。
+5. **环境选择**：若在 WebEnvironments 中定义多个环境（DEV/SIT等），修改 `web_test_config.yaml` 的 `active_environment` 即可快速切换浏览器设置和 Url。
 
 ---
 
-#### 3.6 WebEnvironments Sheet （环境配置信息）
+综上，第三部分主要阐述了 Web UI 测试模块如何通过 Excel 用例进行页面元素定位、步骤执行与数据驱动，并结合多环境与自定义操作机制达成高效的 Web UI 自动化测试。下一部分将介绍 **E2E 测试**（API + Web 结合）或 **性能测试** 的详细内容。
 
-- **字段说明：**
-  - **Environment：**
-    环境名称，如 DEV、SIT、PROD；必须与 `configs/web_test_config.yaml` 中设置的激活环境一致。
-  - **TargetURL：**
-    当前测试环境的目标地址，例如 `https://dev.example.com`。
-  - **Browser：**
-    浏览器类型，如 chrome、edge（不区分大小写）。
-  - **IsRemote：**
-    是否使用远程 WebDriver，填写布尔值（True 或 False）。
-  - **RemoteURL：**
-    当 IsRemote 为 True 时提供远程 WebDriver Hub 地址。
-  - **ChromePath / ChromeDriverPath：**
-    对于本地执行，指定 Chrome 浏览器及驱动路径。
-  - **EdgePath / EdgeDriverPath：**
-    指定 Edge 浏览器及其驱动路径。
-  - **BrowserOptions：**
-    浏览器启动参数，一般以 JSON 格式字符串表示。
 
-- **示例记录：**
-
-| Environment | TargetURL                     | Browser | IsRemote | RemoteURL                | ChromeDriverPath              | BrowserOptions                                         |
-|-------------|-------------------------------|---------|----------|--------------------------|-------------------------------|--------------------------------------------------------|
-| DEV         | https://dev.example.com       | chrome  | False    |                          | C:\Drivers\chromedriver.exe   | {"headless": false, "window-size": "1920,1080"}         |
-| PROD        | https://www.example.com       | chrome  | False    |                          | C:\Drivers\chromedriver.exe   | {"headless": true, "window-size": "1920,1080"}          |
+以下为本自动化测试框架的 **第四部分说明**，介绍如何在同一套框架下集成并执行**性能测试**（Performance Testing）。将重点阐述整体设计思路、配置文件、脚本编写方法及执行流程。与前几部分一样，性能测试也可通过命令行或配置文件实现一键式启动。
 
 ---
 
-#### 3.7 CustomActions Sheet（可选自定义操作）
+## 第四部分：性能测试模块
 
-- **字段说明：**
-  - **Action Name：**
-    自定义操作名称，在 TestSteps 或 PageModules 中引用。
-  - **Python Code：**
-    自定义 Python 代码，必须包含一个 `execute` 函数，作为关键词入口。
-  - **Description：**
-    对操作的简单说明，有助于维护和理解操作逻辑。
+本框架的性能测试基于第三方负载工具（如 **Locust**、**JMeter**、**K6** 等）进行封装，从而统一管理**性能场景配置**、**数据驱动**、**环境切换**和**结果收集**。主要目标包括：
 
-- **示例记录：**
-
-| Action Name  | Python Code                                               | Description                     |
-|--------------|-----------------------------------------------------------|---------------------------------|
-| CustomScroll | def execute(driver, **kwargs):\n    driver.execute_script("window.scrollTo(0, document.body.scrollHeight)") | 滚动到页面底部                   |
+1. **自动加载场景配置**：通过 YAML 或 Excel 对并发用户数、启动时长、运行时间等进行参数化。
+2. **数据驱动**：结合已有的 `TestData` 或单独编写性能测试专用数据文件，如账号池、测试样本等。
+3. **一键执行**：可由 `python main.py --performance` 或集成到 CI 来统一调度。
+4. **结果可视化**：通过内置的 HTML 报告或外接 Grafana、influxDB 等进行性能指标监控。
 
 ---
 
-### 4. 用例生成与执行总结
+### 一、配置文件与初始化
 
-- **加载阶段：**
-  系统通过 `libraries/web/web_test_loader.py` 读取所有 Excel Sheet，并对 TestCases、TestSteps、TestData、Locators、PageModules、WebEnvironments（及可选的 CustomActions、EnvVariables）进行校验，确保各引用关系正确无误。
+#### 1.1 `performance_test_config.yaml`
 
-- **生成阶段：**
-  在加载验证后，`libraries/robot/case/web_generator.py` 根据 TestCases 表生成每个测试用例，同时依据 TestSteps 表依次构造调用关键词，并结合 TestData 表生成数据驱动的多组测试用例。
-  页面操作中，每个步骤通过查找 PageModules 和 Locators 对应的操作细节，生成调用 WebActions 中方法的 Robot Framework 关键词。
+与 API/UI 测试类似，性能测试的主要配置集中在 `configs/performance_test_config.yaml`，示例内容如下：
 
-- **执行阶段：**
-  生成的 Robot Framework 测试用例由核心执行器（如 `robot_test_executor.py`）调用，浏览器通过 `webdriver_factory.py` 根据 WebEnvironments 配置创建，并传入 WebActions 执行各步操作。验证结果与错误信息通过日志记录，并最终生成 HTML 格式的测试报告（利用 templates 下的报告模板）。
+```yaml
+tool: locust
+active_environment: SIT
+test_cases_path: 'test_cases/performance_test_cases.xlsx'
+locust_options:
+  host: 'https://sit.example.com'
+  users: 50
+  spawn_rate: 5
+  run_time: '10m'
+  headless: true
+  loglevel: INFO
+```
 
-- **注意事项：**
-  - 各 Sheet 内必填项必须完整，命名需要严格一致，避免因错字或格式问题而造成执行失败。
-  - 动态变量应使用 `${变量名}` 或 Jinja2 语法（例如 `{{timestamp}}`）格式编写，确保变量在生成请求、输入数据时能正常替换。
-  - 在数据驱动测试中，用例各列之间的关联必须一一对应，保证每一轮测试能正确使用相应数据；
-  - 环境信息与浏览器设置务必正确，路径、选项格式应符合开发要求；
-  - 自定义操作（CustomActions）编写后应经过充分测试，确保其 `execute` 函数能够被正确调用，并返回预期结果。
+常见字段：
 
----
+- **tool**：指定使用的负载工具，如 `locust`、`jmeter`、`k6` 等，本框架当前主要集成 Locust，其他工具可扩展。
+- **active_environment**：与 API/Web 测试共用同一个环境标识，用于切换不同环境的 URL、账号等。
+- **test_cases_path**：性能测试用例文件（如 `test_cases/performance_test_cases.xlsx`），若需数据驱动可在同一 Excel 里或独立 CSV 文件存储数据。
+- **locust_options**：Locust 相关的启动参数：
+  - `host`：目标环境地址
+  - `users`：并发用户数上限
+  - `spawn_rate`：每秒启动多少个虚拟用户
+  - `run_time`：测试持续时长（如10分钟）
+  - `headless`：是否在无UI模式下执行
+  - `loglevel`：日志级别等
 
-下面给出完整说明书的第三部分，详细描述 Web 性能测试模块的程序逻辑以及 Excel 用例文件的填写要求。该部分与 API 与 Web UI 测试类似，但侧重于多轮页面访问、响应时间统计、资源占用采集及图表展示，帮助评估系统性能和稳定性。
+> 注：如果采用 **JMeter** 或 **K6**，可在配置文件中定义对应的参数，如 JMeter 的 `thread_num`、`ramp_up_time` 等。
 
----
+#### 1.2 初始化流程
 
-## 第四部分：Web 性能测试模块详细说明
-
-### 1. 性能测试的总体思路
-
-Web 性能测试旨在模拟用户对某一页面或应用的多次访问，通过 Selenium 控制浏览器执行操作，收集每次请求的响应时间、内存占用、CPU 使用情况等性能指标。最后将采集到的关键指标数据生成统计图表并嵌入 HTML 测试报告中。
-
-整个性能测试流程主要分为以下几个步骤：
-
-1. **配置加载**
-   - 性能测试相关配置存放在 `configs/web_pt_config.yaml` 中，包含当前激活环境、Excel 用例文件路径、测试参数（如循环次数、间隔时间）、性能指标采集选项等。
-   - 模块 `common/config_manager.py` 同样用于加载该配置，设置为全局变量供后续使用。
-
-2. **测试用例数据加载与验证**
-   - 用例数据主要通过 `libraries/performance/web_pt_loader.py` 加载，该模块读取 Excel 文件中的多个 Sheet 信息，常见的 Sheet 包括：
-     - **TestCases**：核心测试用例信息，每一行定义一个性能测试场景。
-     - **TestFunctions**：针对某一用例定义的具体性能测试函数或场景动作，例如页面加载、交互操作、接口调用等。
-     - **SubFunctions**：针对复杂测试场景，拆分出多个子操作步骤，便于数据拆分采集。
-     - **Locators**：页面元素定位信息，便于确定测试过程中关注的关键部分（如统计某个模块的加载时间）。
-     - **CustomActions**（可选）：自定义扩展操作，若内置操作无法满足需求，可在此编写自定义 Python 代码。
-   - 加载过程中会校验各 Sheet 的必填字段，检查引用名称是否一致，确保测试数据有效完整。
-
-3. **测试用例生成**
-   - 模块 `libraries/robot/case/web_pt_robot_generator.py` 是性能测试用例生成器。
-   - 根据 Excel 中的用例配置，生成对应的 Robot Framework 测试用例：
-     - 在每个测试场景中，调用 `libraries/performance/web_pt.py` 中封装的核心方法开始执行性能测试，通常包括多次页面访问、数据采集、性能统计等。
-     - 利用数据驱动方式，可以对同一测试场景使用不同参数，反复运行对比性能指标。
-
-4. **性能数据收集与报告生成**
-   - **数据采集**：
-     - 性能测试过程中，测试用例会多次调用目标页面，并利用 Selenium 获取页面加载完成时间、AJAX 请求响应、页面内特定模块（例如图片、表格或 JS 调用）的响应时间。
-     - 同时，可采集浏览器内存占用（通过调用 JavaScript 脚本）以及 CPU 使用率等信息。
-   - **数据统计与图表绘制**：
-     - 模块 `libraries/performance/web_pt_reporter.py` 根据采集数据利用 Matplotlib、Chart.js 或其它图表库生成 Base64 编码的统计图，展示响应时间的分布、平均值、最大值等分析结果。
-     - 图表和统计数据会嵌入到 HTML 报告中，以便于用户直观了解性能趋势。
-
-5. **测试执行与异常处理**
-   - 执行时，测试框架通过 `robot_test_executor.py` 启动性能测试用例，每个测试步骤均记录详细日志，并在测试过程中设置适当的等待时间，确保数据采集的准确性。
-   - 当出现异常情况（例如页面未加载完成、响应时间超时等），测试用例会记录错误并提供详细的日志信息，便于后期分析和定位问题。
+1. **加载配置**：
+   - 读取并解析 `performance_test_config.yaml`；
+   - 根据 `tool` 判断使用何种负载工具；
+2. **设置全局变量**：
+   - 将 `active_environment`、`locust_options` 等注入 Robot Framework（如果跟其他部分在同一进程中）。
+3. **数据准备**：
+   - 如果有性能测试专用的账号池、请求参数等，需要提前准备或在 `PerformanceTestLoader` 中读取 Excel/CSV 进行初始化。
+4. **启动**：
+   - 若使用 Locust 分布式执行，会在 Master/Worker 上分别加载配置；也可单机模式下直接运行。
 
 ---
 
-### 2. 性能测试相关模块详细说明
+### 二、性能测试用例（Scenarios）
 
-#### 2.1 核心模块说明
+与 API 只需编写一组业务接口用例不同，性能测试往往需要**定义多个场景（Scenario）**，每个场景包含**不同的请求组合、权重、思维等待时间**等。为此可以采用以下两种组织方式：
 
-- **`web_pt.py`**
-  - 封装性能测试的核心逻辑，包括页面请求、数据采集、结果统计等。
-  - 是否需要模拟重复访问、调用延时、请求并发等逻辑均在此模块中实现。
+1. **在 Excel 中专门新增 `PerformanceScenarios` Sheet**：
+   - 定义每个场景的名称、接口列表、执行顺序、请求体等；
+   - 在 Locust 脚本中动态解析后生成 tasks。
 
-- **`web_pt_loader.py`**
-  - 负责加载性能测试 Excel 文件，并解析 **TestCases**、**TestFunctions**、**SubFunctions**、**Locators**、以及 **CustomActions** 等 Sheet。
-  - 同时完成必要的字段校验和数据结构转换，确保数据能供后续的性能测试执行过程正确使用。
+2. **直接在 Python/Locust 脚本中编写**：
+   - 通过继承 `locust.HttpUser`, `task` 装饰器的方式实现业务流；
+   - Excel/CSV 仅用于管理测试数据（账号、参数）。
 
-- **`web_pt_reporter.py`**
-  - 根据采集到的性能数据生成图表和统计汇总。
-  - 利用图表库生成 Base64 编码图片，并将其嵌入最终的 HTML 报告中展示。
-
-- **`web_pt_robot_keyword.py`**
-  - 封装了性能测试的 Robot Framework 关键词，测试用例在生成后会直接调用这些关键词，完成性能统计任务。
-
-#### 2.2 关键实现逻辑
-
-- **循环执行**
-  - 根据配置文件和 Excel 用例中定义的重复访问次数，多次请求目标页面，获取每次的响应时间和资源使用值。
-
-- **数据采集接口**
-  - 使用 Selenium 调用 JavaScript 获取页面加载完成时间（例如 利用 `window.performance.timing`）、AJAX 完成时间等；
-  - 采集页面内 DOM 元素加载后的状态值（如图片加载是否成功、特定模块是否显示等）。
-
-- **数据统计与图表绘制**
-  - 将每次采集的数据累积后计算平均值、最大值、最小值、标准差等统计指标；
-  - 根据这些指标绘制折线图、柱状图或饼图，直观展示性能趋势；
-  - 图表生成后利用 Base64 编码转换成可嵌入 HTML 报告的格式。
-
-- **结果验证与自动跳过机制**
-  - 当性能测试数据低于预期基准或出现异常时，系统可自动标记该测试场景为失败，并根据配置跳过后续测试，防止浪费资源。
+本框架支持第一种更“低代码化”的方式，也允许在 Python 中灵活编写复杂场景。下面介绍如何在 Excel 中配置场景。
 
 ---
 
-### 3. Web 性能测试 Excel 用例的填写要求
+#### 2.1 `PerformanceScenarios` Sheet (可选)
 
-为了确保性能测试数据采集和执行准确无误，Excel 测试用例文件需要按照固定的格式填写。以下为各个 Sheet 的详细要求和示例：
+| 字段           | 说明                                               | 示例                                          |
+|----------------|----------------------------------------------------|-----------------------------------------------|
+| Scenario Name  | 场景名称                                           | “UserRegistrationLoadTest”                    |
+| Weight         | 该场景在全部场景中的权重（Locust 用于随机调度）      | 2                                             |
+| Step Index     | 场景步骤序号                                       | 1, 2, 3…                                      |
+| API Endpoint   | 对应前面已有的 API Endpoint 名或完整 URL           | “CreateUser” / “https://sit.example.com/api”  |
+| HTTP Method    | GET/POST/PUT/DELETE 等                             | “POST”                                        |
+| Body Template  | 如需发送请求体可指定（与 API 测试部分类似）         | “CreateUserTpl”                               |
+| Headers        | 请求头（可简写或引用 YAML）                         | “AuthHeader”                                  |
+| Think Time     | 思考时间（秒），每步操作后等待多少秒（Locust中概念） | “1”                                           |
+| Notes          | 备注                                               | “注册接口并记录响应耗时”                       |
 
-#### 3.1 TestCases Sheet（性能测试用例基本信息）
-
-- **字段说明：**
-  - **Case ID**：唯一标识，如 “WPTC001”、“WPTC002”；必须唯一。
-  - **Name**：用例名称，例如 “首页加载性能测试”。
-  - **Descriptions**：详细描述当前性能测试场景，描述测试目的和预期性能指标。
-  - **Run**：执行标识，“Y” 表示执行，“N” 表示跳过。
-  - **Tags**：标签，方便筛选和过滤，如 “performance, critical”。
-  - **Suite**：用于将用例分组，如 “首页性能测试”。
-
-- **示例记录：**
-
-| Case ID  | Name                 | Descriptions                          | Run | Tags                | Suite            |
-|----------|----------------------|---------------------------------------|-----|---------------------|------------------|
-| WPTC001  | 首页加载性能测试    | 测试首页多次加载后的响应时间和资源使用 | Y   | performance, critical | 首页模块       |
-| WPTC002  | 产品列表性能测试    | 测试产品页面加载响应时间与数据接口调用   | Y   | performance         | 产品模块         |
+> 注：在 Locust 脚本解析时，会根据 “Scenario Name” 分组，并结合“Weight” 来设置场景分发。对于每个场景的步骤（Step Index）依次调用相应 API Endpoint 或 URL，并可在之间执行随机或固定的思考等待。
 
 ---
 
-#### 3.2 TestFunctions Sheet（性能测试函数/场景定义）
+#### 2.2 账号/数据池 (可选)
 
-- **字段说明：**
-  - **Case ID**：与 TestCases 对应，标识该用例的具体测试场景。
-  - **Function ID**：性能测试函数的唯一标识，如 “Func01”、“Func02”。
-  - **Function Name**：简短描述功能名称，如 “首页加载统计”。
-  - **Actions**：定义本函数调用的操作关键词，通常对应 `web_pt.py` 中的调用方法，如 “load_page”、“scroll_page”等。
-  - **Parameters**：如果本函数需要传入参数（如重复次数、滚动次数、等待时间等），在此指定参数名称及默认值（可以采用 JSON 格式）。
-  - **Wait Time**：执行该操作后的等待时间，单位秒。
+如果需要大量不同账号或参数，可将其存储在 Excel 其它 Sheet 或单独 CSV 文件：
 
-- **示例记录：**
-
-| Case ID | Function ID | Function Name       | Actions        | Parameters                                      | Wait Time |
-|---------|-------------|---------------------|----------------|-------------------------------------------------|-----------|
-| WPTC001 | Func01      | 首页加载统计        | load_page      | {"repeat": 5, "sleep": 2}                        | 2         |
-| WPTC001 | Func02      | 页面滚动统计        | scroll_page    | {"scrolls": 3}                                   | 1         |
-| WPTC002 | Func01      | 产品页数据接口调用统计 | load_product_page | {"repeat": 3}                                 | 2         |
+- **Accounts** Sheet： columns = `username`, `password`, `other_info`…
+- 脚本启动时读取 -> 存入列表 -> 用迭代或随机取下一个账号 -> 执行场景请求。
 
 ---
 
-#### 3.3 SubFunctions Sheet（性能测试子函数，复杂场景拆分）
+### 三、基于 Locust 的实现示例
 
-- **字段说明：**
-  - **Case ID**：与 TestCases 对应，方便跟踪衍生的子操作。
-  - **Function ID**：关联 TestFunctions 中的 Function ID。
-  - **SubFunction ID**：子函数的唯一标识，如 “Sub01”、“Sub02”。
-  - **Action**：具体的操作步骤，如 “verify_element_loaded”、“capture_resource_usage”。
-  - **描述**：对该子函数的详细说明与预期结果。
+本框架的示例集成 **Locust** 作为负载工具，核心文件一般包括：
 
-- **示例记录：**
+- `performance_test_launcher.py`：读取 `performance_test_config.yaml`，解析 Excel 的 `PerformanceScenarios`，并生成 `locustfile.py` 或以动态方式直接启动 Locust。
+- `locustfile.py`：定义 `LocustUser` 类，用 tasks 实现对场景请求的访问。
+- `performance_data_loader.py`：封装读取账号池、BodyTemplates、Headers 逻辑，以便 Locust 脚本中使用。
 
-| Case ID | Function ID | SubFunction ID | Action                   | 描述                          |
-|---------|-------------|----------------|--------------------------|-------------------------------|
-| WPTC001 | Func01      | Sub01          | verify_element_loaded    | 验证首页关键元素加载完成       |
-| WPTC001 | Func02      | Sub01          | capture_scroll_duration  | 记录页面滚动后的响应时间       |
+**关键步骤**：
 
----
-
-#### 3.4 Locators Sheet（性能测试中关注的页面元素定位）
-
-- **字段说明：**
-  - **Page Name**：目标页面名称，如 “HomePage”、“ProductPage”。
-  - **Element Name**：关注的元素名称，如 “main_banner”、“product_list”。
-  - **Locator Type**：定位方法，例如 id、xpath、css 等。
-  - **Locator Value**：具体定位表达式，用于后续对页面加载、元素状态验证等。
-  - **Description**：描述该元素用途（例如加载标识）。
-
-- **示例记录：**
-
-| Page Name  | Element Name  | Locator Type | Locator Value                     | Description         |
-|------------|---------------|--------------|-----------------------------------|---------------------|
-| HomePage   | main_banner   | id           | banner-main                       | 首页主横幅           |
-| ProductPage| product_list  | xpath        | //div[@class='product-list']      | 产品列表区域         |
+1. **获取 locust_options**：并发用户数、运行时长、host 等。
+2. **解析 PerformanceScenarios**：把相同 `Scenario Name` 的行组成一个 task 集合，为每个 step 记录 `HTTP Method`、`URL`、`Body`、`Headers`、`Think Time`。
+3. **动态 or 静态生成 locustfile**：
+   - 动态：在 Python 运行时构造一个字符串或类对象并传给 LocustRunner；
+   - 静态：提前写好 `locustfile.py` 模板，通过 Jinja2 之类的方式把场景插入。
+4. **启动 Locust**：
+   - 在本地可 `locust -f locustfile.py --users 50 --spawn-rate 5 --run-time 10m --headless`；
+   - 或在分布式环境下启动 Master/Worker。
+5. **收集结果**：
+   - Locust 会在终端输出 RPS(请求率)、响应时间分布、失败率等；也能通过 WebUI 或导出 CSV。
+   - 如需整合至 Robot Framework 报告，可将关键指标写回到 `output.xml` 自定义标签中，也可在 `report/` 目录保存统计。
 
 ---
 
-#### 3.5 CustomActions Sheet（可选自定义性能测试扩展操作）
+### 四、执行与整合
 
-- **字段说明：**
-  - **Action Name**：自定义操作名称。
-  - **Python Code**：自定义逻辑代码，必须实现 `execute` 函数。
-  - **Description**：说明操作用途，比如额外采集的资源使用情况等。
-
-- **示例记录：**
-
-| Action Name      | Python Code                                                                                           | Description                     |
-|------------------|-------------------------------------------------------------------------------------------------------|---------------------------------|
-| CustomMemoryCheck| def execute(driver, **kwargs):\n    # 取浏览器内存使用信息\n    mem = driver.execute_script("return window.performance.memory")\n    return mem  | 自定义操作：采集浏览器内存使用信息 |
-
----
-
-### 4. 用例生成与数据驱动执行
-
-- 性能测试用例生成器会根据 **TestCases** 中的记录生成 Robot Framework 用例，并依次调用对应 **TestFunctions** 所定义的操作。
-- 如果用例设计为数据驱动，则同一用例可根据 **TestFunctions** 与 **SubFunctions** 中设置的参数多次执行，统计每次采集数据后的响应时间和稳定性指标。
-- 在用例执行过程中，调用 `web_pt.py` 中的函数后，会将采集到的各项数据保存，并最终传递给 `web_pt_reporter.py` 生成统计图表，以便在最终的 HTML 报告中展示。
+1. **命令行执行**：
+   ```bash
+   python main.py --performance
+   ```
+   脚本会检查 `performance_test_config.yaml`，根据 `tool` 判断是 Locust 还是其他工具，再调用对应流程。
+2. **与 API/Web/E2E 互不干扰**：
+   - 若只加 `--performance`，则只跑性能测试；
+   - 也可加 `--api` 或 `--web` 实现在同一轮 CI 里先功能测试，再性能测试；
+   - 如果要在同一个 pipeline 中先执行集成测试，后执行性能测试，可以通过配置多阶段或多个 `main.py` 命令分步骤进行。
+3. **报告查看**：
+   - Locust 自带 WebUI (http://localhost:8089) 可在运行时查看统计；若 `--headless` 则自动输出汇总到终端；
+   - 若需要本框架统一管理报告，可在 `performance_test_launcher.py` 中收集结果写入 `report/performance_result.json` 或 `report/performance_summary.html`。
 
 ---
 
-### 5. 数据采集与报告输出
+### 五、扩展与注意事项
 
-- **数据采集：**
-  - 每次操作均采集响应时间、页面加载情况，并且对关键步骤调用 JavaScript 获取内存、CPU 等数据。
-  - 数据采集日志详细记录每次请求的起止时间、采集数据及异常情况。
-
-- **报告生成：**
-  - 利用 `web_pt_reporter.py` 对所有采集数据进行统计，利用图表库生成响应时间分布、平均值、最大值等统计图。
-  - 将生成的 Base64 编码图表嵌入 HTML 报告模板中，在 Robot Framework 自有报告中显示，方便用户直观评估系统性能。
+1. **高级用法（分布式、多场景调度）**：Locust、JMeter 均支持分布式集群，需在脚本中配置 Master/Worker 节点的 IP、端口等。
+2. **资源监控**：性能测试往往需要监控服务器 CPU、内存、网络带宽等，可配合 Grafana + InfluxDB/Prometheus 方案进行实时统计。
+3. **数据准备**：在大并发下，API 需要足量的账号或测试数据，如订单号、ID 等，否则可能导致并发时互相影响（如重复注册）。要提前考虑数据清理和重复使用策略。
+4. **断言**：性能脚本中通常也建议添加基础断言（响应码是否 200、响应体字段是否正确），否则只测吞吐量，缺乏正确性判断可能导致误判。
+5. **与功能测试共享逻辑**：如在 `BodyTemplates`、`Headers`、`Endpoints` 中已有配置，可直接复用 API 测试部分生成请求，从而减少重复编写。
 
 ---
 
 ## 小结
 
-本部分详细描述了 Web 性能测试模块的设计逻辑和执行流程，从配置加载、Excel 数据解析、用例生成、执行过程中的多轮采集，到最终数据统计与报告生成。
-同时为性能测试 Excel 文件的各个 Sheet（TestCases、TestFunctions、SubFunctions、Locators、CustomActions）给出了详细的填写要求和示例记录。
-通过该模块，测试人员可以轻松配置并执行网页性能测试，获得关键性能指标和直观图表报告，为系统性能调优提供依据。
+本部分主要介绍了如何将 **性能测试** 集成到同一自动化框架中。通过配置 `performance_test_config.yaml`、定义 `PerformanceScenarios` 或自定义脚本，即可使用 **Locust**（或其他负载工具）进行大规模并发测试，辅以统一的环境切换、数据驱动和日志/报告管理。至此，整个框架已经涵盖了从 **API**、**Web** 到 **性能** 的多层次自动化测试能力。如果需要 **E2E** 测试场景或其他专项（安全、可用性…），也可按照类似方法进行扩展。
 
----
-
-以上即为本自动化测试框架中 Web 性能测试部分的详细说明。整个框架通过模块化和数据驱动设计，实现了 API、Web UI、E2E 与性能测试的无缝集成，确保测试工作的高效、灵活和可维护性。
-
-
-以下整理出完整说明书的第四部分，聚焦于自动化测试框架的整体流程以及扩展机制，便于后续维护与定制化开发。
-
----
-
-## 第五部分：整体流程与扩展机制
-
-本部分总结整个自动化测试框架的整体设计思路和执行流程，并介绍如何通过扩展机制支持 API、Web UI、E2E 与性能测试的无缝集成与灵活定制。
-
----
-
-### 1. 整体架构概览
-
-- **模块化设计**
-  框架各部分模块化清晰划分，主要包括：
-  - **配置管理模块**：统一加载测试环境、执行参数、浏览器和驱动配置（配置文件、EnvVariables、WebEnvironments 等）。
-  - **Excel 用例解析模块**：独立解析各类 Excel Sheet（TestCases、TestSteps、TestData、Locators、PageModules、TestFunctions、SubFunctions、CustomActions 等），并进行数据校验。
-  - **用例生成模块**：根据不同测试类型（API、Web UI、E2E、性能）生成统一格式的 Robot Framework 用例，支持数据驱动和前后置操作。
-  - **关键词封装模块**：封装 WebActions、VerificationActions、PerformanceActions 等关键词，为各测试用例提供具体操作实现。
-  - **执行与报告模块**：统一调用 Robot Framework 执行用例，利用日志系统、报告模板生成详细执行报告（含错误日志、截图、性能图表等）。
-
-- **统一接口和全局变量**
-  各模块通过全局变量（例如 `${active_environment}`、全局保存动态数据字段）进行数据共享，实现跨用例、跨模块的信息传递和依赖管理。
-
----
-
-### 2. 整体执行流程
-
-1. **启动阶段**
-   - 入口程序（例如 `main.py`）解析命令行参数，确定执行类型（API、Web UI、E2E、性能测试等）。
-   - 根据执行类型调用工厂模式生成对应的用例集合，初始化全局变量和环境配置。
-
-2. **配置加载**
-   - 加载 YAML 配置文件和环境数据信息，设置浏览器及驱动路径、远程/本地执行标志、浏览器选项等。
-   - 同时读取 Excel 用例文件，解析各 Sheet 数据，并校验引用关系与数据完整性。
-
-3. **用例生成**
-   - 用例生成器（如 `web_generator.py`、`e2e_generator.py`、`web_pt_robot_generator.py` 等）根据 Excel 内记录构造 Robot Framework 测试用例：
-     - 按照 TestCases 合并 TestSteps 或 TestFunctions 信息生成步骤调用。
-     - 支持数据驱动，通过 TestData 或具体功能参数，生成多组测试用例。
-     - 应用前置、后置操作、登录/登出验证及自定义初始化步骤。
-
-4. **测试执行**
-   - 调用 Robot Framework 执行生成的测试用例，每个步骤调用封装好的关键词（WebActions、VerificationActions、PerformanceActions 等）。
-   - 测试过程中自动记录日志、错误信息，关键步骤支持高亮和截屏。
-
-5. **数据采集与报告输出**
-   - 性能测试部分通过多次循环访问采集响应时间、内存占用、CPU 使用率等指标，并生成统计图。
-   - 所有测试均通过日志管理器记录详细执行数据，并将日志、错误截图与图表嵌入 HTML 报告中输出。
-
----
-
-### 3. 扩展机制
-
-框架设计预留了多处扩展接口和自定义功能，确保满足不同项目的多样化需求：
-
-1. **自定义操作（CustomActions）**
-   - 支持通过 Excel 中的 CustomActions Sheet 添加扩展操作。
-   - 用户可编写符合规范的 Python 脚本（必须包含 `execute` 函数），自定义操作逻辑，通过用例调用扩展关键词。
-
-2. **数据驱动与参数化**
-   - Excel 表中通过 TestData、TestFunctions 中 JSON 格式传递参数，实现同一用例的多组数据驱动测试。
-   - 全局变量和动态替换机制（`${变量名}` 或 Jinja2 语法）可实现数据共享和动态参数注入。
-
-3. **前后置操作**
-   - 用例生成支持在 TestCases 中配置 TestSetup 与 TestTeardown 操作，实现环境初始化、登录、数据清理等逻辑。
-   - 同时可在 TestSteps 或 TestFunctions 中通过标识调用特定关键词完成前后置扩展操作。
-
-4. **多测试类型无缝集成**
-   - 框架通过分层设计，实现了 API、Web UI、E2E 和性能测试的互相嵌套与协同执行。
-   - 统一调用入口和报告生成器保证在整体报告中输出各模块的详细运行信息。
-
-5. **日志与报告扩展**
-   - 日志系统（如 `common/log_manager.py`）支持多级别日志输出与颜色打印。
-   - 报告模板支持扩展，各模块生成的统计图、成功/失败信息可自动嵌入最终 HTML 报告中，便于后期调试和改版。
-
----
-
-### 4. 总结
-
-- **整体流程**：从配置加载、Excel 数据解析、用例生成、测试执行，到数据采集与报告输出，各环节协同工作，构成一个多测试类型统一管理、数据驱动执行的整体流程。
-- **扩展机制**：通过自定义操作、数据驱动、前后置操作、多模块协同以及可自定义日志和报告模板，为后续功能扩展和项目定制提供了极大灵活性和较高可维护性。
-
-该架构既能满足常规的测试场景，又能便捷地扩展新功能，确保整个测试流程在灵活性、高效性和可扩展性上取得平衡，为测试人员提供了一套高质量、高效率的自动化测试解决方案。
-
---- 
-
-以上即为自动化测试框架的整体流程与扩展机制的整理说明。
 
