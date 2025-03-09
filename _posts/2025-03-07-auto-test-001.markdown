@@ -1,0 +1,163 @@
+---
+layout:     post
+title:      "基于 Python 和 Robot Framework 的自动化测试框架"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2025-03-07 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+### **基于 Python 和 Robot Framework 的自动化测试框架**
+
+---
+
+下面给出一个**详细的项目文件结构**示例，以及对该自动化测试框架程序的详细说明。该项目主要分为配置文件、公共工具库、测试类别逻辑（API、Web UI、E2E、性能等）以及报告模板等部分。下面是一个可能的目录树结构和各部分说明：
+
+---
+
+## 一、文件结构示例
+
+假设项目根目录为 **project_root**，目录结构大致如下：
+
+```
+project_root/
+├── configs/
+│   ├── api_test_config.yaml      // API测试配置（环境、测试用例路径、过滤条件等）
+│   ├── db_config.yaml            // 数据库连接配置（DEV、UAT等环境的数据库信息）
+│   ├── e2e_test_config.yaml      // E2E测试配置
+│   ├── logging_config.yaml       // 日志系统配置
+│   ├── saved_fields.yaml         // API测试保存的变量（例如Token等）
+│   ├── web_pt_config.yaml        // Web性能测试配置
+│   └── web_test_config.yaml      // Web UI测试配置
+│
+├── libraries/
+│   ├── api/                      // API测试相关模块
+│   │   ├── api_test_keywords.py  // Robot库封装的API相关关键词
+│   │   ├── api_test_loader.py    // 解析Excel文件加载API测试用例（包含Sheet：API、BodyTemplates、Headers、Endpoints等）
+│   │   ├── body_generator.py     // 根据Body模板和默认值生成请求body（支持动态值替换）
+│   │   ├── headers_generator.py  // 根据Headers模板生成请求头，并进行动态变量替换
+│   │   ├── request_sender.py     // 封装requests请求，发送HTTP调用
+│   │   ├── response_handler.py   // 处理和校验API响应（支持JSONPath断言、动态检查等）
+│   │   └── saved_fields_manager.py // 读写保存字段文件，实现变量的自动保存与替换
+│   │   └── template_renderer.py  // 利用Jinja2模板渲染生成最终的请求体
+│   │
+│   ├── common/                   // 公共的辅助工具和通用配置
+│   │   ├── config_manager.py     // 加载YAML/JSON配置文件，提供全局配置读取接口
+│   │   ├── log_manager.py        // 日志管理工具（支持颜色日志、日志文件输出）
+│   │   ├── utility_helpers.py    // 常用工具方法（如格式化JSON、XML、查找项目根目录等）
+│   │   ├── variable_generator.py // 根据占位符名称生成动态变量（例如UUID、时间戳等）
+│   │   └── variable_transformer.py // 用于对变量进行转换（如日期格式转换、大小写转换等）
+│   │
+│   ├── db/                       // 数据库操作模块
+│   │   ├── db.py                 // 抽象和SQLAlchemy数据库连接的基本实现（包括连接、查询、更新、插入、删除）
+│   │   └── db_operator.py        // 封装了数据库操作接口，支持验证数据库中值、数据插入更新等
+│   │
+│   ├── performance/              // 性能测试相关模块（主要针对Web性能测试）
+│   │   ├── web_pt.py             // Web性能测试核心逻辑，执行测试用例、收集响应时间、内存等数据
+│   │   ├── web_pt_loader.py      // 加载Web性能测试Excel文件（包括TestCases、TestFunctions、SubFunctions、Locators、CustomActions等）
+│   │   ├── web_pt_reporter.py    // 根据测试数据生成图表和统计报表（通过Matplotlib、Chart.js等生成Base64图表）
+│   │   └── web_pt_robot_keyword.py // 封装为Robot Framework关键词，便于在测试套件中调用性能测试
+│   │
+│   ├── robot/                    // 与Robot Framework集成的模块
+│   │   ├── case/                // 各种测试用例生成器，实现将Excel测试用例生成Robot测试用例
+│   │   │   ├── base_generator.py // 抽象用例生成器接口（load_configuration、initialize_components、create_test_suite、create_test_case、create_test_steps）
+│   │   │   ├── api_generator.py  // 生成API测试用例（调用 API关键词）
+│   │   │   ├── e2e_generator.py  // 生成端到端（E2E）测试用例（混合使用Web和API步骤）
+│   │   │   ├── web_generator.py  // 生成Web UI测试用例（将页面对象和操作转为Robot 测试步骤）
+│   │   │   ├── web_pt_robot_generator.py // 生成性能测试用例（封装WebPerformanceTester测试过程）
+│   │   │   └── unified_generator.py // 根据传入的测试类型（api、web、e2e、performance）获取相应的用例生成器
+│   │   │
+│   │   ├── custom_action_executor.py // 可执行自定义Python代码的执行器，为Web UI测试自定义操作提供支持
+│   │   └── robot_test_executor.py   // 核心的Robot测试执行器，负责调用WebActions、数据库操作、日志记录、条件（如Sanity Check）的处理
+│   │
+│   ├── web/                      // Web UI 测试相关模块
+│   │   ├── webdriver_factory.py  // 根据配置创建Selenium WebDriver实例（支持本地和远程）
+│   │   ├── web_actions.py        // 整合了所有Web UI操作的功能类（继承并组合了所有 action 模块）
+│   │   └── web_test_loader.py    // 加载Web UI测试Excel文件，并进行数据验证（包含Locators、PageModules、TestCases、TestSteps、TestData、WebEnvironments、CustomActions、EnvVariables）
+│   │       └── web_action/       // Web UI具体的操作封装，每个文件对应一种操作类型
+│   │             ├── alert_actions.py      // 处理浏览器Alert的操作（接受、拒绝、获取文本）
+│   │             ├── base.py                 // 所有Web操作模块的基类，提供元素查找、等待方法等
+│   │             ├── cookie_actions.py       // 浏览器Cookie操作
+│   │             ├── decorators.py           // 公共装饰器，如计算执行时长等
+│   │             ├── element_actions.py      // 基本的点击、输入、清除、hover等操作
+│   │             ├── javascript_actions.py   // 通过JS执行操作，如点击、填充、滚动
+│   │             ├── js.py                   // 存放JS代码片段，供javascript_actions调用
+│   │             ├── navigation_actions.py     // 浏览器导航（打开URL、刷新、后退、前进等）
+│   │             ├── table_actions.py        // 处理网页表格的验证与操作（选择行、分表验证等）
+│   │             ├── table_verifier.py       // 实现与表格有关的断言验证，支持exact/partial/regex匹配
+│   │             ├── utils_actions.py        // 辅助功能，如截图、元素高亮
+│   │             ├── verification_actions.py // 验证页面标题、文本、图形数值等
+│   │             ├── wait_actions.py         // 封装WebDriverWait相关操作等待元素加载、文本出现等
+│   │             └── window_actions.py       // 窗口和frame的切换操作
+│
+├── templates/                    // 模板文件，用于生成最终的报告
+│   ├── rf_report_template.html   // Robot测试报告HTML模板（包含侧边栏、图表、数据表等）
+│   └── test_summary_template.html// 测试总结报告模板
+│
+├── test_cases/                   // 测试用例文件，通常为Excel文件
+│   ├── api_test_cases.xlsx       // API测试用例
+│   ├── web_test_cases.xlsx       // Web UI测试用例
+│   ├── e2e_test_cases.xlsx       // E2E测试用例
+│   └── web_pt_cases.xlsx         // Web性能测试用例
+│
+├── main.py                       // 主程序入口文件，负责解析命令行切换测试类型并调用对应的生成器
+└── ...                           // 其它可能的脚本、说明文件等
+```
+
+---
+
+## 二、程序详细逻辑说明
+
+该项目是一个**自动化测试框架**，支持多种测试方式（API、Web UI、端到端、性能）并统一生成 Robot Framework 测试套件，其详细逻辑如下：
+
+1. **配置管理与初始化**
+   – 所有测试配置信息（如环境、测试用例路径、数据库配置、日志配置等）均存放在 `configs/` 目录下的 YAML 文件中。
+   – 模块 `common/config_manager.py` 用于加载这些 YAML/JSON 配置，统一提供接口。
+   – 在测试开始前，各测试生成器会调用 `load_configuration()` 方法读取相应配置，并将部分配置（例如当前激活环境）设置为 Robot Framework 的全局变量（例如 `${active_environment}`）。
+
+2. **API测试部分**
+   – 在 `libraries/api/` 目录下，`api_test_loader.py` 负责解析 API 测试 Excel 文件，其中包含多个 Sheet（例如 API、BodyTemplates、Headers、Endpoints 等），完成用例的加载和结构验证。
+   – `body_generator.py` 根据用例中指定的 Body 模板和默认值，结合用户输入的 Body Override，通过 Jinja2 模板引擎（`template_renderer.py`）渲染生成最终请求体，同时使用 `variable_generator.py` 产生动态值（如 uuid、时间戳等）。
+   – `headers_generator.py` 同样对请求头进行解析与动态替换。
+   – API 请求由 `request_sender.py` 封装，调用 requests 库发送请求；返回后， `response_handler.py` 实现了响应校验与断言（支持直接JSONPath断言、动态检查“CheckWith”等逻辑），以及对需要保存字段（如 token）的处理，通过 `saved_fields_manager.py` 实现。
+   – 各个 API 关键步骤被封装为 Robot Framework 关键词，在测试用例中调用，支持“sanity check”逻辑：如果测试中带有该标签的用例失败，则后续测试可被自动跳过。
+
+3. **Web UI测试部分**
+   – `libraries/web/web_test_loader.py` 负责加载 Web UI 的 Excel 测试用例，包括页面对象、步骤、元素定位（Locators）、测试数据、环境信息以及自定义操作（CustomActions）。其中还包含对页面变量的加载（EnvVariables sheet），并用来设置为 RF 全局变量。
+   – `webdriver_factory.py` 根据配置（是否远程、所用浏览器及其选项）创建 Selenium WebDriver 实例。
+   – 测试操作封装在 `libraries/web/web_actions.py` 中，该类继承自多个模块（例如 element_actions、javascript_actions、wait_actions、window_actions 等），提供统一的接口。
+   – 每个操作模块（放在 `libraries/web/web_action/` 目录中）均对某一类操作进行了封装，如点击、输入、元素高亮、滚动、表格验证（筛选、断言数据匹配）等。
+   – 验证部分由 `verification_actions.py` 实现，支持验证页面标题、文本、数字（图形数据、金额等可进行数值比较、取小数）以及元素状态（可见、启用、选中）等。
+   – 所有等待操作均集中于 `wait_actions.py` 中，使用 WebDriverWait 实现等待条件（presence、visibility、clickable、invisibility、文本出现等）。
+
+4. **E2E测试和性能测试部分**
+   – E2E测试通常是一个综合测试流程，可能会同时调用Web步骤和API步骤，生成器在 `libraries/robot/case/e2e_generator.py` 中实现，内部可能调用 API 用例生成器（如 `api_generator.py`）和 Web UI 用例生成器（如 `web_generator.py`）。
+   – Web性能测试的核心在 `libraries/performance/web_pt.py`，该模块利用 Selenium 对目标页面进行多轮访问，统计响应时间、JavaScript内存使用情况等。测试用例数据从 Excel（`web_pt_cases.xlsx`）加载，管理与报告生成使用 `web_pt_loader.py` 和 `web_pt_reporter.py`。报告生成后，以Base64编码的图片形式嵌入到 HTML 模板中，通过 Robot Framework 的Log输出。
+
+5. **Robot Framework 集成**
+   – 所有的测试用例生成器都实现了统一接口（在 `base_generator.py` 中定义），并在 `unified_generator.py` 通过工厂模式（`RobotCaseGeneratorFactory`）获取对应的生成器。
+   – 各生成器根据配置、Excel用例数据生成 Robot Framework 测试套件（TestSuite），并为每个测试用例创建相应的“Test Case”，组装步骤（关键词调用）以及配置前置、后置设置（如 TestSetup、TestTeardown、SuiteSetup、SuiteTeardown）。
+   – 执行器（例如 `robot_test_executor.py`）负责在执行时调用相应的库关键词，并处理特殊条件，如遇到某些“sanity check”失败时调用 BuiltIn.skip 方法跳过后续步骤。
+
+6. **报告与日志**
+   – 在测试执行结束后，测试报告和日志文件会被写入 `report/` 目录。
+   – 模板文件（如 `rf_report_template.html` 和 `test_summary_template.html`）会被用于生成详细的图表、数据表和统计信息，基于 Bootstrap、Chart.js 等前端技术呈现一个直观的测试统计仪表板。
+
+7. **自定义操作扩展**
+   – 为满足特殊需求，`custom_action_executor.py` 可以加载用户在 Excel 中定义的 Python 代码（CustomActions），并在测试脚本中执行，从而扩展Web操作的功能。
+
+8. **入口程序及命令行参数**
+   – 主程序（例如 main.py）会解析命令行参数（如 `--api`、`--web`、`--e2e`、`--performance`），根据参数选定对应的测试类型，并通过 `UnifiedRobotCaseGenerator` 生成对应的 Robot Framework 测试套件，然后运行测试并生成报告及仪表板。
+
+---
+
+## 三、小结
+
+整个框架采用模块化设计，每个子系统（API、Web、E2E、性能）均独立处理用例加载、执行和验证，同时利用配置文件实现灵活的环境切换；借助 Robot Framework 对测试用例进行统一管理和集成；使用 Selenium（及其封装的 Web Actions）实现 Web 页面自动化操作，高度支持数据驱动和动态值替换，最终生成详细的HTML报告和图表，方便用户观察测试运行情况与趋势。
+
+以上就是整个项目的详细文件结构和程序逻辑说明。
