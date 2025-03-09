@@ -11,11 +11,6 @@ tags:
     - Automated Testing
 ---
 
-
-下面给出一份完整的说明书，对项目的各个模块、目录结构、程序逻辑、以及 Excel 用例填写（API 和 Web）的各个细节进行了详细描述。由于篇幅较大，本文分为多部分进行说明，以下为第一部分，后续部分可以继续补充。
-
----
-
 # 自动化测试框架详细说明书
 
 该框架基于 Python 与 Robot Framework 实现，支持多种测试类型（API、Web UI、端到端、性能）。框架采用模块化设计：配置文件统一管理各种参数、公共工具库封装常用函数与中间件、各测试类别的逻辑独立处理用例的加载、执行与验证，最终生成详细的 HTML 报告和日志。
@@ -123,15 +118,10 @@ project_root/
 
 ---
 
-## 第二部分：各测试类型的详细逻辑
+## 第二部分：API 测试模块详细说明
 
-接下来的章节分别说明 API 测试与 Web UI 测试的程序逻辑以及 Excel 用例填写要求。以下内容基于本框架的实现说明，便于测试工程师了解整个流程与各项字段如何定义。
 
----
-
-### 3. API 测试部分详细逻辑
-
-#### 3.1 配置文件与初始化
+### 1. 配置文件与初始化
 
 - **配置文件（configs/api_test_config.yaml）：**
   配置当前激活的环境（如 DEV、UAT）、测试用例 Excel 文件路径（例如 test_cases/api_test_cases.xlsx）、是否在每个用例执行后清空保存字段（clear_saved_fields_after_test）、以及可选的用例 ID 列表（tc_id_list）和标签（tags）过滤。
@@ -139,7 +129,7 @@ project_root/
 - **初始化流程：**
   API 测试模块启动时，通过 `common/config_manager.py` 载入所有配置，将激活环境设置为 RF 全局变量（例如 `${active_environment}`），确保后续数据库切换、接口地址选择正确。
 
-#### 3.2 Excel 文件加载与数据校验
+### 2. Excel 文件加载与数据校验
 
 - **用例文件解析：**
   模块 `libraries/api/api_test_loader.py` 负责加载 Excel 文件，将各个 Sheet（包括 API、BodyTemplates、BodyDefaults、Headers、Endpoints）内容加载到内存中。
@@ -154,7 +144,7 @@ project_root/
 - **数据校验：**
   加载过程中，会校验各 Sheet 是否包含必须的列（例如 API Sheet 内需包含 TCID、Run、Endpoint、Body Template、Body Default、Headers、Exp Result 等），同时检查引用的模板名称在对应 Sheet 存在，避免因数据缺失或名称不匹配导致执行错误。
 
-#### 3.3 请求生成与发送
+### 3. 请求生成与发送
 
 - **生成请求体：**
   利用 `libraries/api/body_generator.py`、`template_renderer.py`、以及 `Body Override` 字段：
@@ -171,7 +161,7 @@ project_root/
 - **请求发送：**
   通过 `libraries/api/request_sender.py` 封装对 requests 库的调用，发送 HTTP 请求（支持 JSON 或 XML 数据），并记录请求的执行时间等细节参数。
 
-#### 3.4 响应处理与数据验证
+### 4. 响应处理与数据验证
 
 - **响应验证：**
   模块 `libraries/api/response_handler.py` 对响应体进行解析验证，常见验证方式：
@@ -181,7 +171,7 @@ project_root/
 - **动态检查机制（CheckWith）：**
   在 API 用例中，可在 `Conditions` 字段中定义“[CheckWith]TC002,TC003”，表示在当前用例前后调用指定的附加用例进行结果比对（例如对比数量是否增加）。
 
-#### 3.5 变量替换与 Sanity Check
+### 5. 变量替换与 Sanity Check
 
 - **变量替换：**
   框架支持两种替换规则：
@@ -191,7 +181,7 @@ project_root/
 - **Sanity Check：**
   如果 API 用例的 Tags 列中包含忽略大小写的“sanity check”，则此用例被视作关键接口测试。一旦执行失败，框架会设置全局变量 `${skip_on_sanity_check_failure}` 为 True，从而在后续调用关键词（例如 api_sanity_check）时跳过其他测试，避免时间浪费。
 
-#### 3.6 API Excel 用例填写规范
+### 6. API Excel 用例填写规范
 
 - **API Sheet（主用例表）：**
   每一行对应一个测试用例，主要字段包括：
@@ -217,13 +207,10 @@ project_root/
   • Headers Sheet 需提供 HeaderName 与 YAML 格式的内容；
   • Endpoints Sheet 包含环境、接口名称、请求方法及路径（路径中支持占位符，如 {user_id}）。
 
----
-
-下面给出完整说明书的第二部分，详细描述 Web UI 测试模块的程序逻辑以及 Excel 测试用例文件的填写规则与注意事项。
 
 ---
 
-## 第二部分：Web UI 测试模块详细说明
+## 第三部分：Web UI 测试模块详细说明
 
 Web UI 测试主要基于 Selenium WebDriver 与 Robot Framework 实现，利用 Excel 文件定义页面对象、测试用例、操作步骤、数据驱动以及环境信息。系统在加载并校验 Excel 文件后，将各操作转换为 Robot Framework 测试用例，调用 WebActions 中封装的操作函数来实现页面验证与交互。下面详细描述其各个环节的工作流程与相关文件/模块说明。
 
@@ -528,7 +515,7 @@ Web UI 测试主要基于 Selenium WebDriver 与 Robot Framework 实现，利用
 
 ---
 
-## 第三部分：Web 性能测试模块详细说明
+## 第四部分：Web 性能测试模块详细说明
 
 ### 1. 性能测试的总体思路
 
@@ -736,7 +723,7 @@ Web 性能测试旨在模拟用户对某一页面或应用的多次访问，通�
 
 ---
 
-## 第四部分：整体流程与扩展机制
+## 第五部分：整体流程与扩展机制
 
 本部分总结整个自动化测试框架的整体设计思路和执行流程，并介绍如何通过扩展机制支持 API、Web UI、E2E 与性能测试的无缝集成与灵活定制。
 
