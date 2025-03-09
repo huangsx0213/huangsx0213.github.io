@@ -142,7 +142,7 @@ project_root/
 - **请求组装**
   在 API 测试模块中，使用 `BodyGenerator` 和 `HeadersGenerator` 处理请求体和请求头。
   - 通过选择 Body Template 与默认值，再结合 Excel 中的 “Body Override” 字段，利用 Jinja2 模板引擎生成最终请求内容。
-  - 同时支持动态变量替换，把 `${variable}` 与 `\{{template\}}` 替换为实际动态值（例如 UUID、时间戳等）。
+  - 同时支持动态变量替换，把 `${variable}` 与 "{{template}}" 替换为实际动态值（例如 UUID、时间戳等）。
 - **发送请求**
   核心函数 `RequestSender.send_request` 利用 Python 的 requests 库根据请求方式（GET、POST…）发送请求，并记录响应时间。
 - **响应验证**
