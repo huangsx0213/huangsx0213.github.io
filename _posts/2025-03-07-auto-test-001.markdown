@@ -142,7 +142,7 @@ project_root/
 - **请求组装**
   在 API 测试模块中，使用 `BodyGenerator` 和 `HeadersGenerator` 处理请求体和请求头。
   - 通过选择 Body Template 与默认值，再结合 Excel 中的 “Body Override” 字段，利用 Jinja2 模板引擎生成最终请求内容。
-  - 同时支持动态变量替换，把 `${variable}` 与 ` {{template}} ` 替换为实际动态值（例如 UUID、时间戳等）。
+  - 同时支持动态变量替换，把 `${variable}` 与 {{template}} 替换为实际动态值（例如 UUID、时间戳等）。
 - **发送请求**
   核心函数 `RequestSender.send_request` 利用 Python 的 requests 库根据请求方式（GET、POST…）发送请求，并记录响应时间。
 - **响应验证**
@@ -199,7 +199,7 @@ Excel 文件通常包含多个 sheet，每个 sheet 用于定义不同的部分�
   - **Endpoint**：请求对应的接口名称，需与 Endpoints 表中定义一致
   - **Body Template**：请求体模板名称，应与 BodyTemplates 表中对应
   - **Body Default**：默认数据名称，对应 BodyDefaults 表
-  - **Body Override**：可选字段，允许以 JSON 格式覆盖默认值（支持动态变量，如 `${USER_ID}` 或 Jinja2 格式 `{{timestamp}}`）
+  - **Body Override**：可选字段，允许以 JSON 格式覆盖默认值（支持动态变量，如 `${USER_ID}` 或 Jinja2 格式 {{timestamp}}）
   - **Exp Result**：以 JSONPath 表达式定义预期结果，支持多行以及动态变量替换
   - **Save Fields**：设定要保存的返回字段（格式如 `assign_value($.result.amount, my_amount)`），以便后续用例可以引用
 
@@ -313,7 +313,7 @@ E2E 测试 Excel 文件一般会同时兼顾 API 与 UI 操作，其结构可能
 **总结：**
 
 - 每个 Excel 文件均需保证各个 sheet 内存在必需的列，且字段值与配置文件中引用一致（例如模板、标识、环境名称必须对上）。
-- 在填写时，注意区分静态数据与动态替换数据：变量使用 `${var}` 或模板格式 `{{timestamp}}`。
+- 在填写时，注意区分静态数据与动态替换数据：变量使用 `${var}` 或模板格式 {{timestamp}}。
 - 标签（Tags）可用于控制测试执行（例如加上 “sanity check” 标签使其在关键步骤失败后终止后续执行）。
 
 ---
