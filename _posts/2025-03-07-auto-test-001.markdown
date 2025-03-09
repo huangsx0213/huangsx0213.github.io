@@ -244,7 +244,7 @@ Web UI 用例 Excel 文件通常包含以下几个 sheet：
   - **Case ID**：对应的测试用例标识
   - **Data Set**：数据集标识（允许一个用例有多种数据，每行代表一个数据集）
   - **Parameter Name**：待替换的参数名
-  - **Value**：对应的值，可以是字符串、数字或是 JSON 数据格式
+  - **Value**：对应的值，可以是字符串、数字或是 JSON 数据格式。支持动态变量替换，把 `${variable}` 与 `{% raw %}{{template}}{% endraw %}` 替换为实际动态值（例如 UUID、时间戳等）
   - **Data Type**：数据类型（例如 string、integer、json 等）
 
 - **Locators Sheet**
