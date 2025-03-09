@@ -108,9 +108,13 @@ project_root/
 
 接着，根据选择的测试类型，利用 `UnifiedRobotCaseGenerator`（位于 `libraries/robot/case/unified_generator.py`）创建对应的 Robot Framework TestSuite。
 该生成器内部通过工厂方法调用对应的生成器：
+
 – API测试：调用 `APIRobotCaseGenerator`（`libraries/robot/case/api_generator.py`），
+
 – Web UI测试：调用 `WebRobotCaseGenerator`（`libraries/robot/case/web_generator.py`），
+
 – E2E测试：调用 `E2ERobotCaseGenerator`（`libraries/robot/case/e2e_generator.py`），
+
 – 性能测试：调用 `WebPerformanceRobotCaseGenerator`（`libraries/robot/case/web_pt_robot_generator.py`）。
 
 在每个生成器中，流程大致如下：
