@@ -161,3 +161,408 @@ project_root/
 整个框架采用模块化设计，每个子系统（API、Web、E2E、性能）均独立处理用例加载、执行和验证，同时利用配置文件实现灵活的环境切换；借助 Robot Framework 对测试用例进行统一管理和集成；使用 Selenium（及其封装的 Web Actions）实现 Web 页面自动化操作，高度支持数据驱动和动态值替换，最终生成详细的HTML报告和图表，方便用户观察测试运行情况与趋势。
 
 以上就是整个项目的详细文件结构和程序逻辑说明。
+
+下面整理了API测试部分的详细逻辑以及如何填写API用例所在的Excel表格的要求和示例，供参考。
+
+---
+
+## 一、API测试部分详细逻辑
+
+1. **配置文件与初始化**
+   – **配置文件：**
+  在 `configs/api_test_config.yaml` 中配置当前激活的环境（例如 DEV、UAT 等），测试用例文件的路径（如 `test_cases/api_test_cases.xlsx`）、是否在每个用例执行后清空保存的字段（clear_saved_fields_after_test）以及可选的用例ID列表（tc_id_list）和标签（tags）作为过滤条件。
+   – **初始化：**
+  API模块在初始化时，首先由配置管理器加载配置信息，并将当前环境值设为 Robot 框架的全局变量（如 `${active_environment}`），以便后续对数据库或其它部分的配置进行切换。
+
+2. **Excel测试用例文件的加载与校验**
+   – **加载模块：**
+  通过位于 `libraries/api/api_test_loader.py` 的 APITestLoader，将 Excel 文件中的各个 Sheet 内容全部加载到内存中。
+   – **Excel组织结构：**
+  Excel文件主要有以下几个Sheet：
+   • **API：** 主测试用例信息。
+   • **BodyTemplates：** 定义请求体模板。
+   • **BodyDefaults：** 定义请求体的默认数据。
+   • **Headers：** 定义请求消息头模板。
+   • **Endpoints：** 根据环境定义接口的HTTP方法和URL Path。
+   – **结构校验：**
+  加载后程序会校验每个 Sheet 是否包含必要的列（例如 API sheet 中必须有TCID、Run、Endpoint、Body Template、Body Default、Headers、Exp Result 等），以及各个引用模板之间的对应关系，例如 API 用例引用的Body Template名称必须在 BodyTemplates 表中存在。
+
+3. **生成请求和发送调用**
+   – **生成请求体：**
+  由 `BodyGenerator`（`libraries/api/body_generator.py`）读取API用例中指定的“Body Template”和“Body Default”，先加载默认数据和模板内容。接着，根据用例中“Body Override”字段提供的JSON格式字符串，将默认数据与额外的参数合并。在合并过程中，对其中包含的占位符进行动态值替换，例如：
+   - 描述为 `"{{timestamp}}"` 的字段，将调用 `VariableGenerator` 生成当前时间戳（timestamp）；
+   - 通过 `${变量名}` 的格式可引用Robot Framework预先设置的全局变量。
+   – **生成请求头：**
+  `HeadersGenerator`（`libraries/api/headers_generator.py`）负责解析 Headers sheet 中对应的模板内容，同样支持动态变量替换（例如 Authorization 字段中可能含有 `${AUTH_TOKEN}`）。
+   – **接口地址及方法：**
+  根据 API 用例中的“Endpoint”字段，程序会在 Endpoints sheet 中查找匹配的接口，根据活跃环境（active_environment）确定接口的HTTP方法（如 GET、POST 等）和 URL路径，若接口不存在，则会报错。
+   – **请求发送：**
+  通过封装在 `RequestSender`（`libraries/api/request_sender.py`） 内部调用 requests 真正发起请求，支持 json 或 xml 格式的数据。请求发送过程中会记录请求的执行时间。
+
+4. **响应处理与校验**
+   – **响应验证：**
+  返回后由 `ResponseValidator`（`libraries/api/response_handler.py`） 对返回的响应内容进行验证。
+  验证逻辑包括：
+   - 使用 JSONPath 表达式从响应体中抽取数据，并与 API 用例中“Exp Result”中定义的预期值对比；
+   - 当响应中需要保存的字段（例如 Token 或其它数据）在“Save Fields”中指定时，通过 `ResponseFieldSaver` 从响应抽取数据并设置全局变量，供后续用例使用。
+   – **动态检查机制（CheckWith）：**
+  在 API 用例的“Conditions”字段中，可以定义 “[CheckWith]TC002,TC003” 这样的附加测试用例，在执行当前用例前后运行这些子用例，将它们返回的结果做差值校验（如数量增加了+1等）。
+
+5. **欄位覆盖与动态变量**
+   – 测试用例中可以利用占位符进行动态数据生成。
+   – **两种常见替换方式：**
+  • 使用 Jinja2 语法的 `{{placeholder}}`，如 `{{timestamp}}` 触发生成当前格式化的时间戳；
+  • 使用 `${VARIABLE}` 的形式，从 Robot 框架环境变量中获取已有数据。
+   – 这些替换将发生在请求体生成以及请求头准备的过程中。
+
+6. **Sanity Check机制**
+   – 如果 API 用例在“Tags”列中包含“sanity check”标签，则系统把它视为关键用例。
+   – 当“sanity check”用例执行失败后，全局变量 `${skip_on_sanity_check_failure}` 会被设为 True，从而使后续测试调用 `api_sanity_check` 关键词时自动跳过，避免浪费时间。
+
+---
+
+## 二、填写 API Excel 表格的详细逻辑
+
+API用例 Excel 文件主要包括多个 Sheet，每个Sheet用于存放不同类型的数据。下面分别说明各个Sheet以及在**API**测试用例填写时需要注意的事项：
+
+### 1. API Sheet（主用例表）
+
+每一行代表一个测试用例，主要字段说明如下：
+
+- **TCID**
+  • 唯一的测试用例标识符，格式如 "TC001"、"TC002" 。
+  • 必须唯一，不可重复。
+
+- **Name**
+  • 测试用例名称，简短描述接口测试的内容或目的。
+
+- **Descriptions**
+  • 对用例的详细描述，说明测试目的、背景等。
+
+- **Run**
+  • 指定本条用例是否执行。填写 "Y" 表示执行，"N" 表示跳过（注意大小写均要求一致）。
+
+- **Suite**
+  • 指定测试用例所在的套件名称，用于将用例按照模块或功能归组，比如 "User API"、"Payments" 等。
+
+- **Tags**
+  • 用于分类或过滤的标签，采用逗号分隔，例如 "critical, regression"。
+  • 如果包含 "sanity check"（不区分大小写）则表示该用例为关键接口测试。
+
+- **Endpoint**
+  • 接口名称，必须与 Endpoints sheet 中“Endpoint”列的值保持一致。
+  • 用于确定对应的URL路径和HTTP方法。
+
+- **Body Template**
+  • 参考 Body 模板文件的名字。模板在 BodyTemplates sheet 中定义。
+  • 用于生成请求体结构（一般为 JSON）。
+
+- **Body Default**
+  • 指定默认值模板的名称，在 BodyDefaults sheet 中定义。
+  • 用于给请求体提供基本数据结构或默认值。
+
+- **Body Override**
+  • 用户自定义的 JSON 格式字符串，用于覆盖或补充 Body Default 数据。
+  • 示例：
+    ```json
+    {"user_id": "${USER_ID}", "timestamp": "{{timestamp}}"}
+    ```
+  • 此处支持动态变量替换。若某个字段不需要覆盖则可以留空。
+
+- **Headers**
+  • 要使用的请求头模板名称，参照 Headers sheet 中的 “HeaderName”。
+  • 示例：
+    ```yaml
+    Authorization: "Bearer ${AUTH_TOKEN}"
+    Content-Type: "application/json"
+    ```
+
+- **Exp Result**
+  • 预期结果，通常使用 JSONPath 表达式指定某个响应字段的预期值。
+  • 示例：
+    ```
+    $.status.code=200
+    $.response.success=true
+    ```
+  • 也支持动态变量，例如 `${EXPECTED_STATUS}` 会被替换为实际的变量值。
+
+- **Save Fields**
+  • 指定从响应中需要保存的字段，用于后续用例可能需要用到这些数据。
+  • 支持两种格式：
+    - 直接写 JSONPath 表达式，如 `$.response.token`
+    - 或使用函数格式，如 `assign_value($.response.token,my_token)` 表示提取token并保存为全局变量 `${my_token}`。
+
+- **Conditions**
+  • 可选项，用于描述特殊的前置或后置条件。
+  • 例如可以写 `[CheckWith]TC002,TC003`，告诉框架在测试当前用例前后执行其他测试用例用于校验动态变化；
+  • 也可写 `[TestSetup]` 或 `[TestTeardown]` 等标记来指定测试前后动作。
+
+- **Wait**
+  • 执行完本测试后等待的时间（单位秒），以确保后续请求或异步处理有足够的处理时间。
+  • 若不需要等待可以留空或填“0”。
+
+### 2. BodyTemplates Sheet
+
+- **TemplateName**
+  • 模板唯一标识符，用于在API用例中引用（例如 "UserCreateTemplate"）。
+
+- **Content**
+  • 模板内容，通常为 JSON 格式字符串（也支持 XML），可写入 Jinja2 模板语法以供动态渲染。
+  • 示例：
+    ```json
+    {
+      "user_id": "{{ user_id }}",
+      "timestamp": "{{ timestamp }}",
+      "details": {
+         "name": "{{ name }}",
+         "email": "{{ email }}"
+      }
+    }
+    ```
+
+- **Format**
+  • 数据格式标识，一般填写 "json" 或 "xml"。
+
+### 3. BodyDefaults Sheet
+
+- **Name**
+  • 默认数据模板的名称，例如 "UserCreateDefault"。
+
+- **Content**
+  • 默认数据，格式为JSON字符串，用于提供基本请求数据。
+  • 示例：
+    ```json
+    {
+      "user_id": "",
+      "name": "Unknown",
+      "email": ""
+    }
+    ```
+
+### 4. Headers Sheet
+
+- **HeaderName**
+  • 请求头模板名称，例如 "CommonHeaders"。
+
+- **Content**
+  • YAML格式字符串，内容为不同的请求头及其值。
+  • 示例：
+    ```yaml
+    Authorization: "Bearer ${AUTH_TOKEN}"
+    Content-Type: "application/json"
+    Accept: "application/json"
+    ```
+
+### 5. Endpoints Sheet
+
+- **Environment**
+  • 环境名称，应与api_test_config.yaml中的active_environment一致，如 DEV 或 UAT。
+
+- **Endpoint**
+  • 接口名称，必须与 API sheet 中用例的 Endpoint 字段一致。
+
+- **Method**
+  • HTTP 方法，如 GET、POST、PUT、DELETE、PATCH。
+
+- **Path**
+  • 接口URL 路径，可能包含路径参数，例如 `/api/users` 或 `/api/users/{user_id}`。
+
+---
+
+## 三、小结
+
+- **API测试流程：**
+  读取配置 → 加载Excel所有Sheet并校验结构 → 根据API sheet读取每个用例的详细信息 → 利用 BodyTemplates 与 BodyDefaults 以及Body Override生成请求体，同时利用Headers模板生成请求头 → 根据Endpoints sheet确定请求方法和URL → 调用RequestSender发起请求 → 使用ResponseValidator和ResponseFieldSaver对响应进行断言和记录 → 如果用例包含特殊标签（如sanity check）则做进一步处理。
+
+- **Excel填写要求：**
+  每个字段必须准确填写，引用模板名称时需确保在对应Sheet中存在；动态变量格式使用 `${}` 或 `{{}}`；预期结果建议使用 JSONPath 表达式；虽然某些字段可以为空（如Body Override、Wait），但关键字段（TCID、Run、Endpoint、Body Template、Headers等）必须正确填写。
+
+通过上述两大部分的详细说明，可以帮助测试工程师正确编写API用例Excel，并理解整个API测试执行过程。
+
+下面整理出 Web 测试部分的详细逻辑以及如何填写 Web 测试 Excel 文件的各个 Sheet 字段要求和注意事项，供后续使用者参考。
+
+---
+
+## 一、Web 测试部分详细逻辑
+
+Web 测试主要通过以下几个步骤实现，从 Excel 加载用例、验证数据完整后生成 Robot Framework 测试用例并调用 Selenium WebDriver 进行页面操作。其详细流程如下：
+
+1. **配置与初始化**
+   - **配置加载：**
+     Web 测试相关的配置存放在 `configs/web_test_config.yaml` 文件中，该文件中包含当前激活的环境（active_environment）、测试用例 Excel 文件的路径（test_cases_path）、用例过滤列表（tc_id_list）以及标签过滤（tags）。
+   - **环境信息：**
+     Web 环境配置信息存放在 Excel 文件中的 WebEnvironments Sheet，内容包括环境名称、目标 URL、浏览器类型（chrome、edge）、是否远程执行、远程地址、浏览器及驱动路径、浏览器选项等。
+   - **全局变量：**
+     在初始化过程中，通过加载配置获取活跃环境，将环境信息设置为 Robot Framework 的全局变量（如 `${active_environment}`），以便后续测试用例中调用。
+
+2. **Excel 测试用例文件加载与校验**
+   Web 测试用例 Excel 文件通常包含多个 Sheet，各 Sheet 负责存放不同类型的数据，主要包括：
+   - **TestCases**：记录每个测试用例的基本信息。
+   - **TestSteps**：定义每个测试用例的具体操作步骤（执行顺序、页面名称、模块名称、是否执行等）。
+   - **TestData**：提供数据驱动测试所需的参数（参数名称、数据集、数据类型和值）。
+   - **Locators**：记录页面上各个元素的定位信息，包括页面名称、元素名称、定位类型、定位值及元素说明。
+   - **PageModules**：定义页面模型和功能模块，每个模块描述具体动作，包含页面名称、模块名称、元素名称、所要调用的 WebAction（如 click、input、hover 等）、参数（如待输入值）、是否高亮、是否截图、等待时间、以及是否执行。
+   - **WebEnvironments**：存放不同测试环境下的配置信息（例如目标 URL、浏览器相关信息等）。
+   - **CustomActions**（可选）：记录自定义的 Python 代码，以扩展 Web 操作；当标准库功能不能满足业务需求时，可以在此定义自定义操作。
+
+   – **数据校验：**
+     加载时，`libraries/web/web_test_loader.py` 会对各 Sheet 数据进行验证，确保：
+     • TestCases 中必须存在用例 ID、名称、描述、是否运行等必填项；
+     • TestSteps 中需填写每一步属于哪个用例（Case ID）、执行顺序、关联的 Page Name 与 Module Name；
+     • PageModules、Locators 数据之间需保持一致：例如，TestSteps 中引用的 Page Name 和 Module Name，必须在 PageModules 中有对应定义，而页面中的元素名称应在 Locators 表中能够找到定位信息；
+     • WebEnvironments 中的信息必须齐全，并且与配置文件中激活的环境匹配；
+     • TestData 表中提供的参数必须与页面模块中要求的参数相对应，保证数据驱动测试的数据能正确传递到用例中。
+
+3. **生成测试用例与执行**
+   - **测试用例生成器：**
+     加载和验证完 Excel 数据后，Web 测试生成器（例如位于 `libraries/robot/case/web_generator.py` 中）将根据 TestCases 表中的每一行生成对应的 Robot Framework 测试用例。
+   - **用例拆分：**
+     对于一个测试用例，可以结合 TestData 表中的数据集，高度进行数据驱动测试，如果用例存在多个数据集，则会生成多个 Robot 测试用例。
+   - **步骤构建：**
+     根据 TestSteps 表中定义的执行步骤，将每一步转换成 Robot Framework 调用关键词。Web 操作的执行由统一的 WebActions 类完成。该类在 `libraries/web/web_actions.py` 中定义，内部组合了各种专用操作模块（例如 element_actions、javascript_actions、wait_actions、window_actions、navigation_actions 等）。
+   - **调用 Selenium：**
+     通过 `webdriver_factory.py` 根据 WebEnvironments 的配置创建对应的 WebDriver 实例，并将该实例传递给 WebActions 进行页面操作。
+   - **验证与结果记录：**
+     测试过程中，各测试步骤会调用验证关键词（封装在 verification_actions.py 中）对页面元素、标题、文本、表格数据等进行断言；操作失败时，则记录错误信息，同时日志系统（log_manager.py）记录详细调试日志。
+   - **前后置操作：**
+     同时支持在 TestCases 中配置特定的前置【TestSetup】、后置【TestTeardown】操作，通过约定形式在 TestSteps 或 Conditions 中添加特殊标记调用对应 Robot 关键词，比如设置环境变量或关闭浏览器。
+
+4. **全局变量与自定义操作**
+   – 在 Excel 中还可以通过 EnvVariables Sheet 定义当前环境下的一些全局变量，加载后会通过 `web_test_loader` 设置为 Robot Framework 全局变量。
+   – 同时 CustomActions Sheet 提供自定义操作的编写入口，通过 `custom_action_executor.py` 解析并执行用户自定义的 Python 脚本，从而扩展标准功能。
+
+---
+
+## 二、填写 Web Test Excel 表格的详细逻辑
+
+Web 测试 Excel 用例文件由多个 Sheet 组成，每个 Sheet 按照特定用途填写，具体要求如下：
+
+### 1. TestCases Sheet （用例基本信息）
+
+每一行代表一个独立的测试用例。主要字段包括：
+- **Case ID**
+  • 唯一标识符，例如 "UITC001"、"UITC002" 等，必须唯一。
+- **Name**
+  • 用例名称，简洁描述测试目的，例如 “Login Test”。
+- **Descriptions**
+  • 详细描述测试步骤和预期目标，可供参考说明用例背景。
+- **Run**
+  • 指定是否执行：填写 "Y" 表示执行，"N" 表示跳过。
+- **Tags**
+  • 用于归类和过滤，例如 "regression, critical"。也可包含 “sanity check” 标识关键用例。
+- **Suite**
+  • 用例所属的测试套件名称，用于将用例进行分组展示（例如 "Login Module"）。
+
+### 2. TestSteps Sheet （步骤定义）
+
+每个测试步骤描述了执行该用例时的具体操作。常见字段：
+- **Case ID**
+  • 指明该步骤属于哪一个测试用例，必须与 TestCases Sheet 中的 Case ID 对应。
+- **Step ID**
+  • 分步顺序编号，用于确定执行顺序（例如 1、2、3……）。
+- **Page Name**
+  • 此步骤涉及到的页面名称（页面名称需与 PageModules 和 Locators 中的定义保持一致），例如 "LoginPage"。
+- **Module Name**
+  • 指出此次操作属于页面中的哪个模块或功能，见 PageModules，用于确定调用哪一套操作（例如 "LoginForm"）。
+- **Run**
+  • 指定该步骤是否执行，填写 "Y" 或 "N"。
+- **备注**（可选）
+  • 对步骤操作做补充说明。
+
+### 3. TestData Sheet （数据驱动测试数据）
+
+当同一个测试用例需要使用不同的数据运行时，在 TestData 表中定义数据集：
+- **Case ID**
+  • 测试用例标识，与 TestCases 表对应。
+- **Data Set**
+  • 数据集标识，比如 "Set1", "Set2"，用于区分同一用例的多种数据组合。
+- **Parameter Name**
+  • 对应于页面操作中需要传入的参数名称，例如 "username", "password"。
+- **Value**
+  • 参数实际值，例如 "testuser"，"123456"。
+- **Data Type**
+  • 数据类型，如 string、integer、json 等，便于适当的类型转换。
+
+### 4. Locators Sheet （元素定位信息）
+
+用于描述各页面上元素的定位方式：
+- **Page Name**
+  • 元素所在页面，与 TestSteps 和 PageModules 中定义的页面名称一致。
+- **Element Name**
+  • 元素名称，用于唯一标识页面上的控件，例如 "username_field"、"login_button"。
+- **Locator Type**
+  • 定位方法，例如 id、name、xpath、css、class 等。
+- **Locator Value**
+  • 具体的定位表达式，例如 `"//input[@id='username']"` 或 `"username"`。
+- **Description**
+  • 对该元素的简要描述，便于维护和理解。
+
+### 5. PageModules Sheet （页面模块定义）
+
+此表用于构造页面对象模型，将复杂页面拆分为多个模块，每个模块描述一组相关操作：
+- **Page Name**
+  • 该模块所在的页面名称，例如 "LoginPage"。
+- **Module Name**
+  • 模块名称，表示该模块对应页面上的一个功能区域，例如 "LoginForm"。
+- **Element Name**
+  • 与该模块相关的元素名称，需与 Locators 表中一致（如果操作需要关联具体元素）。
+- **Actions**
+  • 定义该模块的操作动作，调用 WebActions 中预先定义的关键词，例如 "click"、"input"、"verify_text" 等。
+- **Parameter Name**
+  • 操作所需要的参数名称（可以多个，用逗号分隔），例如 "username,password"。
+- **Highlight**
+  • 是否在操作时对元素进行高亮显示，填写 "Y" 或 "N"。
+- **Screenshot**
+  • 操作后是否截图，填写 "Y" 或 "N"。
+- **Wait**
+  • 辅助等待时间（单位秒），如 2、3 秒，可为空时表示不等待。
+- **Run**
+  • 是否执行该模块，填写 "Y" 或 "N"。
+   
+  注意：页面模块在运行时会根据 TestSteps 中选择相应的 Page Name 和 Module Name 查找并调用具体操作。
+
+### 6. WebEnvironments Sheet （环境配置信息）
+
+该 Sheet 定义不同测试环境下的信息，包括：
+- **Environment**
+  • 环境名称，如 DEV、SIT、PROD 等，必须与配置文件中 active_environment 匹配。
+- **TargetURL**
+  • 当前环境下的测试目标地址。
+- **Browser**
+  • 浏览器类型，例如 chrome、edge 等（不区分大小写）。
+- **IsRemote**
+  • 是否使用远程 WebDriver，填写布尔值（True/False）。
+- **RemoteURL**
+  • 若 IsRemote 为 True，则需填写远程 WebDriver Hub 地址。
+- **ChromePath / ChromeDriverPath**
+  • 对于本地执行，指明 Chrome 浏览器及驱动的路径。
+- **EdgePath / EdgeDriverPath**
+  • Edge 浏览器对应路径信息。
+- **BrowserOptions**
+  • 浏览器启动选项，通常以 JSON 格式字符串书写，可包括无头模式、窗口大小等。
+
+### 7. CustomActions Sheet（可选自定义操作）
+
+当标准操作不能满足业务需求时，可以在此定义自定义 Python 脚本：
+- **Action Name**
+  • 自定义操作名称，用于在 TestSteps 或 PageModules 中引用。
+- **Python Code**
+  • 自定义 Python 代码，必须定义一个 `execute` 函数作为入口。
+- **Description**
+  • 对该自定义操作的简要说明。
+
+---
+
+## 三、小结
+
+- **Web 测试执行流程：**
+  通过 `web_test_loader` 加载并验证 Excel 用例文件后，从 TestCases 表中获取用例基本信息，再根据 TestSteps 表构造操作流程；如有数据驱动，则结合 TestData 表循环生成多组用例。页面中的各个操作均依赖于 PageModules 和 Locators 的精准定义，而 WebEnvironments 提供了目标环境和浏览器配置信息。最终，生成的 Robot 框架测试用例调用 WebActions 类中封装的各种 Selenium 操作关键词完成实际的网页操作、验证和断言。
+
+- **Excel 文件填写基本要求：**
+  • 每个 Sheet 中的必填项必须完整无误（例如 TestCases 的 Case ID、Run、Suite、Tags；TestSteps 的 Case ID、Step ID、Page Name、Module Name 等）；
+  • 各个引用和关联名称（页面名称、模块名称、元素名称、模板名称等）保持一致；
+  • 动态数据和变量使用 `${变量名}` 与 `{{动态生成标识}}` 格式，便于后续变量替换；
+  • 用例步骤和数据驱动部分需保持行与列的一一对应，确保生成后的测试步骤能够正确调用；
+  • 环境配置信息在 WebEnvironments 表中填写，确保路径、浏览器选项等数据有效。
+
+通过上述逻辑描述和 Excel 表格的填写说明，测试人员可以按照既定格式构造 Web UI 测试用例，并利用此自动化测试框架生成、执行测试，最终获得详细的测试报告和日志。
