@@ -10,679 +10,180 @@ tags:
     - Testing
 ---
 
-一份极其详尽的 Pytest 学习指南，将内容扩展并细分为六个独立的篇章，每篇都力求深入、全面，并包含丰富的示例和最佳实践。
-
-## 第一篇：Pytest 入门与基础 —— 构建坚实的测试基石
-
-### 标题：**Pytest 启航：从安装配置到编写你的第一个测试**
-
-#### 1. Pytest 简介与优势
-
-*   **什么是 Pytest？**
-    *   Pytest 是一个成熟、全功能的 Python 测试框架。
-    *   它旨在简化测试的编写、组织和执行，并提供丰富的特性和插件生态系统。
-*   **为什么选择 Pytest？**
-    *   **简洁易用：** 相比于 Python 内置的 `unittest` 模块，Pytest 语法更简洁，更符合 Python 的风格 (Pythonic)。
-    *   **自动发现：** Pytest 可以自动发现测试文件和测试函数，无需手动配置。
-    *   **强大的 Fixture 机制：** Fixture 提供了一种优雅的方式来管理测试所需的资源和依赖。
-    *   **丰富的断言：** Pytest 增强了 Python 的 `assert` 语句，提供了更详细的错误信息和更方便的断言方式。
-    *   **参数化测试：** Pytest 内置了对参数化测试的强大支持。
-    *   **插件生态系统：** Pytest 拥有庞大的插件生态系统，可以轻松扩展其功能（例如，代码覆盖率、HTML 报告、并行测试等）。
-    *   **社区活跃：** Pytest 拥有活跃的社区，可以方便地获得帮助和支持。
-
-#### 2. 安装、配置与环境准备
-
-*   **安装 Pytest：**
-    ```bash
-    pip install pytest
-    ```
-    使用 `pip` 安装 Pytest。建议安装最新版本。
-*   **验证安装：**
-    ```bash
-    pytest --version
-    ```
-    运行此命令可以查看 Pytest 的版本信息，确认安装成功。
-*   **虚拟环境（强烈推荐）：**
-    *   **为什么使用虚拟环境？**
-        *   隔离项目依赖：避免不同项目之间的依赖冲突。
-        *   保持环境干净：避免全局 Python 环境被污染。
-    *   **使用 `venv` 创建虚拟环境（Python 3.3+）：**
-        ```bash
-        python3 -m venv .venv  # 创建名为 .venv 的虚拟环境 (可以自定义名称)
-        ```
-    *   **激活虚拟环境：**
-        *   **Linux/macOS:**
-            ```bash
-            source .venv/bin/activate
-            ```
-        *   **Windows:**
-            ```bash
-            .venv\Scripts\activate
-            ```
-    *   **退出虚拟环境：**
-        ```bash
-        deactivate
-        ```
-    *   **其他虚拟环境工具：**
-        *   `virtualenv` (更老的工具，也广泛使用)
-        *   `conda` (Anaconda 或 Miniconda 提供的环境和包管理工具)
-        *   `pipenv` (结合了 `pip` 和 `virtualenv` 的功能)
-        *   `poetry` (更现代的依赖管理和打包工具)
-
-* **配置文件 (pytest.ini, pyproject.toml, tox.ini)**
-   *  Pytest 允许你通过配置文件来自定义其行为。
-   * **`pytest.ini` (首选):**
-       *  这是 Pytest 推荐的配置文件，位于项目的根目录下。
-       * 使用 INI 文件格式。
-
-        ```ini
-        [pytest]
-        # 常用配置选项
-        addopts = -v --cov=my_project --cov-report term-missing  # 额外的命令行选项
-        testpaths = tests src/my_package  # 指定测试目录和源代码目录
-        python_files = test_*.py *_test.py check_*.py  # 测试文件匹配模式
-        python_classes = Test* Suite*  # 测试类匹配模式
-        python_functions = test_* check_*  # 测试函数匹配模式
-        markers =  # 自定义标记
-            slow: mark tests as slow to run
-            network: mark tests that require network access
-            integration: mark integration tests
-        norecursedirs = .* build dist venv .tox  # 忽略的目录
-        filterwarnings =  # 忽略警告
-            error
-            ignore::DeprecationWarning
-        ```
-   * **`pyproject.toml`:**
-      *  如果你的项目使用 `pyproject.toml` 文件进行打包和依赖管理 (例如，使用 Poetry 或 Flit)，你也可以在这里配置 Pytest。
-      ```toml
-      [tool.pytest.ini_options]
-      addopts = "-v --cov=my_project"
-      testpaths = ["tests"]
-      ```
-
-   * **`tox.ini`:**
-      * 如果你使用 `tox` 进行多环境测试（例如，在不同的 Python 版本或不同的依赖组合下运行测试），你可以在 `tox.ini` 文件中配置 Pytest。
-      ```ini
-      [testenv]
-      deps =
-          pytest
-          pytest-cov
-      commands =
-          pytest -v --cov=my_project {posargs}
-      ```
-
-* **环境变量:**
-    *  可以通过设置环境变量来影响 Pytest 的行为。
-    *   **`PYTEST_ADDOPTS`:**  设置额外的命令行选项。
-        ```bash
-        export PYTEST_ADDOPTS="-v --color=yes"  # Linux/macOS
-        set PYTEST_ADDOPTS="-v --color=yes"  # Windows
-        ```
-    *  其他环境变量：参考 Pytest 官方文档。
-
-#### 3. 编写你的第一个测试
-
-*   **测试文件的命名约定：**
-    *   文件名应该以 `test_` 开头或以 `_test.py` 结尾。例如：`test_example.py`, `example_test.py`。
-*   **测试函数的命名约定：**
-    *   测试函数名应该以 `test_` 开头。例如：`test_addition`, `test_string_manipulation`。
-*   **测试类 (可选)：**
-    *   可以将相关的测试函数组织到一个类中。
-    *   类名应该以 `Test` 开头。例如：`TestCalculator`, `TestStringUtilities`。
-    *   类中的测试方法仍然需要以 `test_` 开头。
-
-*   **`assert` 语句：**
-    *   Pytest 使用 Python 内置的 `assert` 语句来进行断言。
-    *   `assert` 后面跟一个表达式，如果表达式的值为 `True`，则测试通过；如果为 `False`，则测试失败。
-    *   Pytest 对 `assert` 语句进行了增强，提供了更详细的错误信息。
-    *  **基本断言示例:**
-        ```python
-        def add(x, y):
-            return x + y
-
-        def test_add():
-            assert add(1, 2) == 3
-            assert add(-1, 1) == 0
-            assert add(0, 0) == 0
-
-        def test_add_strings():
-            assert add("hello", " world") == "hello world"
-
-        def test_add_lists():
-            assert add([1, 2], [3, 4]) == [1, 2, 3, 4]
-        ```
-
-    *  **更丰富的断言方式:**
-
-        ```python
-        import pytest
-        import math
-
-        def test_equality():
-            assert 1 + 1 == 2
-            assert "hello".upper() == "HELLO"
-
-        def test_almost_equal():
-            assert 1.0 == pytest.approx(1.0001, rel=1e-4)  # 相对误差
-            assert 1.0 == pytest.approx(0.9999, abs=1e-4)  # 绝对误差
-            assert math.pi == pytest.approx(3.14, rel=1e-2)
-
-        def test_list_comparison():
-            assert [1, 2, 3] == [1, 2, 3]  # 列表元素和顺序必须完全相同
-            assert [1, 3, 2] != [1, 2, 3]
-
-        def test_dict_comparison():
-            assert {"a": 1, "b": 2} == {"b": 2, "a": 1}  # 字典的键值对相同即可，顺序不重要
-
-        def test_set_comparison():
-            assert {1, 2, 3} == {3, 2, 1}  # 集合的元素相同即可，顺序不重要
-
-        def test_membership():
-            assert 2 in [1, 2, 3]
-            assert "a" in {"a": 1, "b": 2}  # 检查键是否存在于字典中
-            assert "hello" in "hello world"
-
-        def test_truthiness():
-            assert [] == False #python中空列表会被判定为False
-            assert [1] == True #python中非空列表会被判定为True
-            assert not []  # 空列表为 False
-            assert [1]  # 非空列表为 True
-            assert {} == False #空字典判定为False
-            assert {"a": 1} == True #非空字典判定为True
-            assert not {}
-            assert {"a": 1}
-            assert 0 == False #0判定为False
-            assert 1 == True #非0整数判定为True
-            assert not 0
-            assert 1
-            assert "" == False #空字符串判定为False
-            assert "hello" == True #非空字符串判定为True
-            assert not ""
-            assert "hello"
-
-        def test_identity():
-            a = [1, 2, 3]
-            b = a
-            c = [1, 2, 3]
-            assert a is b  # a 和 b 引用同一个对象
-            assert a is not c  # a 和 c 引用不同的对象，即使它们的值相同
-
-        def test_exception():
-            with pytest.raises(ZeroDivisionError):
-                1 / 0
-
-            with pytest.raises(ValueError, match="invalid literal"):
-                int("abc")
-
-            with pytest.raises(TypeError) as excinfo:
-                "hello" + 1
-            assert "must be str, not int" in str(excinfo.value)
-        ```
-
-    *   **自定义断言消息：**
-        ```python
-        def test_failure_with_message():
-            assert 1 + 1 == 3, "Basic arithmetic is broken!"  # 自定义错误消息
-        ```
-
-#### 4. 组织测试
-
-*   **测试文件：**
-    *   将测试代码放在独立的 `.py` 文件中。
-    *   文件名遵循 `test_*.py` 或 `*_test.py` 的命名约定。
-*   **测试目录：**
-    *   通常将测试文件放在一个名为 `tests` 的目录中（或你喜欢的任何名称），与被测试的代码分开。
-    *   `tests` 目录的结构可以模仿被测试代码的结构，也可以根据需要进行调整。
-* **包结构**
-     *  如果你的测试目录包含多个子目录，确保每个子目录都包含一个 `__init__.py` 文件 (即使是空的)，以便 Pytest 将其识别为一个包。
-*   **测试类 (Test Classes)：**
-    *   可以将相关的测试函数组织到一个测试类中。
-    *   类名应该以 `Test` 开头。
-    *   测试类提供了一种组织测试的结构，但不是必需的。
-    *   测试类中的 setup/teardown 方法 (稍后详细介绍)。
-        ```python
-        class TestMyClass:
-            def test_method_one(self):
-                assert True
-
-            def test_method_two(self):
-                assert "hello".upper() == "HELLO"
-        ```
-
-#### 5. 运行测试
-
-*   **基本运行：**
-    *   在项目根目录下（包含 `pytest.ini` 或测试文件的目录）打开终端，运行 `pytest` 命令。
-    *   Pytest 会自动发现并运行所有符合命名约定的测试文件和测试函数。
-*   **指定测试文件或目录：**
-    ```bash
-    pytest tests/  # 运行 tests 目录下的所有测试
-    pytest test_module.py  # 运行 test_module.py 文件中的所有测试
-    pytest tests/test_module.py::test_function  # 运行特定文件中的特定测试函数
-    pytest tests/test_module.py::TestClass::test_method #运行特定类中的特定方法
-    ```
-*   **常用命令行选项 (概览)：**
-    *   `-v`, `--verbose`: 显示更详细的输出（每个测试函数的名称和结果）。
-    *   `-q`, `--quiet`: 减少输出信息，只显示摘要。
-    *   `-s`: 不捕获标准输出/标准错误（用于调试测试代码中的 `print` 语句）。
-    *   `-x`, `--exitfirst`: 遇到第一个失败的测试时立即停止。
-    *   `--lf`, `--last-failed`: 只重新运行上次失败的测试。
-    *   `--ff`, `--failed-first`: 先运行上次失败的测试，然后运行其余的测试。
-    *   `-k EXPRESSION`: 根据名称 (关键字表达式) 选择测试。
-    *   `-m MARKEXPR`: 根据标记 (标记表达式) 选择测试 (稍后详细介绍标记)。
-
-*   **示例：运行测试并查看详细输出**
-    ```bash
-    pytest -v tests/
-    ```
-
-**本篇总结：**
-
-本篇详细介绍了 Pytest 的基础知识，包括安装、配置、编写第一个测试、组织测试以及运行测试。掌握这些基础知识是使用 Pytest 进行有效测试的关键。在下一篇中，我们将深入探讨 Pytest 的核心概念 —— Fixture，这是 Pytest 最强大和最有用的特性之一。
-
-## 第二篇：Pytest 核心概念 —— Fixture 的魔力
-
-### 标题：**深入 Fixture：掌握 Pytest 测试的灵魂**
-
-#### 1. 什么是 Fixture？
-
-*   **定义：** Fixture 是 Pytest 中用于为测试提供固定基线（baseline）的函数。它们可以提供测试所需的各种资源、数据、对象或上下文。
-*   **目的：**
-    *   **消除重复代码：** 避免在多个测试函数中重复编写相同的 setup (准备) 和 teardown (清理) 代码。
-    *   **依赖注入：** 为测试函数提供它们所依赖的资源，而无需测试函数自己创建或管理这些资源。
-    *   **提高可读性和可维护性：** 使测试代码更简洁、更易于理解，因为测试函数只关注核心的测试逻辑。
-    *   **测试隔离：** 确保每个测试都在一个干净、独立的环境中运行，避免测试之间的相互影响。
-
-#### 2. Fixture 的基本用法
-
-*   **`@pytest.fixture` 装饰器：**
-    *   使用 `@pytest.fixture` 装饰器将一个普通函数标记为 Fixture。
-    ```python
-    import pytest
-
-    @pytest.fixture
-    def my_fixture():
-        # Setup: 在这里准备测试所需的资源
-        resource = {"data": 123}
-        return resource  # 将资源提供给测试函数
-        # Teardown: 在这里清理资源 (可选)
-    ```
-
-*   **在测试函数中使用 Fixture：**
-    *   将 Fixture 的名称作为测试函数的参数，Pytest 会自动查找并调用相应的 Fixture 函数，并将返回值传递给测试函数。
-    ```python
-    def test_with_fixture(my_fixture):  # my_fixture 作为参数
-        assert my_fixture["data"] == 123
-    ```
-* **Fixture的返回值:**
-  * Fixture可以返回任何Python对象, 包括:
-    * 基本数据类型 (整数、字符串、布尔值等)
-    * 列表、字典、集合等
-    * 自定义类的实例
-    * 函数 (工厂 Fixture)
-    * 生成器 (用于 setup/teardown)
-    * None (如果 Fixture 只用于 setup/teardown，不需要返回值)
-
-#### 3. Fixture 的作用域 (Scope)
-
-*   **作用域的概念：** Fixture 的作用域决定了它的生命周期和共享范围。换句话说，它决定了 Fixture 实例何时被创建、何时被销毁，以及在哪些测试之间共享。
-*   **Pytest 提供的作用域：**
-    *   **`function` (默认)：**
-        *   每个测试函数都会创建一个新的 Fixture 实例。
-        *   测试之间完全隔离。
-        *   适用于需要干净、独立环境的测试，或者 Fixture 的创建/销毁开销很小的情况。
-    *   **`class`：**
-        *   每个测试类创建一个 Fixture 实例。
-        *   同一个测试类中的所有测试方法共享这个 Fixture 实例。
-        *   适用于同一类中的测试需要共享资源，且资源创建开销较大的情况。
-    *   **`module`：**
-        *   每个测试模块（.py 文件）创建一个 Fixture 实例。
-        *   同一个测试模块中的所有测试函数和测试类共享这个 Fixture 实例。
-        *   适用于同一模块中的测试需要共享资源，且资源创建开销非常大的情况。
-    *  **`package`：**
-        *   每个测试包（包含 `__init__.py` 的目录）创建一个 Fixture 实例。
-        *   同一个测试包中的所有测试模块，类，函数共享这个 Fixture 实例。
-         *   适用于同一package中的测试需要共享资源，且资源创建开销非常大的情况。
-    *   **`session`：**
-        *   整个测试会话（一次 `pytest` 命令的运行）只创建一个 Fixture 实例。
-        *   所有测试模块、测试类和测试函数共享这个 Fixture 实例。
-        *   适用于需要在整个测试会话中共享资源的情况（例如，数据库连接、全局配置、测试服务器）。
-*   **指定作用域：**
-    ```python
-    @pytest.fixture(scope="function")  # 默认作用域，可以省略
-    def function_scoped_fixture(): ...
-
-    @pytest.fixture(scope="class")
-    def class_scoped_fixture(): ...
-
-    @pytest.fixture(scope="module")
-    def module_scoped_fixture(): ...
-    
-    @pytest.fixture(scope="package")
-    def package_scoped_fixture(): ...
-
-    @pytest.fixture(scope="session")
-    def session_scoped_fixture(): ...
-    ```
-
-*   **选择合适的作用域：**
-    *   根据测试的需求和资源的开销来选择合适的作用域。
-    *   优先选择较小的作用域（`function`），以确保测试的隔离性。
-    *   只有在必要时才选择较大的作用域（`class`、`module`、`session`），以减少资源创建的开销。
-* **作用域降级:**
-    *   如果一个 Fixture 依赖于另一个作用域更小的 Fixture，那么它的作用域会自动降级到与它依赖的最小作用域相同。
-
-#### 4. `yield` 关键字与 Setup/Teardown
-
-*   **`yield` 的作用：**
-    *   **提供值：** `yield` 语句将 Fixture 的值（或对象）传递给测试函数。
-    *   **分割 Setup 和 Teardown：** `yield` 语句将 Fixture 函数的代码分为两部分：
-        *   `yield` 之前的代码是 setup 部分，在测试函数执行 *之前* 执行。
-        *   `yield` 之后的代码是 teardown 部分，在测试函数执行 *之后* 执行（无论测试是否成功）。
-*   **示例：**
-
-    ```python
-    import pytest
-
-    @pytest.fixture
-    def database():
-        print("\nConnecting to database...")
-        db = {"data": {}}  # 模拟一个数据库连接
-        yield db  # 将 db 对象提供给测试函数
-        print("\nDisconnecting from database...")
-        db.clear()  # 清理数据库（例如，关闭连接、删除测试数据）
-
-    def test_database_access(database):
-        database["data"]["key1"] = "value1"
-        assert database["data"]["key1"] == "value1"
-
-    def test_another_database_access(database):
-        database["data"]["key2"] = "value2"
-        assert database["data"]["key2"] == "value2"
-    ```
-
-*   **`yield` 与 `return` 的区别：**
-    *   `return` 会立即结束 Fixture 函数的执行，并将返回值传递给测试函数。
-    *   `yield` 会暂停 Fixture 函数的执行，将值传递给测试函数，并在测试函数执行完毕后 *恢复* Fixture 函数的执行（执行 teardown 代码）。
-*   **`try...finally` 块 (可选)：**
-    *   即使在 teardown 阶段发生异常，也可以使用 `try...finally` 块来确保资源被正确释放。
-    ```python
-    @pytest.fixture
-    def resource():
-        print("\nAcquiring resource...")
-        res = acquire_resource()  # 假设这是获取资源的代码
-        yield res
-        print("\nReleasing resource...")
-        try:
-            release_resource(res)  # 假设这是释放资源的代码
-        finally:
-            print("\nResource cleanup complete.")
-    ```
-
-*   **与 `with` 语句结合：**
-    *   如果 Fixture 管理的资源支持 Python 的上下文管理器协议（实现了 `__enter__` 和 `__exit__` 方法），可以使用 `with` 语句来简化 Fixture 的 setup/teardown 代码。
-    ```python
-    import pytest
-
-    @pytest.fixture
-    def file_resource(tmpdir):
-        file_path = tmpdir.join("my_file.txt")
-        with open(file_path, "w") as f:
-            yield f  # 提供文件对象
-        # 文件会在 with 语句块结束后自动关闭，无需显式 teardown 代码
-    ```
-
-#### 5. Fixture 的依赖注入
-
-*   **如何工作：**
-    *   测试函数通过将 Fixture 的名称作为参数来声明对 Fixture 的依赖。
-    *   Pytest 会自动查找并调用相应的 Fixture 函数，并将返回值作为参数传递给测试函数。
-*   **示例：**
-    ```python
-    import pytest
-
-    @pytest.fixture
-    def user():
-        return {"name": "Alice", "age": 30}
-
-    @pytest.fixture
-    def cart(user):  # cart Fixture 依赖于 user Fixture
-        return {"user": user, "items": []}
-
-    def test_add_to_cart(cart):
-        cart["items"].append("item1")
-        assert len(cart["items"]) == 1
-        assert cart["user"]["name"] == "Alice"
-    ```
-
-*   **多个 Fixture：**
-    *   一个测试函数可以依赖多个 Fixture。
-    ```python
-    def test_multiple_fixtures(fixture1, fixture2, fixture3):
-        ...
-    ```
-
-*   **Fixture 之间的依赖：**
-    *   Fixture 可以依赖其他 Fixture，形成依赖链。
-    *   Pytest 会自动解析 Fixture 之间的依赖关系，并按照正确的顺序执行它们。
-
-#### 6. Fixture 的执行顺序
-
-*   **作用域：**
-    *   作用域更广的 Fixture 先执行 (session > package > module > class > function)。
-    *   例如，`session` 级别的 Fixture 会在 `module` 级别的 Fixture 之前执行，`module` 级别的 Fixture 会在 `function` 级别的 Fixture 之前执行。
-*   **参数顺序：**
-    *   在 *相同* 作用域内，Fixture 按照它们在测试函数参数列表中的顺序执行。
-    ```python
-    @pytest.fixture
-    def fixture1():
-        print("\nExecuting fixture1...")
-
-    @pytest.fixture
-    def fixture2():
-        print("\nExecuting fixture2...")
-
-    def test_order(fixture2, fixture1):  # 注意顺序
-        print("\nRunning test...")
-
-    # 输出：
-    # Executing fixture2...
-    # Executing fixture1...
-    # Running test...
-    ```
-
-*   **Autouse Fixture：**
-    *   标记为 `autouse=True` 的 Fixture 会自动应用于其作用域内的所有测试，即使测试函数没有显式声明依赖。
-    *   对于 *相同* 作用域，autouse Fixture 通常在非 autouse Fixture 之前执行。
-    *  可以使用`order`参数控制fixture的执行顺序, `order`参数值越小,优先级越高.
-
-#### 7.深入理解 `request` 对象
-
-*   **`request` 对象是什么？**
-    *   `request` 对象是一个特殊的 Fixture，它提供了关于当前测试请求的上下文信息。
-    *   它可以被注入到 Fixture 函数和测试函数中。
-
-*   **`request` 对象的常用属性：**
-    *   `request.param`：
-        *   仅在参数化 Fixture 中可用。
-        *   获取当前 Fixture 实例的参数值。
-    *   `request.fixturename`：当前 Fixture 的名称。
-    *   `request.scope`：当前 Fixture 的作用域。
-    *   `request.node`：
-        *   当前测试节点。
-        *   可以是 `Function` 对象（对于测试函数）或 `Class` 对象（对于测试类）。
-        *   可以访问测试节点的名称、所在模块、所在类等信息。
-            ```python
-            # 获取测试函数名称
-            test_name = request.node.name
-
-            # 获取测试函数所在模块
-            module = request.node.module
-
-            # 获取测试函数所在类 (如果测试函数在类中)
-            cls = request.node.cls
-            ```
-    *   `request.config`：Pytest 的配置对象（`Config` 对象）。
-        *   可以访问命令行选项、配置文件中的设置等。
-        *   例如：`request.config.getoption("--verbose")` 获取 `-v` 选项的值。
-    *   `request.fspath`：当前测试文件（或 `conftest.py` 文件）的路径（`py.path.local` 对象）。
-    *   `request.function`：当前测试函数对象（如果可用）。
-    *   `request.cls`：当前测试类对象（如果可用）。
-    *   `request.module`：当前测试模块对象。
-    *   `request.session`：当前测试会话对象（`Session` 对象）。
-    *   `request.addfinalizer(fin)`：
-        *   注册一个终结函数 `fin`。
-        *   `fin` 会在 Fixture 的作用域结束时被调用（无论测试是否成功）。
-
-*  **示例: 使用`request.node`获取测试信息**
-
-    ```python
-    import pytest
-    @pytest.fixture(scope="function")
-    def function_fixture(request):
-        print(f"\nFixture for test: {request.node.name}")
-        print(f"  Module: {request.node.module.__name__}")
-        if request.node.cls:
-            print(f"  Class: {request.node.cls.__name__}")
-        print(f"  File: {request.node.fspath}")
-        yield
-        print(f"\nTeardown for test: {request.node.name}")
-
-    class TestMyClass:
-        def test_in_class(self, function_fixture):
-            pass
-
-    def test_standalone(self, function_fixture):
-        pass
-    ```
-
-**本篇总结：**
-
-本篇深入探讨了 Pytest 的 Fixture 机制，包括 Fixture 的定义、作用域、`yield` 关键字、依赖注入、执行顺序以及 `request` 对象。Fixture 是 Pytest 的核心特性，掌握 Fixture 的使用是编写高效、可维护测试的关键。在下一篇中，我们将继续探索 Pytest 的高级特性。
-
-## 第三篇：Pytest 进阶 —— 参数化、标记与插件
-
-### 标题：**驾驭 Pytest 的高级特性：参数化、标记与插件**
-
-#### 1. 参数化测试
-
-*   **参数化测试的概念：**
-    *   参数化测试允许你使用不同的输入数据多次运行同一个测试逻辑。
-    *   这有助于减少重复代码，并提高测试覆盖率。
-
-*   **`@pytest.mark.parametrize` 装饰器：**
-    *   这是 Pytest 中实现参数化测试的主要方式。
-    ```python
-    import pytest
-
-    @pytest.mark.parametrize("input, expected", [
-        (1, 2),
-        (3, 4),
-        (5, 6),
-    ])
-    def test_increment(input, expected):
-        assert input + 1 == expected
-    ```
-    *   **第一个参数：** 参数名称的字符串，多个参数用逗号分隔（例如，`"input, expected"`）。
-    *   **第二个参数：** 一个列表，其中每个元素代表一组参数值。
-        *   参数值通常是元组，元组中元素的顺序与参数名称的顺序对应。
-        *   参数值也可以是列表、字典或其他可迭代对象。
-    *   **Pytest 的行为：** Pytest 会为每组参数值生成一个独立的测试用例，并分别运行测试函数。
-
-*   **多个参数化装饰器：**
-
-    ```python
-    import pytest
-    @pytest.mark.parametrize("x", [1, 2])
-    @pytest.mark.parametrize("y", [3, 4])
-    def test_combinations(x, y):
-        print(f"x: {x}, y: {y}")
-
-    # Pytest 会生成以下测试用例：
-    # - x=1, y=3
-    # - x=1, y=4
-    # - x=2, y=3
-    # - x=2, y=4
-    ```
-    *   Pytest 会生成所有参数的组合（笛卡尔积）。
-
-* **参数化测试 ID (`ids`)**
-
-    *   默认情况下，Pytest 会自动为每个参数化测试用例生成一个 ID（基于参数值）。
-    *   可以使用 `ids` 参数来自定义测试 ID，使其更具可读性。
-    ```python
-    @pytest.mark.parametrize(
-        "input, expected",
-        [
-            (1, 2),
-            (3, 4),
-            pytest.param(5, 7, id="special_case"), # 使用 pytest.param 自定义 ID
-        ],
-        ids=["case1", "case2", "case3_auto_id"]  # 为每组参数指定 ID
-    )
-    def test_increment(input, expected):
-        assert input + 1 == expected
-    ```
-    * **`ids` 参数的值:**
-      *  可以是一个字符串列表, 列表的长度必须与参数值的组数相同。
-      *  也可以是一个接受参数值并返回ID的函数。
-    *   **`pytest.param`：**
-        *   `pytest.param` 函数可以用来包装参数值，并提供额外的元数据，例如自定义 ID 或标记。
-
-*   **标记参数化值 (`pytest.param` 与 `marks`)**
-   ```python
-    import pytest
-
-    @pytest.mark.parametrize(
-        "username, password",
-        [
-            ("valid_user", "valid_password"),
-            pytest.param("invalid_user", "invalid_password", marks=pytest.mark.xfail),
-            pytest.param("admin", "admin_password", marks=[pytest.mark.skip, pytest.mark.admin]),
-        ],
-    )
-    def test_login(username, password):
-        # ... 测试登录逻辑 ...
-        pass
-   ```
-    *   使用 `pytest.param` 可以为特定的参数值组合添加标记（例如，`skip`、`xfail`）。
-    *   `marks` 参数可以接受单个标记或标记列表。
-
-*   **参数化类和方法：**
-    ```python
-    import pytest
-
-    @pytest.mark.parametrize("x", [1, 2])
-    class TestClassParametrized:
-        def test_method(self, x):
-            assert x > 0
-
-        @pytest.mark.parametrize("y", [3, 4])
-        def test_method_combined(self, x, y):
-            assert x + y > 2
-    ```
-     *  可以在类级别或方法级别使用 `@pytest.mark.parametrize`。
-     *  如果类和方法都有参数化，Pytest 会生成所有可能的组合。
-
-#### 2. 标记 (Mark)
-
-*   **标记的概念：**
-    *   标记是附加到测试函数或测试类上的元数据。
-    *   它们用于对测试进行分类、分组、选择性运行或提供额外的信息。
-*   **内置标记：**
-    *   **`@pytest.mark.skip(reason=None)`：** 无条件跳过测试。
-        ```python
-        @pytest.mark.skip(reason="This test is not yet implemented")
-        def test_not_implemented():
-            ...
-        ```
-    *   **`@pytest.mark.skipif(condition, reason=None)`：**
-        *   `condition`: 一个 Python 表达式。如果表达式的值为 `True`，则跳过测试；否则，运行测试。
-        *   `reason`: 可选的跳过原因。
-        ```python
-        import sys
-        import pytest
-
-        @pytest.mark.skipif(sys.platform == "win32", reason="This test only runs on Linux")
-        def test_linux_only():
-       
+以下是针对 Selenium 4.22 及最新版本的 CDP 方法适配性确认和完整修正方案：
+
+---
+
+### **Selenium 4.22+ 中 CDP 的正确用法**
+Selenium 4.x 开始原生支持 Chrome DevTools Protocol (CDP)，但需通过 **`execute_cdp_cmd`** 和 **`get_cdp_session`** 方法操作。以下是对关键 API 的验证和修正说明：
+
+---
+
+### **1. 核心方法验证**
+#### **(1) `execute_cdp_cmd`**
+- **功能**：直接执行 CDP 命令。
+- **适配性**：Selenium 4.22+ 官方支持，最新版本仍有效。
+- **正确用法**：
+  ```python
+  # 启用 Network 域
+  driver.execute_cdp_cmd("Network.enable", {})
+
+  # 设置请求拦截规则
+  driver.execute_cdp_cmd("Network.setRequestInterception", {
+      "patterns": [{
+          "urlPattern": "*",
+          "resourceType": "XHR",
+          "interceptionStage": "HeadersReceived"
+      }]
+  })
+  ```
+
+#### **(2) `get_cdp_session`**
+- **功能**：获取 CDP 会话对象以监听事件。
+- **适配性**：Selenium 4.22+ 支持，但需注意参数和事件注册方式。
+- **正确用法**：
+  ```python
+  # 获取与当前页面关联的 CDP 会话
+  cdp_session = driver.get_cdp_session("page")
+
+  # 注册事件监听器
+  def handle_request_intercepted(**event):
+      # 处理事件逻辑
+
+  cdp_session.add_event_listener("Network.requestIntercepted", handle_request_intercepted)
+  ```
+
+---
+
+### **2. 完整适配代码示例**
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+
+def modify_cookie_value(driver, target_cookie_name, new_value):
+    # 启用 Network 域
+    driver.execute_cdp_cmd("Network.enable", {})
+
+    # 设置拦截规则（匹配所有 XHR 请求的响应头阶段）
+    driver.execute_cdp_cmd("Network.setRequestInterception", {
+        "patterns": [{
+            "urlPattern": "*",
+            "resourceType": "XHR",
+            "interceptionStage": "HeadersReceived"
+        }]
+    })
+
+    # 获取 CDP 会话对象
+    cdp_session = driver.get_cdp_session("page")
+
+    # 定义事件处理函数
+    def handle_request_intercepted(**event):
+        params = event.get("params", {})
+        interception_id = params.get("interceptionId")
+        headers = params.get("responseHeaders", [])
+
+        modified_headers = []
+        for header in headers:
+            if header.get("name", "").lower() == "set-cookie":
+                cookie_str = header.get("value", "")
+                parts = cookie_str.split(";")
+                name_value = parts[0].split("=", 1)
+                if len(name_value) == 2:
+                    cookie_name = name_value[0].strip()
+                    if cookie_name == target_cookie_name:
+                        # 修改 Cookie 值，保留其他属性
+                        new_cookie_str = f"{cookie_name}={new_value};" + ";".join(parts[1:])
+                        header["value"] = new_cookie_str.strip(";")
+            modified_headers.append(header)
+
+        # 继续请求并传递修改后的头信息
+        driver.execute_cdp_cmd("Network.continueInterceptedRequest", {
+            "interceptionId": interception_id,
+            "responseHeaders": modified_headers
+        })
+
+    # 注册事件监听器
+    cdp_session.add_event_listener("Network.requestIntercepted", handle_request_intercepted)
+
+# 使用示例
+driver = webdriver.Chrome()
+driver.get("https://your-target-site.com")
+
+# 修改名为 "user_token" 的 Cookie 值为 "new_token_456"
+modify_cookie_value(driver, "user_token", "new_token_456")
+
+# 触发 API 请求（例如点击按钮）
+# driver.find_element(By.CSS_SELECTOR, "#api-button").click()
+
+# 验证 Cookie 值
+print("修改后的 Cookies:", driver.get_cookies())
+
+driver.quit()
+```
+
+---
+
+### **3. 关键适配点说明**
+| 方法/属性                | Selenium 4.22+ 支持情况 | 注意事项                                                                 |
+|--------------------------|-------------------------|--------------------------------------------------------------------------|
+| `execute_cdp_cmd`        | ✅ 支持                 | 直接调用 CDP 命令，参数需严格匹配协议要求。                              |
+| `get_cdp_session`        | ✅ 支持                 | 参数需为 `"page"`，表示绑定到页面级会话。                               |
+| `add_event_listener`     | ✅ 支持                 | 通过 CDP 会话对象注册，事件名需完整（如 `Network.requestIntercepted`）。|
+| `Network.enable`         | ✅ 支持                 | 必须调用以启用 Network 域，否则无法拦截请求。                           |
+| `Network.setRequestInterception` | ✅ 支持         | `interceptionStage` 必须为 `HeadersReceived`。                          |
+
+---
+
+### **4. 常见问题排查**
+#### **问题 1：事件未触发**
+- **可能原因**：
+  - 未正确调用 `Network.enable`。
+  - `urlPattern` 或 `resourceType` 未匹配到目标请求。
+  - 浏览器或驱动版本不兼容。
+- **解决方案**：
+  1. 确保调用顺序：先 `Network.enable`，再 `Network.setRequestInterception`。
+  2. 调整 `urlPattern` 为更精确的匹配模式（如 `"*api*"`）。
+  3. 检查 Chrome 和 ChromeDriver 版本（要求 Chrome 90+，ChromeDriver 与浏览器版本一致）。
+
+#### **问题 2：修改后的 Cookie 未生效**
+- **可能原因**：
+  - Cookie 值格式错误（如未保留 `Path`、`Domain` 等属性）。
+  - 目标 Cookie 不存在于响应头中。
+- **解决方案**：
+  1. 使用开发者工具检查原始响应头中的 `Set-Cookie` 字段。
+  2. 确保代码中修改逻辑正确拼接 Cookie 字符串。
+
+#### **问题 3：`execute_cdp_cmd` 报错**
+- **错误示例**：
+  ```python
+  selenium.common.exceptions.WebDriverException: Message: unknown command: Unknown command
+  ```
+- **解决方案**：
+  - 检查 CDP 命令名称拼写（如 `Network.enable` 应为 `Network.enable`）。
+  - 参考 [CDP 官方文档](https://chromedevtools.github.io/devtools-protocol/) 确认命令参数格式。
+
+---
+
+### **5. 替代方案：使用 `selenium-wire`**
+如果原生 CDP 操作过于复杂，可改用 **`selenium-wire`** 库简化拦截逻辑：
+```python
+from seleniumwire import webdriver
+
+def modify_response(request):
+    if request.url == "https://api.example.com/data":
+        # 直接修改 Set-Cookie 值
+        request.response.headers["Set-Cookie"] = "user_token=new_token_456; Path=/"
+
+driver = webdriver.Chrome()
+driver.request_interceptor = modify_response
+driver.get("https://example.com")
+```
+- **优点**：无需手动处理 CDP 协议，API 更简洁。
+- **缺点**：需安装第三方库（`pip install selenium-wire`）。
+
+---
+
+### **总结**
+- **Selenium 4.22+ 完全支持**通过 `execute_cdp_cmd` 和 `get_cdp_session` 操作 CDP。
+- 需严格遵循 CDP 协议的命令和参数格式，优先参考官方文档。
+- 若追求开发效率，可评估 `selenium-wire` 等第三方库，但需权衡依赖性和灵活性。
