@@ -9,361 +9,680 @@ catalog: true
 tags:
     - Testing
 ---
-<think>
 
-嗯，用户问的是如何用Selenium的CDP功能来监控一个网址，然后替换服务器返回的cookie。首先，我需要回忆一下之前关于Selenium和CDP的知识。之前用户提到过使用Python的Selenium 4.22版本，所以现在的问题应该在这个环境下解决。
+一份极其详尽的 Pytest 学习指南，将内容扩展并细分为六个独立的篇章，每篇都力求深入、全面，并包含丰富的示例和最佳实践。
 
-用户的问题分为两个部分：监控一个网址和修改响应中的cookie。监控网址可以通过CDP的Network或者Fetch模块来实现，但替换响应内容需要拦截请求和响应。不过cookie通常是服务器通过Set-Cookie头设置的，所以可能需要修改响应头。
+## 第一篇：Pytest 入门与基础 —— 构建坚实的测试基石
 
-首先，我需要确定如何使用Fetch模块来拦截请求和响应。Fetch模块允许暂停请求和响应，然后修改它们。之前讲过如何用Fetch.enable来启用拦截，并处理requestPaused事件。这个时候需要同时处理请求阶段和响应阶段。
+### 标题：**Pytest 启航：从安装配置到编写你的第一个测试**
 
-不过，修改响应的cookie可能需要修改响应头中的Set-Cookie字段。这可能需要获取响应后，修改头信息，然后继续响应。但是CDP的Fetch模块是否允许修改响应头呢？需要查一下相关文档或者示例。
+#### 1. Pytest 简介与优势
 
-另外，用户可能想要在浏览器接收到响应时，替换掉服务器发来的cookie，比如替换成自定义的值。这时候的步骤应该是：
+*   **什么是 Pytest？**
+    *   Pytest 是一个成熟、全功能的 Python 测试框架。
+    *   它旨在简化测试的编写、组织和执行，并提供丰富的特性和插件生态系统。
+*   **为什么选择 Pytest？**
+    *   **简洁易用：** 相比于 Python 内置的 `unittest` 模块，Pytest 语法更简洁，更符合 Python 的风格 (Pythonic)。
+    *   **自动发现：** Pytest 可以自动发现测试文件和测试函数，无需手动配置。
+    *   **强大的 Fixture 机制：** Fixture 提供了一种优雅的方式来管理测试所需的资源和依赖。
+    *   **丰富的断言：** Pytest 增强了 Python 的 `assert` 语句，提供了更详细的错误信息和更方便的断言方式。
+    *   **参数化测试：** Pytest 内置了对参数化测试的强大支持。
+    *   **插件生态系统：** Pytest 拥有庞大的插件生态系统，可以轻松扩展其功能（例如，代码覆盖率、HTML 报告、并行测试等）。
+    *   **社区活跃：** Pytest 拥有活跃的社区，可以方便地获得帮助和支持。
 
-1. 启用Fetch模块，设置拦截模式。
-2. 当请求发送到目标URL时，拦截请求。
-3. 当响应返回时，拦截响应，修改Set-Cookie头。
-4. 放行修改后的响应。
+#### 2. 安装、配置与环境准备
 
-可能需要分别处理请求和响应的暂停事件。例如，在Fetch.requestPaused事件中，判断是请求还是响应阶段。事件参数中有resourceType和requestId，可能需要在响应阶段处理。
+*   **安装 Pytest：**
+    ```bash
+    pip install pytest
+    ```
+    使用 `pip` 安装 Pytest。建议安装最新版本。
+*   **验证安装：**
+    ```bash
+    pytest --version
+    ```
+    运行此命令可以查看 Pytest 的版本信息，确认安装成功。
+*   **虚拟环境（强烈推荐）：**
+    *   **为什么使用虚拟环境？**
+        *   隔离项目依赖：避免不同项目之间的依赖冲突。
+        *   保持环境干净：避免全局 Python 环境被污染。
+    *   **使用 `venv` 创建虚拟环境（Python 3.3+）：**
+        ```bash
+        python3 -m venv .venv  # 创建名为 .venv 的虚拟环境 (可以自定义名称)
+        ```
+    *   **激活虚拟环境：**
+        *   **Linux/macOS:**
+            ```bash
+            source .venv/bin/activate
+            ```
+        *   **Windows:**
+            ```bash
+            .venv\Scripts\activate
+            ```
+    *   **退出虚拟环境：**
+        ```bash
+        deactivate
+        ```
+    *   **其他虚拟环境工具：**
+        *   `virtualenv` (更老的工具，也广泛使用)
+        *   `conda` (Anaconda 或 Miniconda 提供的环境和包管理工具)
+        *   `pipenv` (结合了 `pip` 和 `virtualenv` 的功能)
+        *   `poetry` (更现代的依赖管理和打包工具)
 
-但是，具体怎么在响应阶段修改Set-Cookie头呢？例如，在Fetch.fulfillRequest命令中，可以自定义响应头，但需要构造整个响应内容，这可能比较复杂。或者，是否有其他方法可以在不修改整个响应体的情况下只修改头？
+* **配置文件 (pytest.ini, pyproject.toml, tox.ini)**
+   *  Pytest 允许你通过配置文件来自定义其行为。
+   * **`pytest.ini` (首选):**
+       *  这是 Pytest 推荐的配置文件，位于项目的根目录下。
+       * 使用 INI 文件格式。
 
-或者，是否可以在获取到响应头后，修改其中的Set-Cookie字段，然后继续响应？这可能需要使用Fetch.continueResponse或者类似的方法。
+        ```ini
+        [pytest]
+        # 常用配置选项
+        addopts = -v --cov=my_project --cov-report term-missing  # 额外的命令行选项
+        testpaths = tests src/my_package  # 指定测试目录和源代码目录
+        python_files = test_*.py *_test.py check_*.py  # 测试文件匹配模式
+        python_classes = Test* Suite*  # 测试类匹配模式
+        python_functions = test_* check_*  # 测试函数匹配模式
+        markers =  # 自定义标记
+            slow: mark tests as slow to run
+            network: mark tests that require network access
+            integration: mark integration tests
+        norecursedirs = .* build dist venv .tox  # 忽略的目录
+        filterwarnings =  # 忽略警告
+            error
+            ignore::DeprecationWarning
+        ```
+   * **`pyproject.toml`:**
+      *  如果你的项目使用 `pyproject.toml` 文件进行打包和依赖管理 (例如，使用 Poetry 或 Flit)，你也可以在这里配置 Pytest。
+      ```toml
+      [tool.pytest.ini_options]
+      addopts = "-v --cov=my_project"
+      testpaths = ["tests"]
+      ```
 
-可能还需要注意，修改响应头需要正确计算content-length等字段，但如果是替换现有的cookie值，可能不需要改动内容长度，特别是如果cookie的长度没有变化的话，但实际情况可能更复杂。
+   * **`tox.ini`:**
+      * 如果你使用 `tox` 进行多环境测试（例如，在不同的 Python 版本或不同的依赖组合下运行测试），你可以在 `tox.ini` 文件中配置 Pytest。
+      ```ini
+      [testenv]
+      deps =
+          pytest
+          pytest-cov
+      commands =
+          pytest -v --cov=my_project {posargs}
+      ```
 
-这时候可能需要构造一个修改后的响应头，替换掉Set-Cookie的值，然后继续响应。但Fetch模块中的处理可能需要先获取原始响应，修改后再返回。
+* **环境变量:**
+    *  可以通过设置环境变量来影响 Pytest 的行为。
+    *   **`PYTEST_ADDOPTS`:**  设置额外的命令行选项。
+        ```bash
+        export PYTEST_ADDOPTS="-v --color=yes"  # Linux/macOS
+        set PYTEST_ADDOPTS="-v --color=yes"  # Windows
+        ```
+    *  其他环境变量：参考 Pytest 官方文档。
 
-不过，可能更简单的方式是，在响应阶段捕获该请求，获取响应头，修改Set-Cookie，然后使用Fetch.fulfillRequest来返回一个自定义的响应，包括修改后的头。但这样的话，可能需要重新提供响应体，否则内容会丢失，但如果只是想修改头而不影响内容，可能需要读取原始响应体，然后重新发送。
+#### 3. 编写你的第一个测试
 
-这可能比较复杂，但有没有更简便的方法？
+*   **测试文件的命名约定：**
+    *   文件名应该以 `test_` 开头或以 `_test.py` 结尾。例如：`test_example.py`, `example_test.py`。
+*   **测试函数的命名约定：**
+    *   测试函数名应该以 `test_` 开头。例如：`test_addition`, `test_string_manipulation`。
+*   **测试类 (可选)：**
+    *   可以将相关的测试函数组织到一个类中。
+    *   类名应该以 `Test` 开头。例如：`TestCalculator`, `TestStringUtilities`。
+    *   类中的测试方法仍然需要以 `test_` 开头。
 
-例如，在Fetch.requestPaused事件中，如果事件的phase是Response阶段，则获取响应头，修改Set-Cookie，然后使用Fetch.continueResponse来继续，并带上修改后的头。但是根据CDP文档，ContinueResponse可能需要提供响应代码和头，这样可能必须处理整个响应。
+*   **`assert` 语句：**
+    *   Pytest 使用 Python 内置的 `assert` 语句来进行断言。
+    *   `assert` 后面跟一个表达式，如果表达式的值为 `True`，则测试通过；如果为 `False`，则测试失败。
+    *   Pytest 对 `assert` 语句进行了增强，提供了更详细的错误信息。
+    *  **基本断言示例:**
+        ```python
+        def add(x, y):
+            return x + y
 
-或者，是否存在另一种方式，例如使用Network模块来监听响应头，然后动态修改，但Network模块可能不允许修改响应头，只能读取。
+        def test_add():
+            assert add(1, 2) == 3
+            assert add(-1, 1) == 0
+            assert add(0, 0) == 0
 
-综上，可能的步骤是：
+        def test_add_strings():
+            assert add("hello", " world") == "hello world"
 
-1. 启用Fetch模块，拦截目标URL的请求。
-2. 当请求被暂停时，如果是响应阶段，获取响应头。
-3. 修改响应头中的Set-Cookie字段。
-4. 使用Fetch.fulfillRequest来发送修改后的头和原始响应体。
+        def test_add_lists():
+            assert add([1, 2], [3, 4]) == [1, 2, 3, 4]
+        ```
 
-但如何获取原始响应体呢？可能需要先获取原始响应，这会导致额外的处理步骤，例如使用Fetch.getResponseBody来获取响应体，然后重新发送。
+    *  **更丰富的断言方式:**
 
-这个过程可能涉及多个CDP命令，步骤较多，需要注意顺序和异步处理。
+        ```python
+        import pytest
+        import math
 
-现在需要将这些步骤转化为Python代码，使用Selenium的execute_cdp_cmd方法。
+        def test_equality():
+            assert 1 + 1 == 2
+            assert "hello".upper() == "HELLO"
 
-同时，用户可能希望监控特定的网址，比如当访问某个URL时，替换其返回的cookie。所以需要设置拦截的URL模式。
+        def test_almost_equal():
+            assert 1.0 == pytest.approx(1.0001, rel=1e-4)  # 相对误差
+            assert 1.0 == pytest.approx(0.9999, abs=1e-4)  # 绝对误差
+            assert math.pi == pytest.approx(3.14, rel=1e-2)
 
-例如，使用Fetch.enable时，设置patterns来匹配目标URL，比如{'urlPattern': 'https://example.com/somepath*'}。
+        def test_list_comparison():
+            assert [1, 2, 3] == [1, 2, 3]  # 列表元素和顺序必须完全相同
+            assert [1, 3, 2] != [1, 2, 3]
 
-然后，在事件处理函数中，判断请求的URL是否符合条件，再进行修改。
+        def test_dict_comparison():
+            assert {"a": 1, "b": 2} == {"b": 2, "a": 1}  # 字典的键值对相同即可，顺序不重要
 
-另外，修改cookie的时候需要构造正确的Set-Cookie头格式，可能需要了解如何构造该头的值，包括键、值、域名、路径等属性。
+        def test_set_comparison():
+            assert {1, 2, 3} == {3, 2, 1}  # 集合的元素相同即可，顺序不重要
 
-比如，原本服务器的响应头可能有Set-Cookie: session=123; Domain=example.com; Path=/，想要替换成session=456，其他属性保持不变。
+        def test_membership():
+            assert 2 in [1, 2, 3]
+            assert "a" in {"a": 1, "b": 2}  # 检查键是否存在于字典中
+            assert "hello" in "hello world"
 
-这时候可能需要解析原始的Set-Cookie头，修改值，再重新组合。
+        def test_truthiness():
+            assert [] == False #python中空列表会被判定为False
+            assert [1] == True #python中非空列表会被判定为True
+            assert not []  # 空列表为 False
+            assert [1]  # 非空列表为 True
+            assert {} == False #空字典判定为False
+            assert {"a": 1} == True #非空字典判定为True
+            assert not {}
+            assert {"a": 1}
+            assert 0 == False #0判定为False
+            assert 1 == True #非0整数判定为True
+            assert not 0
+            assert 1
+            assert "" == False #空字符串判定为False
+            assert "hello" == True #非空字符串判定为True
+            assert not ""
+            assert "hello"
 
-这可能需要用Python的字符串处理或者专门的库，但为了简化示例，可能在代码中直接替换字符串。
+        def test_identity():
+            a = [1, 2, 3]
+            b = a
+            c = [1, 2, 3]
+            assert a is b  # a 和 b 引用同一个对象
+            assert a is not c  # a 和 c 引用不同的对象，即使它们的值相同
 
-现在需要将这些思路整理成代码步骤：
+        def test_exception():
+            with pytest.raises(ZeroDivisionError):
+                1 / 0
 
-首先，启用Fetch模块，设置拦截模式：
+            with pytest.raises(ValueError, match="invalid literal"):
+                int("abc")
 
-driver.execute_cdp_cmd('Fetch.enable', {
-    'patterns': [{'urlPattern': 'https://target-url.com/*', 'requestStage': 'Response'}]
-})
+            with pytest.raises(TypeError) as excinfo:
+                "hello" + 1
+            assert "must be str, not int" in str(excinfo.value)
+        ```
 
-这里requestStage设置为Response，表示拦截响应阶段的事件。
+    *   **自定义断言消息：**
+        ```python
+        def test_failure_with_message():
+            assert 1 + 1 == 3, "Basic arithmetic is broken!"  # 自定义错误消息
+        ```
 
-然后，添加CDP监听器，处理Fetch.requestPaused事件。
+#### 4. 组织测试
 
-在事件处理函数中，判断事件是否处于响应阶段，如果是，获取requestId，然后获取响应头和响应体。
+*   **测试文件：**
+    *   将测试代码放在独立的 `.py` 文件中。
+    *   文件名遵循 `test_*.py` 或 `*_test.py` 的命名约定。
+*   **测试目录：**
+    *   通常将测试文件放在一个名为 `tests` 的目录中（或你喜欢的任何名称），与被测试的代码分开。
+    *   `tests` 目录的结构可以模仿被测试代码的结构，也可以根据需要进行调整。
+* **包结构**
+     *  如果你的测试目录包含多个子目录，确保每个子目录都包含一个 `__init__.py` 文件 (即使是空的)，以便 Pytest 将其识别为一个包。
+*   **测试类 (Test Classes)：**
+    *   可以将相关的测试函数组织到一个测试类中。
+    *   类名应该以 `Test` 开头。
+    *   测试类提供了一种组织测试的结构，但不是必需的。
+    *   测试类中的 setup/teardown 方法 (稍后详细介绍)。
+        ```python
+        class TestMyClass:
+            def test_method_one(self):
+                assert True
 
-然后，修改Set-Cookie头，然后使用Fetch.fulfillRequest发送修改后的头和数据。
+            def test_method_two(self):
+                assert "hello".upper() == "HELLO"
+        ```
 
-具体代码可能如下：
+#### 5. 运行测试
 
-def handle_request_paused(event):
-    params = event.get('params', {})
-    request_id = params.get('requestId')
-    resource_type = params.get('resourceType')
-    response_headers = params.get('responseHeaders', [])
+*   **基本运行：**
+    *   在项目根目录下（包含 `pytest.ini` 或测试文件的目录）打开终端，运行 `pytest` 命令。
+    *   Pytest 会自动发现并运行所有符合命名约定的测试文件和测试函数。
+*   **指定测试文件或目录：**
+    ```bash
+    pytest tests/  # 运行 tests 目录下的所有测试
+    pytest test_module.py  # 运行 test_module.py 文件中的所有测试
+    pytest tests/test_module.py::test_function  # 运行特定文件中的特定测试函数
+    pytest tests/test_module.py::TestClass::test_method #运行特定类中的特定方法
+    ```
+*   **常用命令行选项 (概览)：**
+    *   `-v`, `--verbose`: 显示更详细的输出（每个测试函数的名称和结果）。
+    *   `-q`, `--quiet`: 减少输出信息，只显示摘要。
+    *   `-s`: 不捕获标准输出/标准错误（用于调试测试代码中的 `print` 语句）。
+    *   `-x`, `--exitfirst`: 遇到第一个失败的测试时立即停止。
+    *   `--lf`, `--last-failed`: 只重新运行上次失败的测试。
+    *   `--ff`, `--failed-first`: 先运行上次失败的测试，然后运行其余的测试。
+    *   `-k EXPRESSION`: 根据名称 (关键字表达式) 选择测试。
+    *   `-m MARKEXPR`: 根据标记 (标记表达式) 选择测试 (稍后详细介绍标记)。
+
+*   **示例：运行测试并查看详细输出**
+    ```bash
+    pytest -v tests/
+    ```
+
+**本篇总结：**
+
+本篇详细介绍了 Pytest 的基础知识，包括安装、配置、编写第一个测试、组织测试以及运行测试。掌握这些基础知识是使用 Pytest 进行有效测试的关键。在下一篇中，我们将深入探讨 Pytest 的核心概念 —— Fixture，这是 Pytest 最强大和最有用的特性之一。
+
+## 第二篇：Pytest 核心概念 —— Fixture 的魔力
+
+### 标题：**深入 Fixture：掌握 Pytest 测试的灵魂**
+
+#### 1. 什么是 Fixture？
+
+*   **定义：** Fixture 是 Pytest 中用于为测试提供固定基线（baseline）的函数。它们可以提供测试所需的各种资源、数据、对象或上下文。
+*   **目的：**
+    *   **消除重复代码：** 避免在多个测试函数中重复编写相同的 setup (准备) 和 teardown (清理) 代码。
+    *   **依赖注入：** 为测试函数提供它们所依赖的资源，而无需测试函数自己创建或管理这些资源。
+    *   **提高可读性和可维护性：** 使测试代码更简洁、更易于理解，因为测试函数只关注核心的测试逻辑。
+    *   **测试隔离：** 确保每个测试都在一个干净、独立的环境中运行，避免测试之间的相互影响。
+
+#### 2. Fixture 的基本用法
+
+*   **`@pytest.fixture` 装饰器：**
+    *   使用 `@pytest.fixture` 装饰器将一个普通函数标记为 Fixture。
+    ```python
+    import pytest
+
+    @pytest.fixture
+    def my_fixture():
+        # Setup: 在这里准备测试所需的资源
+        resource = {"data": 123}
+        return resource  # 将资源提供给测试函数
+        # Teardown: 在这里清理资源 (可选)
+    ```
+
+*   **在测试函数中使用 Fixture：**
+    *   将 Fixture 的名称作为测试函数的参数，Pytest 会自动查找并调用相应的 Fixture 函数，并将返回值传递给测试函数。
+    ```python
+    def test_with_fixture(my_fixture):  # my_fixture 作为参数
+        assert my_fixture["data"] == 123
+    ```
+* **Fixture的返回值:**
+  * Fixture可以返回任何Python对象, 包括:
+    * 基本数据类型 (整数、字符串、布尔值等)
+    * 列表、字典、集合等
+    * 自定义类的实例
+    * 函数 (工厂 Fixture)
+    * 生成器 (用于 setup/teardown)
+    * None (如果 Fixture 只用于 setup/teardown，不需要返回值)
+
+#### 3. Fixture 的作用域 (Scope)
+
+*   **作用域的概念：** Fixture 的作用域决定了它的生命周期和共享范围。换句话说，它决定了 Fixture 实例何时被创建、何时被销毁，以及在哪些测试之间共享。
+*   **Pytest 提供的作用域：**
+    *   **`function` (默认)：**
+        *   每个测试函数都会创建一个新的 Fixture 实例。
+        *   测试之间完全隔离。
+        *   适用于需要干净、独立环境的测试，或者 Fixture 的创建/销毁开销很小的情况。
+    *   **`class`：**
+        *   每个测试类创建一个 Fixture 实例。
+        *   同一个测试类中的所有测试方法共享这个 Fixture 实例。
+        *   适用于同一类中的测试需要共享资源，且资源创建开销较大的情况。
+    *   **`module`：**
+        *   每个测试模块（.py 文件）创建一个 Fixture 实例。
+        *   同一个测试模块中的所有测试函数和测试类共享这个 Fixture 实例。
+        *   适用于同一模块中的测试需要共享资源，且资源创建开销非常大的情况。
+    *  **`package`：**
+        *   每个测试包（包含 `__init__.py` 的目录）创建一个 Fixture 实例。
+        *   同一个测试包中的所有测试模块，类，函数共享这个 Fixture 实例。
+         *   适用于同一package中的测试需要共享资源，且资源创建开销非常大的情况。
+    *   **`session`：**
+        *   整个测试会话（一次 `pytest` 命令的运行）只创建一个 Fixture 实例。
+        *   所有测试模块、测试类和测试函数共享这个 Fixture 实例。
+        *   适用于需要在整个测试会话中共享资源的情况（例如，数据库连接、全局配置、测试服务器）。
+*   **指定作用域：**
+    ```python
+    @pytest.fixture(scope="function")  # 默认作用域，可以省略
+    def function_scoped_fixture(): ...
+
+    @pytest.fixture(scope="class")
+    def class_scoped_fixture(): ...
+
+    @pytest.fixture(scope="module")
+    def module_scoped_fixture(): ...
     
-    # 判断是否是目标URL的响应阶段
-    if params.get('responseStatusCode') is not None:  # 表示是响应阶段
-        # 修改Set-Cookie头
-        new_headers = []
-        for header in response_headers:
-            if header['name'].lower() == 'set-cookie':
-                # 替换cookie值，这里假设将原来的值替换为new_cookie_value
-                new_value = header['value'].replace('original_value', 'new_cookie_value')
-                new_headers.append({'name': 'Set-Cookie', 'value': new_value})
-            else:
-                new_headers.append(header)
-        
-        # 获取原始响应体
-        body_response = driver.execute_cdp_cmd('Fetch.getResponseBody', {'requestId': request_id})
-        body = body_response.get('body', '')
-        
-        # 构造新的响应
-        driver.execute_cdp_cmd('Fetch.fulfillRequest', {
-            'requestId': request_id,
-            'responseCode': params.get('responseStatusCode', 200),
-            'responseHeaders': new_headers,
-            'body': body.encode('base64') if body_response.get('base64Encoded') else body
-        })
+    @pytest.fixture(scope="package")
+    def package_scoped_fixture(): ...
 
-driver.add_cdp_listener('Fetch.requestPaused', handle_request_paused)
+    @pytest.fixture(scope="session")
+    def session_scoped_fixture(): ...
+    ```
 
-不过这里需要注意，Fetch.getResponseBody可能需要处理base64编码的情况，例如，如果body是base64编码的，那么在Fulfill的时候也需要用相同的编码方式。
+*   **选择合适的作用域：**
+    *   根据测试的需求和资源的开销来选择合适的作用域。
+    *   优先选择较小的作用域（`function`），以确保测试的隔离性。
+    *   只有在必要时才选择较大的作用域（`class`、`module`、`session`），以减少资源创建的开销。
+* **作用域降级:**
+    *   如果一个 Fixture 依赖于另一个作用域更小的 Fixture，那么它的作用域会自动降级到与它依赖的最小作用域相同。
 
-此外，可能还需要处理跨域或某些安全设置，需要确保在启用Fetch模块时正确配置。
+#### 4. `yield` 关键字与 Setup/Teardown
 
-此外，设置requestStage为Response可能需要在Fetch.enable的patterns中指定，例如：
+*   **`yield` 的作用：**
+    *   **提供值：** `yield` 语句将 Fixture 的值（或对象）传递给测试函数。
+    *   **分割 Setup 和 Teardown：** `yield` 语句将 Fixture 函数的代码分为两部分：
+        *   `yield` 之前的代码是 setup 部分，在测试函数执行 *之前* 执行。
+        *   `yield` 之后的代码是 teardown 部分，在测试函数执行 *之后* 执行（无论测试是否成功）。
+*   **示例：**
 
-driver.execute_cdp_cmd('Fetch.enable', {
-    'patterns': [{
-        'urlPattern': 'https://target-url.com/*',
-        'requestStage': 'Response'  # 拦截响应阶段
-    }]
-})
+    ```python
+    import pytest
 
-这样，只有响应阶段的事件会被拦截，避免处理请求阶段的事件。
+    @pytest.fixture
+    def database():
+        print("\nConnecting to database...")
+        db = {"data": {}}  # 模拟一个数据库连接
+        yield db  # 将 db 对象提供给测试函数
+        print("\nDisconnecting from database...")
+        db.clear()  # 清理数据库（例如，关闭连接、删除测试数据）
 
-不过，是否允许在响应阶段修改头呢？需要验证这一点，或者是否有其他限制。
+    def test_database_access(database):
+        database["data"]["key1"] = "value1"
+        assert database["data"]["key1"] == "value1"
 
-另外，如果修改了响应头，尤其是Set-Cookie，需要确保新的cookie格式是正确的，否则浏览器可能无法正确解析，导致cookie不被存储。
+    def test_another_database_access(database):
+        database["data"]["key2"] = "value2"
+        assert database["data"]["key2"] == "value2"
+    ```
 
-可能的测试步骤是，先尝试在代码中替换Set-Cookie头的值，然后查看浏览器中存储的cookie是否变化。
+*   **`yield` 与 `return` 的区别：**
+    *   `return` 会立即结束 Fixture 函数的执行，并将返回值传递给测试函数。
+    *   `yield` 会暂停 Fixture 函数的执行，将值传递给测试函数，并在测试函数执行完毕后 *恢复* Fixture 函数的执行（执行 teardown 代码）。
+*   **`try...finally` 块 (可选)：**
+    *   即使在 teardown 阶段发生异常，也可以使用 `try...finally` 块来确保资源被正确释放。
+    ```python
+    @pytest.fixture
+    def resource():
+        print("\nAcquiring resource...")
+        res = acquire_resource()  # 假设这是获取资源的代码
+        yield res
+        print("\nReleasing resource...")
+        try:
+            release_resource(res)  # 假设这是释放资源的代码
+        finally:
+            print("\nResource cleanup complete.")
+    ```
 
-综上，可能需要以下代码结构：
+*   **与 `with` 语句结合：**
+    *   如果 Fixture 管理的资源支持 Python 的上下文管理器协议（实现了 `__enter__` 和 `__exit__` 方法），可以使用 `with` 语句来简化 Fixture 的 setup/teardown 代码。
+    ```python
+    import pytest
 
-from selenium import webdriver
-import base64
+    @pytest.fixture
+    def file_resource(tmpdir):
+        file_path = tmpdir.join("my_file.txt")
+        with open(file_path, "w") as f:
+            yield f  # 提供文件对象
+        # 文件会在 with 语句块结束后自动关闭，无需显式 teardown 代码
+    ```
 
-driver = webdriver.Chrome()
+#### 5. Fixture 的依赖注入
 
-# 启用 Fetch 并设置拦截响应阶段的请求
-driver.execute_cdp_cmd('Fetch.enable', {
-    'patterns': [{
-        'urlPattern': 'https://example.com/set-cookie-route*',
-        'requestStage': 'Response'
-    }]
-})
+*   **如何工作：**
+    *   测试函数通过将 Fixture 的名称作为参数来声明对 Fixture 的依赖。
+    *   Pytest 会自动查找并调用相应的 Fixture 函数，并将返回值作为参数传递给测试函数。
+*   **示例：**
+    ```python
+    import pytest
 
-def handle_fetch_paused(event):
-    params = event.get('params', {})
-    request_id = params.get('requestId')
-    
-    # 仅处理响应阶段的事件
-    if 'responseStatusCode' not in params:
-        return  # 如果不是响应阶段，直接继续请求
-    
-    # 获取原始响应头和状态码
-    status_code = params['responseStatusCode']
-    headers = params.get('responseHeaders', [])
-    
-    # 修改 Set-Cookie 头
-    new_headers = []
-    for header in headers:
-        if header['name'].lower() == 'set-cookie':
-            # 示例：替换 cookie 值，假设原cookie是session=123
-            modified_cookie = header['value'].replace('session=123', 'session=modified_456')
-            new_headers.append({'name': 'Set-Cookie', 'value': modified_cookie})
-        else:
-            new_headers.append(header)
-    
-    # 获取原始响应体
-    get_body_response = driver.execute_cdp_cmd('Fetch.getResponseBody', {'requestId': request_id})
-    body = get_body_response['body']
-    is_base64 = get_body_response.get('base64Encoded', False)
-    
-    # 使用修改后的头重新构造响应
-    fulfill_args = {
-        'requestId': request_id,
-        'responseCode': status_code,
-        'responseHeaders': new_headers,
-        'body': body if is_base64 else base64.b64encode(body.encode()).decode()
-    }
-    
-    # 如果是 base64 编码，直接传递，否则需要编码
-    if is_base64:
-        fulfill_args['body'] = body
-    else:
-        fulfill_args['body'] = base64.b64encode(body.encode()).decode()
-    
-    driver.execute_cdp_cmd('Fetch.fulfillRequest', fulfill_args)
+    @pytest.fixture
+    def user():
+        return {"name": "Alice", "age": 30}
 
-driver.add_cdp_listener('Fetch.requestPaused', handle_fetch_paused)
+    @pytest.fixture
+    def cart(user):  # cart Fixture 依赖于 user Fixture
+        return {"user": user, "items": []}
 
-driver.get('https://example.com/set-cookie-route')
+    def test_add_to_cart(cart):
+        cart["items"].append("item1")
+        assert len(cart["items"]) == 1
+        assert cart["user"]["name"] == "Alice"
+    ```
 
-# 验证 cookie 是否被修改
-cookies = driver.get_cookies()
-print(cookies)  # 检查是否有 session=modified_456
+*   **多个 Fixture：**
+    *   一个测试函数可以依赖多个 Fixture。
+    ```python
+    def test_multiple_fixtures(fixture1, fixture2, fixture3):
+        ...
+    ```
 
-driver.quit()
+*   **Fixture 之间的依赖：**
+    *   Fixture 可以依赖其他 Fixture，形成依赖链。
+    *   Pytest 会自动解析 Fixture 之间的依赖关系，并按照正确的顺序执行它们。
 
-这样，当访问目标URL时，服务器返回的Set-Cookie头会被修改，浏览器将存储修改后的cookie。
+#### 6. Fixture 的执行顺序
 
-但需要注意的是，这种方法需要提前知道目标URL的模式（urlPattern），并且可能需要处理各种情况，例如多个Set-Cookie头，或者没有Set-Cookie头的情况。此外，Fetch.getResponseBody在响应阶段可能已经接收完数据，但如果是大文件可能会有性能问题。
+*   **作用域：**
+    *   作用域更广的 Fixture 先执行 (session > package > module > class > function)。
+    *   例如，`session` 级别的 Fixture 会在 `module` 级别的 Fixture 之前执行，`module` 级别的 Fixture 会在 `function` 级别的 Fixture 之前执行。
+*   **参数顺序：**
+    *   在 *相同* 作用域内，Fixture 按照它们在测试函数参数列表中的顺序执行。
+    ```python
+    @pytest.fixture
+    def fixture1():
+        print("\nExecuting fixture1...")
 
-另外，如果原响应是压缩的（如gzip），可能需要解压缩后再处理，但一般情况下浏览器会自动处理，这里可能需要保持原样，避免解压。
+    @pytest.fixture
+    def fixture2():
+        print("\nExecuting fixture2...")
 
-可能的错误点包括：未正确处理base64编码的响应体，导致返回的数据损坏；修改后的头格式不正确，导致浏览器无法解析；或者没有正确处理所有响应头，导致某些头丢失。
+    def test_order(fixture2, fixture1):  # 注意顺序
+        print("\nRunning test...")
 
-因此，在实际应用中需要测试和调整代码，确保修改后的响应能够正确被浏览器处理，并且cookie确实被替换。
+    # 输出：
+    # Executing fixture2...
+    # Executing fixture1...
+    # Running test...
+    ```
 
-总结，步骤为：
+*   **Autouse Fixture：**
+    *   标记为 `autouse=True` 的 Fixture 会自动应用于其作用域内的所有测试，即使测试函数没有显式声明依赖。
+    *   对于 *相同* 作用域，autouse Fixture 通常在非 autouse Fixture 之前执行。
+    *  可以使用`order`参数控制fixture的执行顺序, `order`参数值越小,优先级越高.
 
-1. 启用Fetch模块，拦截目标URL的响应。
-2. 监听Fetch.requestPaused事件。
-3. 在事件处理中，检查是否为响应阶段。
-4. 获取响应头和响应体。
-5. 修改Set-Cookie头。
-6. 使用Fetch.fulfillRequest返回修改后的响应。
-</think>
+#### 7.深入理解 `request` 对象
 
-以下是使用 Selenium 4.22 + Python 通过 CDP 监控并替换服务器响应中 Cookie 的完整方案：
+*   **`request` 对象是什么？**
+    *   `request` 对象是一个特殊的 Fixture，它提供了关于当前测试请求的上下文信息。
+    *   它可以被注入到 Fixture 函数和测试函数中。
 
----
+*   **`request` 对象的常用属性：**
+    *   `request.param`：
+        *   仅在参数化 Fixture 中可用。
+        *   获取当前 Fixture 实例的参数值。
+    *   `request.fixturename`：当前 Fixture 的名称。
+    *   `request.scope`：当前 Fixture 的作用域。
+    *   `request.node`：
+        *   当前测试节点。
+        *   可以是 `Function` 对象（对于测试函数）或 `Class` 对象（对于测试类）。
+        *   可以访问测试节点的名称、所在模块、所在类等信息。
+            ```python
+            # 获取测试函数名称
+            test_name = request.node.name
 
-### **核心思路**
-通过 Chrome DevTools Protocol 的 `Fetch` 模块拦截 HTTP 响应，修改 `Set-Cookie` 头后重新注入响应。
+            # 获取测试函数所在模块
+            module = request.node.module
 
----
+            # 获取测试函数所在类 (如果测试函数在类中)
+            cls = request.node.cls
+            ```
+    *   `request.config`：Pytest 的配置对象（`Config` 对象）。
+        *   可以访问命令行选项、配置文件中的设置等。
+        *   例如：`request.config.getoption("--verbose")` 获取 `-v` 选项的值。
+    *   `request.fspath`：当前测试文件（或 `conftest.py` 文件）的路径（`py.path.local` 对象）。
+    *   `request.function`：当前测试函数对象（如果可用）。
+    *   `request.cls`：当前测试类对象（如果可用）。
+    *   `request.module`：当前测试模块对象。
+    *   `request.session`：当前测试会话对象（`Session` 对象）。
+    *   `request.addfinalizer(fin)`：
+        *   注册一个终结函数 `fin`。
+        *   `fin` 会在 Fixture 的作用域结束时被调用（无论测试是否成功）。
 
-### **完整代码**
-```python
-from selenium import webdriver
-import base64
+*  **示例: 使用`request.node`获取测试信息**
 
-# 初始化浏览器
-driver = webdriver.Chrome()
+    ```python
+    import pytest
+    @pytest.fixture(scope="function")
+    def function_fixture(request):
+        print(f"\nFixture for test: {request.node.name}")
+        print(f"  Module: {request.node.module.__name__}")
+        if request.node.cls:
+            print(f"  Class: {request.node.cls.__name__}")
+        print(f"  File: {request.node.fspath}")
+        yield
+        print(f"\nTeardown for test: {request.node.name}")
 
-# 定义要监控的目标 URL（支持通配符 *）
-TARGET_URL = "https://example.com/api/setcookie*"
+    class TestMyClass:
+        def test_in_class(self, function_fixture):
+            pass
 
-def modify_cookie_in_response(event):
-    params = event.get('params', {})
-    request_id = params.get('requestId')
-    
-    # 仅处理响应阶段
-    if 'responseStatusCode' not in params:
-        return
+    def test_standalone(self, function_fixture):
+        pass
+    ```
 
-    # 获取原始响应信息
-    status_code = params['responseStatusCode']
-    headers = params.get('responseHeaders', [])
-    
-    # 修改 Set-Cookie 头
-    new_headers = []
-    for header in headers:
-        if header['name'].lower() == 'set-cookie':
-            original_cookie = header['value']
-            # 替换 Cookie 示例：将 "session=old_value" 改为 "session=new_value"
-            modified_cookie = original_cookie.replace("old_value", "new_value")
-            new_headers.append({'name': 'Set-Cookie', 'value': modified_cookie})
-        else:
-            new_headers.append(header)
-    
-    # 获取原始响应体
-    body_response = driver.execute_cdp_cmd('Fetch.getResponseBody', {'requestId': request_id})
-    body = body_response['body']
-    is_base64_encoded = body_response.get('base64Encoded', False)
+**本篇总结：**
 
-    # 构造新响应
-    fulfill_args = {
-        'requestId': request_id,
-        'responseCode': status_code,
-        'responseHeaders': new_headers,
-        'body': body if is_base64_encoded else base64.b64encode(body.encode()).decode()
-    }
+本篇深入探讨了 Pytest 的 Fixture 机制，包括 Fixture 的定义、作用域、`yield` 关键字、依赖注入、执行顺序以及 `request` 对象。Fixture 是 Pytest 的核心特性，掌握 Fixture 的使用是编写高效、可维护测试的关键。在下一篇中，我们将继续探索 Pytest 的高级特性。
 
-    # 发送修改后的响应
-    driver.execute_cdp_cmd('Fetch.fulfillRequest', fulfill_args)
+## 第三篇：Pytest 进阶 —— 参数化、标记与插件
 
-# 启用 Fetch 并监听目标 URL 的响应
-driver.execute_cdp_cmd('Fetch.enable', {
-    'patterns': [{
-        'urlPattern': TARGET_URL,
-        'requestStage': 'Response'  # 关键：只拦截响应阶段
-    }]
-})
-driver.add_cdp_listener("Fetch.requestPaused", modify_cookie_in_response)
+### 标题：**驾驭 Pytest 的高级特性：参数化、标记与插件**
 
-# 访问测试页面
-driver.get("https://example.com/api/setcookie")
+#### 1. 参数化测试
 
-# 验证 Cookie 是否被修改
-print("修改后的 Cookies:", driver.get_cookies())
+*   **参数化测试的概念：**
+    *   参数化测试允许你使用不同的输入数据多次运行同一个测试逻辑。
+    *   这有助于减少重复代码，并提高测试覆盖率。
 
-driver.quit()
-```
+*   **`@pytest.mark.parametrize` 装饰器：**
+    *   这是 Pytest 中实现参数化测试的主要方式。
+    ```python
+    import pytest
 
----
+    @pytest.mark.parametrize("input, expected", [
+        (1, 2),
+        (3, 4),
+        (5, 6),
+    ])
+    def test_increment(input, expected):
+        assert input + 1 == expected
+    ```
+    *   **第一个参数：** 参数名称的字符串，多个参数用逗号分隔（例如，`"input, expected"`）。
+    *   **第二个参数：** 一个列表，其中每个元素代表一组参数值。
+        *   参数值通常是元组，元组中元素的顺序与参数名称的顺序对应。
+        *   参数值也可以是列表、字典或其他可迭代对象。
+    *   **Pytest 的行为：** Pytest 会为每组参数值生成一个独立的测试用例，并分别运行测试函数。
 
-### **关键步骤说明**
-1. **启用 Fetch 模块**：通过 `Fetch.enable` 指定要拦截的 URL 模式和响应阶段 (`requestStage: 'Response'`).
-2. **监听响应事件**：通过 `add_cdp_listener` 捕获 `Fetch.requestPaused` 事件.
-3. **修改 Cookie**：
-   - 遍历响应头找到 `Set-Cookie`
-   - 使用字符串替换或正则表达式修改 Cookie 值
-   - 保留其他头信息避免破坏响应
-4. **重新注入响应**：
-   - 通过 `Fetch.getResponseBody` 获取原始响应体
-   - 使用 `Fetch.fulfillRequest` 回传修改后的头和原始 body
+*   **多个参数化装饰器：**
 
----
+    ```python
+    import pytest
+    @pytest.mark.parametrize("x", [1, 2])
+    @pytest.mark.parametrize("y", [3, 4])
+    def test_combinations(x, y):
+        print(f"x: {x}, y: {y}")
 
-### **注意事项**
-- **编码处理**：如果响应体是二进制数据（如图片），需保持 `base64Encoded` 标志与原始响应一致
-- **精准匹配**：调整 `urlPattern` 确保只拦截目标请求（如 `*` 匹配任意字符，`?` 匹配单个字符）
-- **Cookie 完整性**：修改时需保持 Cookie 属性（如 `Domain`、`Path`、`HttpOnly` 等）
-- **性能影响**：频繁拦截大响应体可能导致内存压力
+    # Pytest 会生成以下测试用例：
+    # - x=1, y=3
+    # - x=1, y=4
+    # - x=2, y=3
+    # - x=2, y=4
+    ```
+    *   Pytest 会生成所有参数的组合（笛卡尔积）。
 
----
+* **参数化测试 ID (`ids`)**
 
-### **高级定制**
-#### **正则表达式替换 Cookie**
-```python
-import re
+    *   默认情况下，Pytest 会自动为每个参数化测试用例生成一个 ID（基于参数值）。
+    *   可以使用 `ids` 参数来自定义测试 ID，使其更具可读性。
+    ```python
+    @pytest.mark.parametrize(
+        "input, expected",
+        [
+            (1, 2),
+            (3, 4),
+            pytest.param(5, 7, id="special_case"), # 使用 pytest.param 自定义 ID
+        ],
+        ids=["case1", "case2", "case3_auto_id"]  # 为每组参数指定 ID
+    )
+    def test_increment(input, expected):
+        assert input + 1 == expected
+    ```
+    * **`ids` 参数的值:**
+      *  可以是一个字符串列表, 列表的长度必须与参数值的组数相同。
+      *  也可以是一个接受参数值并返回ID的函数。
+    *   **`pytest.param`：**
+        *   `pytest.param` 函数可以用来包装参数值，并提供额外的元数据，例如自定义 ID 或标记。
 
-modified_cookie = re.sub(
-    r'session=\w+', 
-    'session=hacked_value', 
-    original_cookie
-)
-```
+*   **标记参数化值 (`pytest.param` 与 `marks`)**
+   ```python
+    import pytest
 
-#### **多 Cookie 处理**
-```python
-for header in headers:
-    if header['name'].lower() == 'set-cookie':
-        cookies = header['value'].split(';')
-        modified = [c.replace('old', 'new') for c in cookies]
-        new_headers.append({'name': 'Set-Cookie', 'value': ';'.join(modified)})
-```
+    @pytest.mark.parametrize(
+        "username, password",
+        [
+            ("valid_user", "valid_password"),
+            pytest.param("invalid_user", "invalid_password", marks=pytest.mark.xfail),
+            pytest.param("admin", "admin_password", marks=[pytest.mark.skip, pytest.mark.admin]),
+        ],
+    )
+    def test_login(username, password):
+        # ... 测试登录逻辑 ...
+        pass
+   ```
+    *   使用 `pytest.param` 可以为特定的参数值组合添加标记（例如，`skip`、`xfail`）。
+    *   `marks` 参数可以接受单个标记或标记列表。
 
-#### **动态 Cookie 生成**
-```python
-import time
-new_cookie = f"session=modified_{int(time.time())}"
-```
+*   **参数化类和方法：**
+    ```python
+    import pytest
 
----
+    @pytest.mark.parametrize("x", [1, 2])
+    class TestClassParametrized:
+        def test_method(self, x):
+            assert x > 0
 
-### **验证方法**
-1. 浏览器开发者工具检查 Network 面板中的响应头
-2. 使用 `driver.get_cookies()` 打印实际存储的 Cookie
-3. 在修改逻辑中添加调试输出：
-```python
-print(f"Original Cookie: {original_cookie}")
-print(f"Modified Cookie: {modified_cookie}")
-```
+        @pytest.mark.parametrize("y", [3, 4])
+        def test_method_combined(self, x, y):
+            assert x + y > 2
+    ```
+     *  可以在类级别或方法级别使用 `@pytest.mark.parametrize`。
+     *  如果类和方法都有参数化，Pytest 会生成所有可能的组合。
+
+#### 2. 标记 (Mark)
+
+*   **标记的概念：**
+    *   标记是附加到测试函数或测试类上的元数据。
+    *   它们用于对测试进行分类、分组、选择性运行或提供额外的信息。
+*   **内置标记：**
+    *   **`@pytest.mark.skip(reason=None)`：** 无条件跳过测试。
+        ```python
+        @pytest.mark.skip(reason="This test is not yet implemented")
+        def test_not_implemented():
+            ...
+        ```
+    *   **`@pytest.mark.skipif(condition, reason=None)`：**
+        *   `condition`: 一个 Python 表达式。如果表达式的值为 `True`，则跳过测试；否则，运行测试。
+        *   `reason`: 可选的跳过原因。
+        ```python
+        import sys
+        import pytest
+
+        @pytest.mark.skipif(sys.platform == "win32", reason="This test only runs on Linux")
+        def test_linux_only():
+       
