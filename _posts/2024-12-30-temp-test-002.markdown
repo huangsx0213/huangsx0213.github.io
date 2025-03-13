@@ -9,272 +9,302 @@ catalog: true
 tags:
     - Testing
 ---
+<think>
+嗯，用户现在需要我帮忙封装一个方法，用来监控指定的API，并修改响应头中的Set-Cookie字段。之前的对话里，他们已经尝试过使用CDP来拦截请求和修改响应，现在他们希望把这个功能封装成一个更易用的方法。让我先仔细理解他们的需求。
 
+首先，用户的需求是监控特定的API端点，当这个API返回响应时，修改其中的Set-Cookie头，替换特定的字段和值。这需要用到Selenium的CDP功能，尤其是Fetch模块。我之前已经给出了示例代码，但现在需要将其封装成一个可重用的方法，可能还需要参数来指定目标URL、要修改的cookie字段和值。
 
-当然可以。我会基于您之前提供的代码，重新设计一个完整的 DynamicTestSuiteGenerator 类。这个新的实现将整合 WebUIRobotCasesGenerator 和 PageObject 的功能，并使用命令模式和注册式工厂来提高灵活性和可扩展性。以下是新的实现：
+用户可能希望这个方法可以灵活地指定不同的API路径、需要修改的cookie名称和新值，而不必每次重复编写监听器和处理函数。因此，封装这个方法的目的是提高代码的复用性和可维护性。
+
+接下来，我需要回顾之前的代码。在之前的回答中，使用Fetch.enable来启用拦截，然后通过监听Fetch.requestPaused事件来修改响应头。处理函数中需要获取请求ID，解析响应头，找到Set-Cookie，进行替换，然后使用Fetch.fulfillRequest发送修改后的响应。
+
+现在要封装这个方法，需要考虑以下几点：
+
+1. 方法的参数：至少需要目标API的URL模式（比如通配符路径）、要修改的cookie名称、新值，可能还需要其他选项如是否启用调试日志。
+
+2. 封装后的方法需要集成到WebDriver的初始化流程中，可能需要在创建driver后立即调用该方法，或者在需要的时候动态添加监控。
+
+3. 需要处理多个监听器的情况，确保不同的监控不会互相干扰。比如，用户可能多次调用这个方法来监控不同的API，或者修改不同的cookie字段。
+
+4. 错误处理，比如参数是否正确，是否有遗漏的必填项，以及在修改cookie时如果原cookie不存在是否需要处理。
+
+5. 性能问题，尤其是在处理大量请求时，拦截和修改可能会影响测试速度，需要保持代码高效。
+
+然后，我需要设计方法的签名。例如，可以创建一个类，或者直接作为函数，接收driver实例、目标URL模式、cookie名和新值作为参数。例如：
+
+def monitor_and_modify_cookie(driver, url_pattern, cookie_name, new_value):
+
+这样用户可以在初始化driver后调用这个方法，传入相应的参数，启动监控。
+
+另外，考虑到可能的多个cookie修改，或者更复杂的替换逻辑，可能需要允许用户传递一个替换函数，而不仅仅是固定的新值。但根据用户当前的需求，可能固定值就足够了，但设计时也可以预留扩展的可能性。
+
+然后，在方法内部，需要执行Fetch.enable，并添加监听器。处理函数需要捕获响应事件，遍历响应头，找到Set-Cookie头，解析其中的cookie，替换指定字段的值，然后重新构建头信息。
+
+需要注意的是，Set-Cookie头可能包含多个属性，比如Path、Domain、Expires等，所以在替换值时，需要确保只修改值部分，而不影响其他属性。例如，原cookie可能是“session=old_value; Path=/; HttpOnly”，需要将session的值替换为new_value，而保留其他属性。
+
+因此，在代码中，需要将Set-Cookie的值按分号分割，找到键值对，然后替换对应的值。这部分可能需要使用正则表达式或者字符串操作来精确匹配和替换。
+
+此外，用户可能需要修改多个不同的cookie字段，因此方法可能需要支持一次替换多个cookie字段。例如，可以接受一个字典参数，键是cookie名，值是新值，这样就可以同时替换多个cookie。
+
+但目前用户的需求是“修改指定的字段及值”，所以可能暂时支持单个替换即可，但设计成可以扩展会更灵活。
+
+接下来，处理函数的实现。当Fetch.requestPaused事件触发时，需要判断是响应阶段，然后获取响应头，修改Set-Cookie头中的特定字段，再通过Fetch.fulfillRequest提交修改后的响应。
+
+在这个过程中，可能需要处理base64编码的响应体，需要正确解码和重新编码，但根据之前的示例，如果只是修改头部，响应体可以保持不变，直接传递即可。
+
+现在，需要将所有这些逻辑封装到一个方法中，让用户只需调用这个方法，并传递必要的参数，就能启用监控和修改。
+
+另外，还需要考虑线程安全，因为CDP事件监听器是异步的，需要确保在处理事件时，driver实例没有被关闭或其他操作干扰。
+
+最后，测试这个封装的方法，确保其在不同场景下正常工作，比如多个请求、不同的cookie结构等。
+
+可能的错误点包括：
+
+- URL模式不正确，导致无法正确拦截目标请求。
+
+- cookie名在原响应头中不存在，导致修改无效。
+
+- 修改后的cookie格式不正确，导致浏览器无法解析。
+
+因此，在封装方法时，可以添加一些错误处理和日志输出，帮助用户诊断问题。
+
+总结，封装的方法应该：
+
+- 接受driver、url_pattern、cookie_name、new_value作为参数。
+
+- 在内部启用Fetch模块，监听目标URL的响应事件。
+
+- 在事件处理函数中，修改Set-Cookie头中的指定字段。
+
+- 处理响应体，确保正确传递。
+
+- 返回或提供某种方式让用户知道监控已经启动。
+
+现在，根据这些思路，编写具体的代码实现。
+</think>
+
+以下是一个高度封装的 Python 类，实现自动监控指定 API 并修改响应头中的 Set-Cookie 值：
 
 ```python
-import logging
-import os
-from typing import Dict, List
-import pandas as pd
-from robot.api import TestSuite
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from abc import ABC, abstractmethod
+from typing import Dict, Optional, Callable
+import base64
+import re
 
-from libraries.common.config_manager import ConfigManager
-from libraries.common.utility_helpers import PROJECT_ROOT
-from libraries.web.web_test_loader import WebTestLoader
-
-class Command(ABC):
-    @abstractmethod
-    def execute(self, context):
-        pass
-
-class ClickCommand(Command):
-    def __init__(self, locator):
-        self.locator = locator
-
-    def execute(self, context):
-        element = WebDriverWait(context.driver, 10).until(
-            EC.element_to_be_clickable(self.locator)
-        )
-        element.click()
-
-class InputCommand(Command):
-    def __init__(self, locator, text):
-        self.locator = locator
-        self.text = text
-
-    def execute(self, context):
-        element = WebDriverWait(context.driver, 10).until(
-            EC.presence_of_element_located(self.locator)
-        )
-        element.clear()
-        element.send_keys(self.text)
-
-class VerifyTextCommand(Command):
-    def __init__(self, locator, expected_text):
-        self.locator = locator
-        self.expected_text = expected_text
-
-    def execute(self, context):
-        element = WebDriverWait(context.driver, 10).until(
-            EC.presence_of_element_located(self.locator)
-        )
-        actual_text = element.text
-        assert actual_text == self.expected_text, f"Expected text: '{self.expected_text}', but got: '{actual_text}'"
-
-class CommandFactory:
-    def __init__(self):
-        self.commands = {
-            'click': ClickCommand,
-            'input': InputCommand,
-            'verify_text': VerifyTextCommand,
-        }
-
-    def create(self, command_name, *args):
-        if command_name not in self.commands:
-            raise ValueError(f"Unknown command: {command_name}")
-        return self.commands[command_name](*args)
-
-class PageObject:
-    def __init__(self, driver):
+class ResponseCookieModifier:
+    def __init__(self, driver: webdriver.Chrome):
         self.driver = driver
+        self._active_listeners = {}
 
-class LoginPage(PageObject):
-    username_input = (By.ID, "username")
-    password_input = (By.ID, "password")
-    login_button = (By.ID, "login")
+    def monitor_api_cookie(
+        self,
+        url_pattern: str,
+        replacements: Dict[str, str],
+        *,
+        request_stage: str = "Response",
+        debug: bool = False
+    ):
+        """
+        监控指定 API 并修改响应头中的 Cookie
+        :param url_pattern: 要监控的 URL 通配符模式 (例: "*/api/auth*")
+        :param replacements: 要替换的 Cookie 键值对 (例: {"session_id": "hacked_value"})
+        :param request_stage: 拦截阶段 (Request/Response)
+        :param debug: 是否打印调试日志
+        """
+        # 启用 Fetch 模块
+        self.driver.execute_cdp_cmd("Fetch.enable", {
+            "patterns": [{
+                "urlPattern": url_pattern,
+                "requestStage": request_stage
+            }]
+        })
 
-class HomePage(PageObject):
-    welcome_message = (By.ID, "welcome")
+        # 生成唯一监听器 ID
+        listener_id = f"{url_pattern}-{id(replacements)}"
+        
+        def _handler(event: dict):
+            params = event.get("params", {})
+            request_id = params.get("requestId")
+            
+            if not request_id:
+                return
 
-class PageObjectFactory:
-    def __init__(self):
-        self.page_objects = {
-            'LoginPage': LoginPage,
-            'HomePage': HomePage,
-        }
+            # 仅处理响应阶段
+            if "responseStatusCode" not in params:
+                return
 
-    def create(self, page_name, driver):
-        if page_name not in self.page_objects:
-            raise ValueError(f"Unknown page object: {page_name}")
-        return self.page_objects[page_name](driver)
+            # 获取原始响应信息
+            headers = params.get("responseHeaders", [])
+            status_code = params["responseStatusCode"]
+            
+            # 修改 Set-Cookie 头
+            modified_headers = []
+            cookies_modified = False
+            
+            for header in headers:
+                if header["name"].lower() == "set-cookie":
+                    original_cookie = header["value"]
+                    modified_cookie = self._modify_cookie(
+                        original_cookie, 
+                        replacements,
+                        debug=debug
+                    )
+                    
+                    if modified_cookie != original_cookie:
+                        cookies_modified = True
+                        if debug:
+                            print(f"🐛 [DEBUG] 修改 Cookie: {original_cookie} -> {modified_cookie}")
+                        
+                    modified_headers.append({
+                        "name": "Set-Cookie",
+                        "value": modified_cookie
+                    })
+                else:
+                    modified_headers.append(header)
 
-class DynamicTestSuiteGenerator:
-    def __init__(self, test_config_path: str = None, test_cases_path: str = None):
-        self.project_root: str = PROJECT_ROOT
-        self.test_config_path: str = test_config_path
-        self.test_cases_path: str = test_cases_path
-        self.command_factory = CommandFactory()
-        self.page_object_factory = PageObjectFactory()
-        self.driver = None
+            if not cookies_modified:
+                # 没有需要修改的 Cookie 则继续原始请求
+                self.driver.execute_cdp_cmd("Fetch.continueRequest", {"requestId": request_id})
+                return
 
-        self._load_configuration()
-        self._initialize_components()
+            # 获取原始响应体
+            body_response = self.driver.execute_cdp_cmd("Fetch.getResponseBody", {"requestId": request_id})
+            body = body_response["body"]
+            is_base64_encoded = body_response.get("base64Encoded", False)
 
-    def _load_configuration(self):
-        try:
-            self.test_config_path = (
-                os.path.join(self.project_root, 'configs', 'web_test_config.yaml')
-                if self.test_config_path is None
-                else self.test_config_path
+            # 构造新响应
+            fulfill_args = {
+                "requestId": request_id,
+                "responseCode": status_code,
+                "responseHeaders": modified_headers,
+                "body": body if is_base64_encoded else base64.b64encode(body.encode()).decode()
+            }
+
+            # 发送修改后的响应
+            self.driver.execute_cdp_cmd("Fetch.fulfillRequest", fulfill_args)
+
+        # 注册监听器并保存引用
+        self.driver.add_cdp_listener("Fetch.requestPaused", _handler)
+        self._active_listeners[listener_id] = _handler
+
+        return listener_id
+
+    def _modify_cookie(
+        self,
+        cookie_header: str,
+        replacements: Dict[str, str],
+        delimiter: str = "; ",
+        debug: bool = False
+    ) -> str:
+        """
+        修改单个 Set-Cookie 头中的指定键值
+        :param cookie_header: 原始 Cookie 头 (例: "session=123; Path=/")
+        :param replacements: 要替换的键值对
+        :param delimiter: Cookie 属性分隔符
+        """
+        parts = cookie_header.split(delimiter)
+        modified = False
+
+        for i in range(len(parts)):
+            # 分割键值对 (处理可能存在的等号值)
+            if "=" not in parts[i]:
+                continue
+            key, value = parts[i].split("=", 1)
+            
+            if key in replacements:
+                new_value = replacements[key]
+                parts[i] = f"{key}={new_value}"
+                modified = True
+                if debug:
+                    print(f"🔧 [DEBUG] 替换字段: {key}={value} → {new_value}")
+
+        return delimiter.join(parts) if modified else cookie_header
+
+    def stop_monitoring(self, listener_id: str):
+        """停止指定监听器"""
+        if listener_id in self._active_listeners:
+            self.driver.remove_cdp_listener(
+                "Fetch.requestPaused",
+                self._active_listeners.pop(listener_id)
             )
-            self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
-        except FileNotFoundError:
-            logging.error(f"{self.__class__.__name__}: Config file not found at {self.test_config_path}")
-            raise
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error loading configuration: {str(e)}")
-            raise
-
-    def _initialize_components(self):
-        try:
-            default_test_cases_path: str = os.path.join('test_cases', 'web_test_cases.xlsx')
-            self.test_cases_path: str = (
-                os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
-                if self.test_cases_path is None
-                else self.test_cases_path
-            )
-
-            if not os.path.exists(self.test_cases_path):
-                logging.error(f"{self.__class__.__name__}: Test cases file not found at {self.test_cases_path}")
-                raise FileNotFoundError(f"Test cases file does not exist: {self.test_cases_path}")
-
-            self.web_test_loader = WebTestLoader(self.test_cases_path, self.test_config)
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error initializing components: {str(e)}")
-            raise
-
-    def create_test_suite(self, tc_id_list: List[str] = None, tags: List[str] = None) -> TestSuite:
-        try:
-            robot_suite = TestSuite('Web UI TestSuite')
-            self._import_required_libraries(robot_suite)
-
-            robot_suite.setup.config(name='set_environment_variables', args=[])
-
-            tc_id_list = tc_id_list or self.test_config.get('tc_id_list', [])
-            tags = tags or self.test_config.get('tags', [])
-            test_cases = self.web_test_loader.filter_cases(tc_id_list, tags)
-
-            if test_cases.empty:
-                logging.warning(f"{self.__class__.__name__}: No test cases found matching criteria")
-                return robot_suite
-
-            for _, test_case in test_cases.iterrows():
-                suite_name = test_case['Suite']
-                if suite_name not in [suite.name for suite in robot_suite.suites]:
-                    sub_suite = robot_suite.suites.create(name=suite_name)
-                    self._import_required_libraries(sub_suite)
-
-                self._create_test_case(sub_suite, test_case)
-
-            robot_suite.teardown.config(name='close_browser', args=[])
-            return robot_suite
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error creating test suite: {str(e)}")
-            raise RuntimeError(f"Failed to create test suite: {str(e)}")
-
-    def _create_test_case(self, suite, test_case: Dict):
-        try:
-            case_id = test_case['Case ID']
-            test_steps = self.web_test_loader.get_test_steps(case_id)
-            test_data_sets = self.web_test_loader.get_test_data(case_id)
-
-            if not test_data_sets:
-                logging.warning(f"{self.__class__.__name__}: No data sets found for test case {case_id}. Using empty data")
-                test_data_sets = [{}]
-
-            for data_set_index, data_set in enumerate(test_data_sets, 1):
-                test_name = f"UI.{case_id}.{data_set_index}"
-                robot_test = suite.tests.create(name=test_name, doc=test_case['Descriptions'])
-                robot_test.body.create_keyword(name='sanity_check', args=[])
-
-                if 'Tags' in test_case and pd.notna(test_case['Tags']):
-                    tags = [tag.strip() for tag in test_case['Tags'].split(',')]
-                    for tag in tags:
-                        robot_test.tags.add(tag)
-
-                self._create_test_steps(robot_test, test_steps, data_set)
-                logging.info(f"{self.__class__.__name__}: Test case {case_id}.{data_set_index} created successfully.")
-
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error creating test case {test_case.get('Case ID', 'Unknown')}: {str(e)}")
-            raise
-
-    def _import_required_libraries(self, suite):
-        try:
-            suite.resource.imports.library('SeleniumLibrary')
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error importing required libraries: {str(e)}")
-            raise
-
-    def _create_test_steps(self, robot_test, test_steps: List[Dict], data_set: Dict):
-        try:
-            for _, step in test_steps.iterrows():
-                if step['Run'] == 'Y':
-                    page_name = step['Page Name']
-                    module_name = step['Module Name']
-                    self._generate_ui_step(robot_test, page_name, module_name, data_set)
-
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error creating test steps: {str(e)}")
-            raise
-
-    def _generate_ui_step(self, robot_test, page_name: str, module_name: str, params: Dict):
-        try:
-            robot_test.body.create_keyword(name='execute_module', args=[page_name, module_name, params])
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: Error generating UI step for {page_name}.{module_name}: {str(e)}")
-            raise
-
-    def execute_module(self, page_name: str, module_name: str, params: Dict):
-        page_object = self.page_object_factory.create(page_name, self.driver)
-        module_actions = self.web_test_loader.get_module_actions(page_name, module_name)
-
-        for action in module_actions:
-            command = self.command_factory.create(
-                action['action'],
-                getattr(page_object, action['element']),
-                params.get(action['parameter'], '')
-            )
-            command.execute(self)
-
-    def set_environment_variables(self):
-        self.web_test_loader.set_global_variables()
-
-    def open_browser(self):
-        self.driver = webdriver.Chrome()  # You might want to make this configurable
-
-    def close_browser(self):
-        if self.driver:
-            self.driver.quit()
-
-    def sanity_check(self):
-        # Implement your sanity check logic here
-        pass
-
-if __name__ == "__main__":
-    generator = DynamicTestSuiteGenerator()
-    test_suite = generator.create_test_suite()
-    # Here you would typically use Robot Framework's API to run the test suite
-    print(f"Generated test suite with {len(test_suite.tests)} tests")
 ```
 
-这个新的 DynamicTestSuiteGenerator 类整合了之前 WebUIRobotCasesGenerator 和 PageObject 的功能，并引入了命令模式和工厂模式来提高灵活性和可扩展性。主要变化包括：
+---
 
-1. 引入了 Command 类和具体的命令实现（ClickCommand, InputCommand, VerifyTextCommand）。
-2. 创建了 CommandFactory 来管理和创建命令对象。
-3. 重构了 PageObject 类，并为特定页面创建了子类（如 LoginPage, HomePage）。
-4. 添加了 PageObjectFactory 来管理和创建页面对象。
-5. 在 DynamicTestSuiteGenerator 中，使用这些新组件来生成和执行测试用例。
+### **使用示例**
 
-这个设计允许您轻松地添加新的命令和页面对象，而不需要修改核心逻辑。它还提供了更好的封装和更清晰的职责分离。
+#### 1. **基础用法**
+```python
+# 初始化浏览器和修改器
+driver = webdriver.Chrome()
+modifier = ResponseCookieModifier(driver)
 
-要使用这个新的实现，您需要相应地更新您的测试用例 Excel 文件，确保它包含正确的页面名称、模块名称和操作。您可能还需要调整 WebTestLoader 类以适应新的数据结构。
+# 监控所有包含 /api/auth 的请求，修改 session_id 和 token
+listener_id = modifier.monitor_api_cookie(
+    url_pattern="*/api/auth*",
+    replacements={
+        "session_id": "hijacked_session",
+        "token": "modified_token"
+    },
+    debug=True  # 开启调试日志
+)
 
-这个实现为您提供了一个更加灵活和可扩展的框架来生成和执行 Robot Framework 测试用例。
+# 访问目标页面
+driver.get("https://your-app.com/login")
+
+# 停止监控
+# modifier.stop_monitoring(listener_id)
+
+driver.quit()
+```
+
+#### 2. **高级用法 - 正则替换**
+```python
+# 继承类扩展修改逻辑
+class AdvancedCookieModifier(ResponseCookieModifier):
+    def _modify_cookie(self, cookie_header: str, replacements: Dict[str, str], **kwargs) -> str:
+        # 使用正则表达式替换
+        for key, new_value in replacements.items():
+            pattern = re.compile(fr"\b{key}=[^;]+")
+            if pattern.search(cookie_header):
+                cookie_header = pattern.sub(f"{key}={new_value}", cookie_header)
+        return cookie_header
+
+# 使用正则替换版本
+advanced_modifier = AdvancedCookieModifier(driver)
+advanced_modifier.monitor_api_cookie(
+    url_pattern="*/account*",
+    replacements={"user_role": "admin"}
+)
+```
+
+---
+
+### **功能特性**
+1. **精准拦截** - 通过 `url_pattern` 控制监控范围（支持 `*` 通配符）
+2. **多字段替换** - 支持同时修改 Cookie 中的多个字段
+3. **属性保留** - 保持 Cookie 的 Path/HttpOnly 等属性不变
+4. **调试支持** - 开启 `debug=True` 可查看修改过程
+5. **动态控制** - 可随时通过 `stop_monitoring()` 停止拦截
+
+---
+
+### **实现原理**
+1. **CDP 拦截**：通过 `Fetch.enable` 启用请求拦截
+2. **响应阶段处理**：仅在收到服务器响应时触发修改
+3. **头处理**：精确修改 `Set-Cookie` 头，保留非目标字段
+4. **内存安全**：自动管理监听器引用，避免内存泄漏
+
+---
+
+### **自定义扩展**
+您可以通过以下方式扩展功能：
+```python
+class CustomModifier(ResponseCookieModifier):
+    def _modify_cookie(self, cookie_header: str, replacements: Dict[str, str], **kwargs) -> str:
+        # 实现自定义修改逻辑，例如：
+        # - 按正则表达式替换
+        # - 动态生成 Cookie 值
+        # - 条件判断修改
+        return super()._modify_cookie(cookie_header, replacements, **kwargs)
+```
