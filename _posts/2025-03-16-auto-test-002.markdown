@@ -1,0 +1,3469 @@
+---
+layout:     post
+title:      "Python Playwright 自动化测试教程"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2025-03-16 12:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+
+# Python Playwright 自动化测试详尽教程 (第一篇)
+
+## 目录
+
+1. [Playwright 简介](#playwright-简介)
+2. [环境搭建](#环境搭建)
+3. [Playwright 基础](#playwright-基础)
+4. [浏览器和上下文操作](#浏览器和上下文操作)
+5. [页面操作基础](#页面操作基础)
+6. [元素定位与交互](#元素定位与交互)
+7. [等待机制](#等待机制)
+8. [表单操作](#表单操作)
+
+## Playwright 简介
+
+Playwright 是微软开发的一个自动化测试工具，支持 Chromium、Firefox 和 WebKit 三大浏览器引擎，能够在 Windows、Linux 和 macOS 上运行。它具有以下特点：
+
+1. **跨浏览器支持**：一套代码可以在多种浏览器上运行
+2. **自动等待**：内置智能等待机制，减少显式等待的需要
+3. **强大的选择器**：支持 CSS、XPath 以及自定义选择器
+4. **隔离的浏览器上下文**：每个测试可以有独立的浏览器状态
+5. **网络控制**：可以拦截和修改网络请求
+6. **移动端模拟**：支持模拟移动设备
+7. **并行执行**：支持测试并行运行
+
+相比 Selenium，Playwright 提供了更现代的 API，更快的执行速度，以及更好的稳定性。
+
+## 环境搭建
+
+### 安装 Python 和 Playwright
+
+首先，确保你已经安装了 Python 3.7 或更高版本。然后，使用 pip 安装 Playwright：
+
+```bash
+pip install playwright
+```
+
+安装完成后，需要安装浏览器：
+
+```bash
+playwright install
+```
+
+这个命令会下载并安装 Chromium、Firefox 和 WebKit 浏览器。如果只需要特定浏览器，可以指定：
+
+```bash
+playwright install chromium
+playwright install firefox
+playwright install webkit
+```
+
+### 验证安装
+
+创建一个简单的脚本来验证安装是否成功：
+
+```python:e:\MyProjects\e2e_test_framework\verify_install.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    page.goto('https://playwright.dev/')
+    print(page.title())
+    browser.close()
+```
+
+运行脚本：
+
+```bash
+python e:\MyProjects\e2e_test_framework\verify_install.py
+```
+
+如果一切正常，你应该能看到 Playwright 官网的标题输出。
+
+## Playwright 基础
+
+### 同步 API vs 异步 API
+
+Playwright 提供了同步和异步两种 API：
+
+- **同步 API**：使用 `playwright.sync_api`，适合大多数测试场景
+- **异步 API**：使用 `playwright.async_api`，适合与其他异步代码集成
+
+同步 API 示例：
+
+```python:e:\MyProjects\e2e_test_framework\sync_example.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    page.goto('https://www.baidu.com')
+    page.fill('#kw', 'Playwright')
+    page.click('#su')
+    page.wait_for_load_state('networkidle')
+    page.screenshot(path='baidu_search.png')
+    browser.close()
+```
+
+异步 API 示例：
+
+```python:e:\MyProjects\e2e_test_framework\async_example.py
+import asyncio
+from playwright.async_api import async_playwright
+
+async def main():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        page = await browser.new_page()
+        await page.goto('https://www.baidu.com')
+        await page.fill('#kw', 'Playwright')
+        await page.click('#su')
+        await page.wait_for_load_state('networkidle')
+        await page.screenshot(path='baidu_search_async.png')
+        await browser.close()
+
+asyncio.run(main())
+```
+
+在本教程中，我们主要使用同步 API，因为它更易于理解和使用。
+
+### Playwright 架构
+
+Playwright 的架构包含以下主要组件：
+
+1. **Playwright**：主入口点，用于创建浏览器实例
+2. **Browser**：浏览器实例，如 Chromium、Firefox 或 WebKit
+3. **BrowserContext**：浏览器上下文，相当于一个隔离的浏览器会话
+4. **Page**：浏览器页面，大多数操作都在这一层进行
+5. **Frame**：页面中的框架，可以是主框架或 iframe
+
+## 浏览器和上下文操作
+
+### 启动浏览器
+
+可以通过多种方式启动浏览器：
+
+```python:e:\MyProjects\e2e_test_framework\browser_launch.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    # 默认启动（无头模式）
+    browser1 = p.chromium.launch()
+    
+    # 有头模式启动（可见浏览器窗口）
+    browser2 = p.chromium.launch(headless=False)
+    
+    # 设置浏览器窗口大小
+    browser3 = p.chromium.launch(headless=False, args=['--window-size=1920,1080'])
+    
+    # 慢速模式，放慢操作速度，便于调试
+    browser4 = p.chromium.launch(headless=False, slow_mo=100)
+    
+    # 使用已安装的浏览器
+    browser5 = p.chromium.launch(channel='chrome')  # 可选值: 'chrome', 'msedge', 'chrome-beta', 等
+    
+    # 关闭所有浏览器
+    browser1.close()
+    browser2.close()
+    browser3.close()
+    browser4.close()
+    browser5.close()
+```
+
+### 浏览器上下文
+
+浏览器上下文是一个隔离的浏览器会话，拥有独立的 cookies、localStorage 等状态：
+
+```python:e:\MyProjects\e2e_test_framework\browser_context.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    
+    # 创建默认上下文
+    context1 = browser.new_context()
+    
+    # 创建带有特定视口大小的上下文
+    context2 = browser.new_context(viewport={'width': 1920, 'height': 1080})
+    
+    # 创建模拟移动设备的上下文
+    iphone = p.devices['iPhone 12']
+    context3 = browser.new_context(**iphone)
+    
+    # 创建带有地理位置的上下文
+    context4 = browser.new_context(
+        geolocation={"latitude": 39.9042, "longitude": 116.4074},
+        permissions=["geolocation"]
+    )
+    
+    # 创建带有语言和时区的上下文
+    context5 = browser.new_context(
+        locale='zh-CN',
+        timezone_id='Asia/Shanghai'
+    )
+    
+    # 关闭所有上下文
+    context1.close()
+    context2.close()
+    context3.close()
+    context4.close()
+    context5.close()
+    
+    browser.close()
+```
+
+### 持久化上下文状态
+
+可以保存和恢复浏览器上下文状态，如 cookies、localStorage 等：
+
+```python:e:\MyProjects\e2e_test_framework\persistent_context.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    
+    # 创建上下文
+    context = browser.new_context()
+    page = context.new_page()
+    
+    # 登录网站
+    page.goto('https://github.com/login')
+    page.fill('input[name="login"]', 'your_username')
+    page.fill('input[name="password"]', 'your_password')
+    page.click('input[type="submit"]')
+    
+    # 等待登录成功
+    page.wait_for_url('https://github.com/')
+    
+    # 保存状态到文件
+    context.storage_state(path='github_state.json')
+    
+    # 关闭当前上下文
+    context.close()
+    
+    # 创建新上下文，加载之前保存的状态
+    new_context = browser.new_context(storage_state='github_state.json')
+    new_page = new_context.new_page()
+    
+    # 直接访问需要登录的页面
+    new_page.goto('https://github.com/settings/profile')
+    
+    # 验证是否已登录
+    assert new_page.url.startswith('https://github.com/settings/profile')
+    
+    new_context.close()
+    browser.close()
+```
+
+## 页面操作基础
+
+### 创建和关闭页面
+
+```python:e:\MyProjects\e2e_test_framework\page_basics.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    context = browser.new_context()
+    
+    # 创建新页面
+    page = context.new_page()
+    
+    # 导航到 URL
+    page.goto('https://www.baidu.com')
+    
+    # 获取页面标题
+    title = page.title()
+    print(f"页面标题: {title}")
+    
+    # 获取当前 URL
+    current_url = page.url
+    print(f"当前 URL: {current_url}")
+    
+    # 页面前进后退
+    page.goto('https://www.qq.com')
+    page.go_back()  # 回到百度
+    page.go_forward()  # 再次前进到腾讯
+    
+    # 刷新页面
+    page.reload()
+    
+    # 关闭页面
+    page.close()
+    
+    context.close()
+    browser.close()
+```
+
+### 页面导航和等待
+
+```python:e:\MyProjects\e2e_test_framework\page_navigation.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    
+    # 基本导航
+    page.goto('https://www.baidu.com')
+    
+    # 带超时的导航（默认为 30 秒）
+    page.goto('https://www.baidu.com', timeout=10000)  # 10 秒超时
+    
+    # 等待页面加载状态
+    page.goto('https://www.baidu.com', wait_until='domcontentloaded')  # 等待 DOMContentLoaded 事件
+    page.goto('https://www.baidu.com', wait_until='load')  # 等待 load 事件（默认）
+    page.goto('https://www.baidu.com', wait_until='networkidle')  # 等待网络空闲
+    
+    # 单独使用等待加载状态
+    page.wait_for_load_state('networkidle')
+    
+    # 等待 URL 变化
+    page.fill('#kw', 'Playwright')
+    page.click('#su')
+    page.wait_for_url('**/s?*')
+    
+    browser.close()
+```
+
+### 截图和 PDF
+
+```python:e:\MyProjects\e2e_test_framework\screenshots_pdf.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    
+    # 导航到页面
+    page.goto('https://www.baidu.com')
+    
+    # 截取整个页面
+    page.screenshot(path='full_page.png', full_page=True)
+    
+    # 截取可视区域
+    page.screenshot(path='viewport.png')
+    
+    # 截取特定元素
+    logo = page.locator('#lg')
+    logo.screenshot(path='logo.png')
+    
+    # 截取为 JPEG 格式，设置质量
+    page.screenshot(path='baidu.jpg', type='jpeg', quality=80)
+    
+    # 截取为 PDF（仅 Chromium 支持）
+    page.goto('https://playwright.dev/python/docs/intro')
+    page.pdf(path='playwright_docs.pdf')
+    
+    browser.close()
+```
+
+## 元素定位与交互
+
+### 定位元素
+
+Playwright 提供了强大的元素定位功能，支持多种选择器：
+
+```python:e:\MyProjects\e2e_test_framework\element_locators.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    page.goto('https://www.baidu.com')
+    
+    # CSS 选择器（最常用）
+    search_input = page.locator('#kw')
+    search_button = page.locator('#su')
+    
+    # XPath 选择器
+    xpath_input = page.locator('//input[@id="kw"]')
+    
+    # 文本内容选择器
+    text_element = page.locator('text=百度一下')
+    
+    # 组合选择器
+    combined = page.locator('#u1 >> text=新闻')
+    
+    # 使用 CSS 和文本
+    css_and_text = page.locator('a:has-text("新闻")')
+    
+    # 使用属性选择器
+    attr_selector = page.locator('[name="wd"]')
+    
+    # 使用 nth 选择器
+    nth_link = page.locator('#u1 a >> nth=0')  # 第一个链接
+    
+    # 使用 has 选择器
+    has_selector = page.locator('div:has(#kw)')
+    
+    # 使用 visible 选择器
+    visible_element = page.locator('#kw:visible')
+    
+    browser.close()
+```
+
+
+# Python Playwright 自动化测试详尽教程 (第二篇)
+
+接着上一篇内容，我们继续深入探讨 Playwright 的元素交互和更多高级功能。
+
+## 元素交互（续）
+
+```python:e:\MyProjects\e2e_test_framework\element_interactions.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=False, slow_mo=100)
+    page = browser.new_page()
+    page.goto('https://www.baidu.com')
+    
+    # 点击元素
+    page.click('#su')
+    
+    # 填充文本
+    page.fill('#kw', 'Playwright Python')
+    
+    # 清除文本
+    page.fill('#kw', '')
+    
+    # 按键操作
+    page.fill('#kw', 'Playwright')
+    page.press('#kw', 'Enter')  # 按回车键
+    
+    # 双击操作
+    page.dblclick('#kw')
+    
+    # 右键点击
+    page.click('#kw', button='right')
+    
+    # 悬停操作
+    page.hover('#s-top-left')
+    
+    # 拖放操作
+    page.drag_and_drop('#draggable', '#droppable')  # 假设页面有这些元素
+    
+    # 选择下拉菜单选项
+    # page.select_option('select#dropdown', 'option1')  # 通过值选择
+    # page.select_option('select#dropdown', label='Option 1')  # 通过标签选择
+    # page.select_option('select#dropdown', index=0)  # 通过索引选择
+    
+    # 复选框和单选按钮
+    # page.check('input[type="checkbox"]')  # 选中复选框
+    # page.uncheck('input[type="checkbox"]')  # 取消选中复选框
+    # page.check('input[type="radio"]')  # 选中单选按钮
+    
+    # 上传文件
+    # page.set_input_files('input[type="file"]', 'path/to/file.txt')
+    # page.set_input_files('input[type="file"]', ['file1.txt', 'file2.txt'])  # 多文件上传
+    
+    browser.close()
+```
+
+## 等待机制
+
+Playwright 提供了多种等待机制，帮助处理异步操作和动态内容：
+
+```python:e:\MyProjects\e2e_test_framework\waiting_mechanisms.py
+from playwright.sync_api import sync_playwright, expect
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    page.goto('https://www.baidu.com')
+    
+    # 1. 等待元素可见
+    page.wait_for_selector('#kw', state='visible')
+    
+    # 2. 等待元素消失
+    # page.wait_for_selector('.loading', state='hidden')
+    
+    # 3. 等待元素附加到 DOM
+    page.wait_for_selector('#su', state='attached')
+    
+    # 4. 等待元素从 DOM 中分离
+    # page.wait_for_selector('.temp-element', state='detached')
+    
+    # 5. 等待特定函数返回真值
+    page.wait_for_function('document.title.includes("百度")')
+    
+    # 6. 等待网络请求完成
+    page.fill('#kw', 'Playwright')
+    with page.expect_navigation():
+        page.click('#su')
+    
+    # 7. 等待下载开始
+    # with page.expect_download() as download_info:
+    #     page.click('a.download-link')
+    # download = download_info.value
+    # download.save_as('/path/to/save/download.zip')
+    
+    # 8. 等待对话框
+    # with page.expect_dialog() as dialog_info:
+    #     page.click('button.show-alert')
+    # dialog = dialog_info.value
+    # dialog.accept()  # 或 dialog.dismiss()
+    
+    # 9. 等待新页面打开
+    # with page.expect_popup() as popup_info:
+    #     page.click('a[target="_blank"]')
+    # popup = popup_info.value  # 新页面
+    
+    # 10. 使用超时
+    page.wait_for_selector('#non-existent', timeout=5000, state='visible')
+    
+    browser.close()
+```
+
+## 断言和验证
+
+Playwright 提供了强大的断言机制，帮助验证页面状态：
+
+```python:e:\MyProjects\e2e_test_framework\assertions.py
+from playwright.sync_api import sync_playwright, expect
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    page.goto('https://www.baidu.com')
+    
+    # 基本断言
+    assert page.title() == '百度一下，你就知道'
+    assert 'baidu.com' in page.url
+    
+    # 使用 expect 断言（推荐）
+    search_input = page.locator('#kw')
+    expect(search_input).to_be_visible()
+    expect(search_input).to_be_enabled()
+    expect(search_input).to_be_empty()
+    
+    # 填充内容后的断言
+    page.fill('#kw', 'Playwright')
+    expect(search_input).to_have_value('Playwright')
+    
+    # 文本内容断言
+    logo_text = page.locator('.s-bottom-layer-content')
+    expect(logo_text).to_contain_text('京公网安备')
+    
+    # 属性断言
+    search_button = page.locator('#su')
+    expect(search_button).to_have_attribute('type', 'submit')
+    
+    # 计数断言
+    nav_links = page.locator('#s-top-left a')
+    expect(nav_links).to_have_count(6)  # 假设有 6 个导航链接
+    
+    # 截图对比断言（需要先生成参考截图）
+    # expect(page).to_have_screenshot('reference.png')
+    
+    browser.close()
+```
+
+## 表单操作
+
+```python:e:\MyProjects\e2e_test_framework\form_operations.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=False)
+    page = browser.new_page()
+    
+    # 导航到包含表单的页面
+    page.goto('https://www.w3school.com.cn/tiy/t.asp?f=eg_html_form_submit')
+    
+    # 切换到包含表单的 iframe
+    frame = page.frame_locator('iframe[name="i"]').first
+    
+    # 填充文本字段
+    frame.locator('input[name="firstname"]').fill('张')
+    frame.locator('input[name="lastname"]').fill('三')
+    
+    # 提交表单
+    frame.locator('input[type="submit"]').click()
+    
+    # 等待提交后的结果
+    page.wait_for_timeout(2000)  # 等待 2 秒查看结果
+    
+    # 回到表单页面
+    page.goto('https://www.w3school.com.cn/tiy/t.asp?f=eg_html_form_submit')
+    frame = page.frame_locator('iframe[name="i"]').first
+    
+    # 使用 fill_form 方法一次性填充多个字段（自定义方法）
+    def fill_form(frame, form_data):
+        for selector, value in form_data.items():
+            frame.locator(selector).fill(value)
+    
+    form_data = {
+        'input[name="firstname"]': '李',
+        'input[name="lastname"]': '四'
+    }
+    fill_form(frame, form_data)
+    
+    # 提交表单
+    frame.locator('input[type="submit"]').click()
+    
+    browser.close()
+```
+
+## 网络拦截和修改
+
+Playwright 允许拦截和修改网络请求，这对于测试不同网络条件、模拟 API 响应等非常有用：
+
+```python:e:\MyProjects\e2e_test_framework\network_interception.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    
+    # 1. 拦截请求并阻止某些资源加载
+    # 阻止图片加载
+    page.route('**/*.{png,jpg,jpeg,gif}', lambda route: route.abort())
+    
+    # 2. 拦截请求并修改响应
+    def handle_route(route):
+        if 'api/data' in route.request.url:
+            # 返回模拟数据
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body='{"success": true, "data": {"message": "这是模拟数据"}}'
+            )
+        else:
+            # 继续正常请求
+            route.continue_()
+    
+    page.route('**/*', handle_route)
+    
+    # 3. 监听网络请求
+    page.on('request', lambda request: print(f'请求: {request.method} {request.url}'))
+    page.on('response', lambda response: print(f'响应: {response.status} {response.url}'))
+    
+    # 4. 等待特定请求完成
+    with page.expect_request('**/*api/data*') as request_info:
+        page.goto('https://example.com')
+    request = request_info.value
+    print(f'捕获到请求: {request.url}')
+    
+    # 5. 模拟网络条件
+    # 模拟慢速网络
+    page.route('**/*', lambda route: route.continue_(
+        slow_mo=100  # 延迟 100ms
+    ))
+    
+    # 6. 修改请求头
+    def modify_headers(route):
+        headers = route.request.headers
+        headers['Custom-Header'] = 'CustomValue'
+        route.continue_(headers=headers)
+    
+    page.route('**/*', modify_headers)
+    
+    # 7. 保存 API 响应
+    def save_response(response):
+        if 'api/important-data' in response.url:
+            print(f'保存响应: {response.url}')
+            with open('api_response.json', 'w') as f:
+                f.write(response.text())
+    
+    page.on('response', save_response)
+    
+    # 示例导航
+    page.goto('https://www.baidu.com')
+    
+    browser.close()
+```
+
+## 多页面和多标签页操作
+
+```python:e:\MyProjects\e2e_test_framework\multi_page_operations.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=False)
+    context = browser.new_context()
+    
+    # 创建多个页面
+    page1 = context.new_page()
+    page2 = context.new_page()
+    
+    # 在不同页面导航到不同网站
+    page1.goto('https://www.baidu.com')
+    page2.goto('https://www.bing.com')
+    
+    # 在页面1中执行操作
+    page1.fill('#kw', 'Playwright 多页面')
+    page1.click('#su')
+    
+    # 在页面2中执行操作
+    page2.fill('#sb_form_q', 'Playwright 多标签页')
+    page2.press('#sb_form_q', 'Enter')
+    
+    # 等待新标签页打开
+    with page1.expect_popup() as popup_info:
+        # 点击会打开新标签页的链接
+        page1.click('a[target="_blank"]', timeout=10000)  # 假设有这样的链接
+    
+    # 获取新打开的标签页
+    popup = popup_info.value
+    print(f'新标签页标题: {popup.title()}')
+    
+    # 在新标签页中执行操作
+    popup.wait_for_load_state()
+    popup.fill('input[type="text"]', '在新标签页中搜索')
+    
+    # 关闭特定页面
+    popup.close()
+    
+    # 获取上下文中的所有页面
+    all_pages = context.pages
+    print(f'当前打开的页面数: {len(all_pages)}')
+    
+    # 在所有页面上执行相同操作
+    for page in all_pages:
+        page.bring_to_front()  # 将页面带到前台
+        page.wait_for_timeout(1000)  # 等待 1 秒
+    
+    browser.close()
+```
+
+## 移动设备模拟
+
+Playwright 支持模拟各种移动设备，包括屏幕尺寸、用户代理、设备方向等：
+
+```python:e:\MyProjects\e2e_test_framework\mobile_emulation.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=False)
+    
+    # 1. 使用预定义设备
+    iphone_12 = p.devices['iPhone 12']
+    iphone_context = browser.new_context(**iphone_12)
+    iphone_page = iphone_context.new_page()
+    iphone_page.goto('https://www.baidu.com')
+    iphone_page.screenshot(path='iphone_baidu.png')
+    
+    # 2. 自定义移动设备
+    custom_mobile = browser.new_context(
+        viewport={'width': 375, 'height': 667},
+        device_scale_factor=2,
+        is_mobile=True,
+        has_touch=True,
+        user_agent='Custom Mobile User Agent'
+    )
+    custom_page = custom_mobile.new_page()
+    custom_page.goto('https://www.baidu.com')
+    
+    # 3. 模拟设备方向
+    iphone_landscape = browser.new_context(
+        **iphone_12,
+        viewport={'width': 844, 'height': 390},  # 横屏尺寸
+        is_mobile=True
+    )
+    landscape_page = iphone_landscape.new_page()
+    landscape_page.goto('https://www.baidu.com')
+    landscape_page.screenshot(path='iphone_landscape.png')
+    
+    # 4. 模拟触摸事件
+    custom_page.tap('#index-kw')  # 点击搜索框
+    custom_page.keyboard.type('移动设备测试')
+    custom_page.tap('#index-bn')  # 点击搜索按钮
+         
+
+
+
+# Python Playwright 自动化测试详尽教程 (第三篇)
+
+接着上一篇内容，我们继续探讨 Playwright 的高级功能和实际应用场景。
+
+## 移动设备模拟（续）
+
+```python:e:\MyProjects\e2e_test_framework\mobile_emulation.py
+    # 5. 模拟地理位置
+    geolocation_context = browser.new_context(
+        geolocation={"latitude": 39.9042, "longitude": 116.4074},
+        permissions=["geolocation"]
+    )
+    geo_page = geolocation_context.new_page()
+    geo_page.goto('https://map.baidu.com')
+    geo_page.wait_for_timeout(3000)  # 等待地图加载
+    
+    # 6. 模拟不同的网络条件
+    slow_3g = {
+        'offline': False,
+        'download_throughput': 750 * 1024 / 8,
+        'upload_throughput': 250 * 1024 / 8,
+        'latency': 100
+    }
+    
+    # 应用网络限制
+    custom_page.route('**/*', lambda route: route.continue_(slow_mo=100))
+    
+    # 关闭所有上下文
+    iphone_context.close()
+    custom_mobile.close()
+    iphone_landscape.close()
+    geolocation_context.close()
+    
+    browser.close()
+```
+
+## 认证和安全测试
+
+```python:e:\MyProjects\e2e_test_framework\auth_security.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    
+    # 1. HTTP 基本认证
+    context1 = browser.new_context(
+        http_credentials={"username": "admin", "password": "admin123"}
+    )
+    page1 = context1.new_page()
+    # 访问需要 HTTP 基本认证的页面
+    page1.goto('https://httpbin.org/basic-auth/admin/admin123')
+    # 验证认证成功
+    page1.wait_for_selector('pre:has-text("authenticated")')
+    
+    # 2. 处理客户端证书
+    # context2 = browser.new_context(
+    #     proxy={
+    #         "server": "proxy.example.com:3128",
+    #         "username": "proxyuser",
+    #         "password": "proxypass"
+    #     }
+    # )
+    
+    # 3. 处理 Cookie
+    context3 = browser.new_context()
+    page3 = context3.new_page()
+    page3.goto('https://www.baidu.com')
+    
+    # 获取所有 cookies
+    cookies = context3.cookies()
+    print(f"获取到 {len(cookies)} 个 cookies")
+    
+    # 设置 cookies
+    context3.add_cookies([
+        {
+            'name': 'customCookie',
+            'value': 'cookieValue',
+            'domain': '.baidu.com',
+            'path': '/'
+        }
+    ])
+    
+    # 清除 cookies
+    context3.clear_cookies()
+    
+    # 4. 处理 localStorage 和 sessionStorage
+    page3.goto('https://www.baidu.com')
+    
+    # 设置 localStorage
+    page3.evaluate('''() => {
+        localStorage.setItem('testKey', 'testValue');
+    }''')
+    
+    # 获取 localStorage
+    local_storage = page3.evaluate('''() => {
+        return localStorage.getItem('testKey');
+    }''')
+    print(f"localStorage 值: {local_storage}")
+    
+    # 清除 localStorage
+    page3.evaluate('''() => {
+        localStorage.clear();
+    }''')
+    
+    # 5. 保存和加载认证状态
+    auth_context = browser.new_context()
+    auth_page = auth_context.new_page()
+    
+    # 执行登录操作（示例）
+    auth_page.goto('https://github.com/login')
+    auth_page.fill('input[name="login"]', 'your_username')
+    auth_page.fill('input[name="password"]', 'your_password')
+    auth_page.click('input[type="submit"]')
+    
+    # 保存认证状态
+    auth_context.storage_state(path='e:\\MyProjects\\e2e_test_framework\\auth_state.json')
+    
+    # 使用保存的认证状态创建新上下文
+    logged_in_context = browser.new_context(storage_state='e:\\MyProjects\\e2e_test_framework\\auth_state.json')
+    
+    # 关闭所有上下文
+    context1.close()
+    context3.close()
+    auth_context.close()
+    logged_in_context.close()
+    
+    browser.close()
+```
+
+## 文件上传和下载
+
+```python:e:\MyProjects\e2e_test_framework\file_operations.py
+from playwright.sync_api import sync_playwright
+import os
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    
+    # 1. 文件上传
+    page.goto('https://cgi-lib.berkeley.edu/ex/fup.html')
+    
+    # 单文件上传
+    file_path = os.path.join(os.getcwd(), 'test_file.txt')
+    
+    # 创建测试文件
+    with open(file_path, 'w') as f:
+        f.write('这是一个测试文件内容')
+    
+    # 上传文件
+    page.set_input_files('input[name="upfile"]', file_path)
+    page.click('input[type="submit"]')
+    
+    # 等待上传完成
+    page.wait_for_load_state('networkidle')
+    
+    # 2. 多文件上传
+    page.goto('https://www.w3schools.com/tags/tryit.asp?filename=tryhtml5_input_multiple')
+    
+    # 创建第二个测试文件
+    file_path2 = os.path.join(os.getcwd(), 'test_file2.txt')
+    with open(file_path2, 'w') as f:
+        f.write('这是第二个测试文件内容')
+    
+    # 切换到包含上传控件的 iframe
+    frame = page.frame_locator('iframe#iframeResult').first
+    
+    # 上传多个文件
+    frame.set_input_files('input[type="file"]', [file_path, file_path2])
+    
+    # 3. 文件下载
+    page.goto('https://file-examples.com/index.php/sample-documents-download/sample-doc-download/')
+    
+    # 等待下载开始
+    with page.expect_download() as download_info:
+        page.click('a[href*=".doc"]')
+    
+    download = download_info.value
+    
+    # 获取下载信息
+    print(f"下载文件名: {download.suggested_filename}")
+    print(f"下载路径: {download.path()}")
+    
+    # 保存下载文件到指定位置
+    download.save_as('e:\\MyProjects\\e2e_test_framework\\downloaded_file.doc')
+    
+    # 取消下载
+    # download.cancel()
+    
+    # 清理测试文件
+    os.remove(file_path)
+    os.remove(file_path2)
+    
+    browser.close()
+```
+
+## 对话框处理
+
+```python:e:\MyProjects\e2e_test_framework\dialog_handling.py
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=False)
+    page = browser.new_page()
+    
+    # 导航到包含对话框的页面
+    page.goto('https://www.w3schools.com/js/tryit.asp?filename=tryjs_alert')
+    
+    # 1. 处理 alert 对话框
+    # 注册对话框处理程序
+    page.on('dialog', lambda dialog: dialog.accept())
+    
+    # 触发 alert
+    frame = page.frame_locator('iframe#iframeResult').first
+    frame.click('button')
+    
+    # 2. 处理确认对话框
+    page.goto('https://www.w3schools.com/js/tryit.asp?filename=tryjs_confirm')
+    
+    # 接受确认对话框
+    page.on('dialog', lambda dialog: dialog.accept())
+    frame = page.frame_locator('iframe#iframeResult').first
+    frame.click('button')
+    
+    # 等待结果
+    frame.wait_for_selector('p:has-text("You pressed OK!")')
+    
+    # 拒绝确认对话框
+    page.goto('https://www.w3schools.com/js/tryit.asp?filename=tryjs_confirm')
+    page.on('dialog', lambda dialog: dialog.dismiss())
+    frame = page.frame_locator('iframe#iframeResult').first
+    frame.click('button')
+    
+    # 等待结果
+    frame.wait_for_selector('p:has-text("You pressed Cancel!")')
+    
+    # 3. 处理提示对话框
+    page.goto('https://www.w3schools.com/js/tryit.asp?filename=tryjs_prompt')
+    
+    # 输入文本并接受
+    def handle_prompt(dialog):
+        print(f"对话框消息: {dialog.message}")
+        dialog.accept("Playwright 测试")
+    
+    page.on('dialog', handle_prompt)
+    frame = page.frame_locator('iframe#iframeResult').first
+    frame.click('button')
+    
+    # 等待结果
+    frame.wait_for_selector('p:has-text("Playwright 测试")')
+    
+    browser.close()
+```
+
+## 性能监控和分析
+
+```python:e:\MyProjects\e2e_test_framework\performance_monitoring.py
+from playwright.sync_api import sync_playwright
+import json
+import time
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    context = browser.new_context()
+    
+    # 开始跟踪
+    context.tracing.start(screenshots=True, snapshots=True)
+    
+    page = context.new_page()
+    
+    # 记录页面加载时间
+    start_time = time.time()
+    page.goto('https://www.baidu.com')
+    load_time = time.time() - start_time
+    print(f"页面加载时间: {load_time:.2f} 秒")
+    
+    # 执行一些操作
+    page.fill('#kw', 'Playwright 性能测试')
+    page.click('#su')
+    page.wait_for_load_state('networkidle')
+    
+    # 获取性能指标
+    metrics = page.evaluate('''() => {
+        const performance = window.performance;
+        const timing = performance.timing;
+        
+        return {
+            // 导航计时
+            navigationStart: timing.navigationStart,
+            redirectTime: timing.redirectEnd - timing.redirectStart,
+            dnsTime: timing.domainLookupEnd - timing.domainLookupStart,
+            connectTime: timing.connectEnd - timing.connectStart,
+            responseTime: timing.responseEnd - timing.responseStart,
+            domContentLoadedTime: timing.domContentLoadedEventEnd - timing.navigationStart,
+            loadTime: timing.loadEventEnd - timing.navigationStart,
+            
+            // 资源计时
+            resources: performance.getEntriesByType('resource').map(entry => ({
+                name: entry.name,
+                duration: entry.duration,
+                transferSize: entry.transferSize
+            }))
+        };
+    }''')
+    
+    # 输出性能指标
+    print(f"DNS 解析时间: {metrics['dnsTime']} ms")
+    print(f"连接时间: {metrics['connectTime']} ms")
+    print(f"响应时间: {metrics['responseTime']} ms")
+    print(f"DOM 内容加载时间: {metrics['domContentLoadedTime']} ms")
+    print(f"页面完全加载时间: {metrics['loadTime']} ms")
+    
+    # 保存性能数据
+    with open('e:\\MyProjects\\e2e_test_framework\\performance_metrics.json', 'w') as f:
+        json.dump(metrics, f, indent=2)
+    
+    # 停止跟踪并保存
+    context.tracing.stop(path='e:\\MyProjects\\e2e_test_framework\\trace.zip')
+    
+    browser.close()
+```
+
+## 视觉比较测试
+
+```python:e:\MyProjects\e2e_test_framework\visual_testing.py
+from playwright.sync_api import sync_playwright, expect
+import os
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    
+    # 设置固定视口大小，确保截图一致
+    page.set_viewport_size({"width": 1280, "height": 720})
+    
+    # 导航到测试页面
+    page.goto('https://www.baidu.com')
+    
+    # 1. 基本截图比较
+    # 创建参考截图目录
+    os.makedirs('e:\\MyProjects\\e2e_test_framework\\screenshots', exist_ok=True)
+    
+    # 截取整个页面
+    reference_path = 'e:\\MyProjects\\e2e_test_framework\\screenshots\\baidu_reference.png'
+    page.screenshot(path=reference_path)
+    
+    # 在后续测试中比较截图
+    current_path = 'e:\\MyProjects\\e2e_test_framework\\screenshots\\baidu_current.png'
+    page.screenshot(path=current_path)
+    
+    # 使用 expect 进行截图比较
+    # 注意：首次运行时会创建参考截图，后续运行才会进行比较
+    expect(page).to_have_screenshot('baidu_expect.png', timeout=5000)
+    
+    # 2. 元素截图比较
+    logo = page.locator('#lg')
+    logo_path = 'e:\\MyProjects\\e2e_test_framework\\screenshots\\baidu_logo.png'
+    logo.screenshot(path=logo_path)
+    
+    # 3. 忽略动态内容的截图比较
+    # 创建一个带有掩码的截图
+    page.screenshot(
+        path='e:\\MyProjects\\e2e_test_framework\\screenshots\\baidu_masked.png',
+        mask=[page.locator('#s_lg_img'), page.locator('#s-hotsearch-wrapper')]  # 掩码动态内容
+    )
+    
+    # 4. 不同设备的视觉测试
+    # 模拟移动设备
+    iphone = p.devices['iPhone 12']
+    mobile_context = browser.new_context(**iphone)
+    mobile_page = mobile_context.new_page()
+    mobile_page.goto('https://www.baidu.com')
+    mobile_page.screenshot(path='e:\\MyProjects\\e2e_test_framework\\screenshots\\baidu_mobile.png')
+
+
+# Python Playwright 自动化测试详尽教程 (第四篇)
+
+接着上一篇内容，我们继续深入探讨 Playwright 的高级功能和实际应用场景。
+
+## 视觉比较测试（续）
+
+```python:e:\MyProjects\e2e_test_framework\visual_testing.py
+    # 5. 不同主题的视觉测试
+    # 模拟暗色主题
+    dark_context = browser.new_context(
+        color_scheme='dark'  # 可选值: 'light', 'dark', 'no-preference'
+    )
+    dark_page = dark_context.new_page()
+    dark_page.goto('https://playwright.dev/')
+    dark_page.screenshot(path='e:\MyProjects\e2e_test_framework\screenshots\playwright_dark.png')
+    
+    # 模拟浅色主题
+    light_context = browser.new_context(
+        color_scheme='light'
+    )
+    light_page = light_context.new_page()
+    light_page.goto('https://playwright.dev/')
+    light_page.screenshot(path='e:\MyProjects\e2e_test_framework\screenshots\playwright_light.png')
+    
+    # 6. 自定义视觉比较函数
+    def compare_screenshots(path1, path2, threshold=0.1):
+        """
+        比较两张截图的相似度
+        threshold: 相似度阈值，低于此值视为不同
+        """
+        try:
+            from PIL import Image, ImageChops, ImageStat
+            import math
+            
+            # 打开图片
+            img1 = Image.open(path1)
+            img2 = Image.open(path2)
+            
+            # 确保尺寸相同
+            if img1.size != img2.size:
+                return False, "图片尺寸不同"
+            
+            # 计算差异
+            diff = ImageChops.difference(img1, img2)
+            stat = ImageStat.Stat(diff)
+            diff_ratio = sum(stat.mean) / (len(stat.mean) * 255)
+            
+            # 保存差异图
+            diff.save('e:\MyProjects\e2e_test_framework\screenshots\diff.png')
+            
+            # 判断是否相似
+            is_similar = diff_ratio < threshold
+            return is_similar, diff_ratio
+        except Exception as e:
+            return False, str(e)
+    
+    # 使用自定义比较函数
+    result, diff = compare_screenshots(
+        'e:\MyProjects\e2e_test_framework\screenshots\baidu_reference.png',
+        'e:\MyProjects\e2e_test_framework\screenshots\baidu_current.png'
+    )
+    print(f"截图比较结果: {'相似' if result else '不同'}, 差异率: {diff}")
+    
+    # 关闭所有上下文
+    mobile_context.close()
+    dark_context.close()
+    light_context.close()
+    
+    browser.close()
+```
+
+## 测试框架集成
+
+Playwright 可以与各种测试框架集成，如 pytest、unittest 等。下面是与 pytest 集成的示例：
+
+```python:e:\MyProjects\e2e_test_framework\test_with_pytest.py
+import pytest
+from playwright.sync_api import sync_playwright, Page, expect
+
+# 全局 playwright 实例
+@pytest.fixture(scope="session")
+def playwright():
+    with sync_playwright() as playwright:
+        yield playwright
+
+# 浏览器实例
+@pytest.fixture(scope="session")
+def browser(playwright):
+    browser = playwright.chromium.launch(headless=False)
+    yield browser
+    browser.close()
+
+# 上下文实例
+@pytest.fixture(scope="function")
+def context(browser):
+    context = browser.new_context()
+    yield context
+    context.close()
+
+# 页面实例
+@pytest.fixture(scope="function")
+def page(context):
+    page = context.new_page()
+    yield page
+
+# 测试用例
+def test_baidu_search(page: Page):
+    # 导航到百度
+    page.goto("https://www.baidu.com")
+    
+    # 验证标题
+    assert "百度一下" in page.title()
+    
+    # 搜索关键词
+    page.fill("#kw", "Playwright Python")
+    page.click("#su")
+    
+    # 等待搜索结果
+    page.wait_for_selector(".result")
+    
+    # 验证搜索结果包含预期文本
+    expect(page.locator(".result")).to_contain_text("Playwright")
+
+def test_bing_search(page: Page):
+    # 导航到必应
+    page.goto("https://www.bing.com")
+    
+    # 验证标题
+    assert "Bing" in page.title()
+    
+    # 搜索关键词
+    page.fill("#sb_form_q", "Playwright Python")
+    page.press("#sb_form_q", "Enter")
+    
+    # 等待搜索结果
+    page.wait_for_selector("#b_results")
+    
+    # 验证搜索结果包含预期文本
+    expect(page.locator("#b_results")).to_contain_text("Playwright")
+
+# 参数化测试
+@pytest.mark.parametrize("search_engine,search_term,expected_text", [
+    ("https://www.baidu.com", "Python Playwright", "Playwright"),
+    ("https://www.bing.com", "Python 自动化测试", "自动化"),
+    ("https://www.sogou.com", "Web 测试框架", "测试框架")
+])
+def test_search_engines(page: Page, search_engine, search_term, expected_text):
+    # 导航到搜索引擎
+    page.goto(search_engine)
+    
+    # 根据不同搜索引擎选择不同的选择器
+    selectors = {
+        "https://www.baidu.com": {"input": "#kw", "button": "#su"},
+        "https://www.bing.com": {"input": "#sb_form_q", "button": "#search_icon"},
+        "https://www.sogou.com": {"input": "#query", "button": "#stb"}
+    }
+    
+    # 获取当前搜索引擎的选择器
+    current_selectors = selectors.get(search_engine)
+    
+    # 搜索关键词
+    page.fill(current_selectors["input"], search_term)
+    page.click(current_selectors["button"])
+    
+    # 等待页面加载
+    page.wait_for_load_state("networkidle")
+    
+    # 验证页面包含预期文本
+    assert expected_text in page.content()
+```
+
+## 持续集成与部署 (CI/CD) 集成
+
+```python:e:\MyProjects\e2e_test_framework\ci_cd_integration.py
+"""
+此文件演示如何在 CI/CD 环境中使用 Playwright
+
+在 CI/CD 环境中运行 Playwright 测试时的注意事项:
+1. 使用无头模式 (headless=True)
+2. 禁用 GPU 加速
+3. 设置适当的超时时间
+4. 处理截图和视频记录
+5. 生成测试报告
+"""
+
+from playwright.sync_api import sync_playwright
+import os
+import sys
+
+# 检测是否在 CI 环境中运行
+is_ci = os.environ.get('CI', 'false').lower() == 'true'
+
+def run_tests():
+    with sync_playwright() as p:
+        # CI 环境中的浏览器配置
+        browser_args = []
+        if is_ci:
+            browser_args = [
+                '--disable-gpu',
+                '--no-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-setuid-sandbox',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process'
+            ]
+        
+        # 启动浏览器
+        browser = p.chromium.launch(
+            headless=True,  # CI 环境中总是使用无头模式
+            args=browser_args
+        )
+        
+        # 创建上下文，配置视频录制
+        context = browser.new_context(
+            record_video_dir='e:\MyProjects\e2e_test_framework\videos' if is_ci else None
+        )
+        
+        # 创建页面
+        page = context.new_page()
+        
+        try:
+            # 执行测试
+            page.goto('https://www.baidu.com')
+            page.fill('#kw', 'Playwright CI/CD')
+            page.click('#su')
+            page.wait_for_selector('.result')
+            
+            # 截图保存
+            os.makedirs('e:\MyProjects\e2e_test_framework\test-results', exist_ok=True)
+            page.screenshot(path='e:\MyProjects\e2e_test_framework\test-results\search-result.png')
+            
+            print("测试通过!")
+            test_status = 0  # 成功
+        except Exception as e:
+            print(f"测试失败: {str(e)}")
+            # 失败时截图
+            os.makedirs('e:\MyProjects\e2e_test_framework\test-results', exist_ok=True)
+            page.screenshot(path='e:\MyProjects\e2e_test_framework\test-results\failure.png')
+            test_status = 1  # 失败
+        finally:
+            # 关闭上下文和浏览器
+            context.close()
+            browser.close()
+            
+        return test_status
+
+if __name__ == "__main__":
+    status = run_tests()
+    sys.exit(status)
+```
+
+## GitHub Actions 配置示例
+
+```yaml:e:\MyProjects\e2e_test_framework\.github\workflows\playwright-tests.yml
+name: Playwright Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-playwright
+        pip install -r requirements.txt
+    
+    - name: Install Playwright browsers
+      run: |
+        python -m playwright install chromium
+    
+    - name: Run tests
+      run: |
+        pytest -v
+      env:
+        CI: true
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-results
+        path: |
+          test-results/
+          videos/
+```
+
+## 数据驱动测试
+
+```python:e:\MyProjects\e2e_test_framework\data_driven_tests.py
+import pytest
+import csv
+import json
+import os
+from playwright.sync_api import sync_playwright, expect
+
+# 从 CSV 文件加载测试数据
+def load_test_data_from_csv(file_path):
+    data = []
+    with open(file_path, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            data.append(row)
+    return data
+
+# 从 JSON 文件加载测试数据
+def load_test_data_from_json(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+# 创建测试数据文件
+def create_test_data_files():
+    # 创建 CSV 测试数据
+    os.makedirs('e:\MyProjects\e2e_test_framework\test_data', exist_ok=True)
+    
+    with open('e:\MyProjects\e2e_test_framework\test_data\search_data.csv', 'w', encoding='utf-8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['search_engine', 'search_term', 'expected_text'])
+        writer.writerow(['https://www.baidu.com', 'Python Playwright', 'Playwright'])
+        writer.writerow(['https://www.bing.com', 'Python 自动化测试', '自动化'])
+        writer.writerow(['https://www.sogou.com', 'Web 测试框架', '测试框架'])
+    
+    # 创建 JSON 测试数据
+    login_data = [
+        {"username": "test_user1", "password": "password1", "expected_result": "success"},
+        {"username": "test_user2", "password": "wrong_password", "expected_result": "failure"},
+        {"username": "", "password": "password3", "expected_result": "validation_error"}
+    ]
+    
+    with open('e:\MyProjects\e2e_test_framework\test_data\login_data.json', 'w', encoding='utf-8') as f:
+        json.dump(login_data, f, ensure_ascii=False, indent=2)
+
+# 创建测试数据文件
+create_test_data_files()
+
+# 使用 CSV 数据的测试
+@pytest.mark.parametrize(
+    "search_engine,search_term,expected_text",
+    [(row['search_engine'], row['search_term'], row['expected_text']) 
+     for row in load_test_data_from_csv('e:\MyProjects\e2e_test_framework\test_data\search_data.csv')]
+)
+def test_search_with_csv_data(search_engine, search_term, expected_text):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        
+        # 导航到搜索引擎
+        page.goto(search_engine)
+        
+        # 根据不同搜索引擎选择不同的选择器
+        selectors = {
+            "https://www.baidu.com": {"input": "#kw", "button": "#su"},
+            "https://www.bing.com": {"input": "#sb_form_q", "button": "#search_icon"},
+            "https://www.sogou.com": {"input": "#query", "button": "#stb"}
+        }
+        
+        # 获取当前搜索引擎的选择器
+        current_selectors = selectors.get(search_engine)
+        
+        # 搜索关键词
+        page.fill(current_selectors["input"], search_term)
+        page.click(current_selectors["button"])
+        
+        # 等待页面加载
+        page.wait_for_load_state("networkidle")
+        
+        # 验证页面包含预期文本
+        assert expected_text in page.content()
+        
+        browser.close()
+
+# 使用 JSON 数据的测试
+@pytest.mark.parametrize(
+    "username,password,expected_result",
+    [(item['username'], item['password'], item['expected_result']) 
+     for item in load_test_data_from_json('e:\MyProjects\e2e_test_framework\test_data\login_data.json')]
+)
+def test_login_with_json_data(username, password, expected_result):
+    with
+
+
+
+
+# Python Playwright 自动化测试详尽教程 (第五篇)
+
+接着上一篇内容，我们继续探讨 Playwright 的高级功能和实际应用场景。
+
+## 数据驱动测试（续）
+
+```python:e:\MyProjects\e2e_test_framework\data_driven_tests.py
+def test_login_with_json_data(username, password, expected_result):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        
+        # 导航到登录页面（这里使用一个示例页面）
+        page.goto('https://demo.playwright.dev/todomvc/#/')
+        
+        # 模拟登录过程
+        if username and password:  # 确保用户名和密码不为空
+            # 在实际应用中，这里应该填写登录表单
+            # 这里仅作为示例
+            login_success = username == "test_user1" and password == "password1"
+            
+            if expected_result == "success":
+                assert login_success, "登录应该成功但失败了"
+            elif expected_result == "failure":
+                assert not login_success, "登录应该失败但成功了"
+        else:
+            # 验证空字段
+            if expected_result == "validation_error":
+                assert not username or not password, "应该有验证错误"
+        
+        browser.close()
+```
+
+## 页面对象模式 (Page Object Model)
+
+页面对象模式是一种设计模式，它将页面元素和操作封装在类中，使测试代码更加清晰和可维护。
+
+```python:e:\MyProjects\e2e_test_framework\page_object_model\base_page.py
+from playwright.sync_api import Page
+
+class BasePage:
+    """所有页面对象的基类"""
+    
+    def __init__(self, page: Page):
+        self.page = page
+    
+    def navigate(self, url):
+        """导航到指定 URL"""
+        self.page.goto(url)
+    
+    def get_title(self):
+        """获取页面标题"""
+        return self.page.title()
+    
+    def get_url(self):
+        """获取当前 URL"""
+        return self.page.url
+    
+    def wait_for_selector(self, selector, state="visible", timeout=30000):
+        """等待元素可见"""
+        return self.page.wait_for_selector(selector, state=state, timeout=timeout)
+    
+    def wait_for_navigation(self, url=None, wait_until="load", timeout=30000):
+        """等待导航完成"""
+        if url:
+            self.page.wait_for_url(url, wait_until=wait_until, timeout=timeout)
+        else:
+            self.page.wait_for_load_state(wait_until, timeout=timeout)
+```
+
+```python:e:\MyProjects\e2e_test_framework\page_object_model\baidu_page.py
+from .base_page import BasePage
+
+class BaiduPage(BasePage):
+    """百度搜索页面对象"""
+    
+    # URL
+    URL = "https://www.baidu.com"
+    
+    # 选择器
+    SEARCH_INPUT = "#kw"
+    SEARCH_BUTTON = "#su"
+    SEARCH_RESULT = ".result-op"
+    
+    def __init__(self, page):
+        super().__init__(page)
+    
+    def navigate(self):
+        """导航到百度首页"""
+        super().navigate(self.URL)
+        return self
+    
+    def search(self, keyword):
+        """执行搜索操作"""
+        self.page.fill(self.SEARCH_INPUT, keyword)
+        self.page.click(self.SEARCH_BUTTON)
+        self.wait_for_selector(self.SEARCH_RESULT)
+        return self
+    
+    def get_search_results(self):
+        """获取搜索结果"""
+        return self.page.locator(self.SEARCH_RESULT).all()
+    
+    def get_first_result_text(self):
+        """获取第一个搜索结果的文本"""
+        return self.page.locator(self.SEARCH_RESULT).first.text_content()
+    
+    def is_result_contains(self, text):
+        """检查搜索结果是否包含指定文本"""
+        results = self.page.locator(self.SEARCH_RESULT)
+        return text in results.text_content()
+```
+
+```python:e:\MyProjects\e2e_test_framework\page_object_model\login_page.py
+from .base_page import BasePage
+
+class LoginPage(BasePage):
+    """登录页面对象"""
+    
+    # URL
+    URL = "https://github.com/login"
+    
+    # 选择器
+    USERNAME_INPUT = "input[name='login']"
+    PASSWORD_INPUT = "input[name='password']"
+    SUBMIT_BUTTON = "input[type='submit']"
+    ERROR_MESSAGE = ".flash-error"
+    
+    def __init__(self, page):
+        super().__init__(page)
+    
+    def navigate(self):
+        """导航到登录页面"""
+        super().navigate(self.URL)
+        return self
+    
+    def login(self, username, password):
+        """执行登录操作"""
+        self.page.fill(self.USERNAME_INPUT, username)
+        self.page.fill(self.PASSWORD_INPUT, password)
+        self.page.click(self.SUBMIT_BUTTON)
+        return self
+    
+    def is_error_message_displayed(self):
+        """检查是否显示错误消息"""
+        return self.page.locator(self.ERROR_MESSAGE).is_visible()
+    
+    def get_error_message(self):
+        """获取错误消息文本"""
+        if self.is_error_message_displayed():
+            return self.page.locator(self.ERROR_MESSAGE).text_content()
+        return None
+```
+
+```python:e:\MyProjects\e2e_test_framework\page_object_model\test_with_pom.py
+import pytest
+from playwright.sync_api import sync_playwright
+from .baidu_page import BaiduPage
+from .login_page import LoginPage
+
+@pytest.fixture(scope="module")
+def browser():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        yield browser
+        browser.close()
+
+@pytest.fixture(scope="function")
+def page(browser):
+    context = browser.new_context()
+    page = context.new_page()
+    yield page
+    context.close()
+
+def test_baidu_search(page):
+    """测试百度搜索功能"""
+    baidu_page = BaiduPage(page)
+    
+    # 导航到百度首页
+    baidu_page.navigate()
+    
+    # 执行搜索
+    baidu_page.search("Playwright Python")
+    
+    # 验证搜索结果
+    assert baidu_page.is_result_contains("Playwright")
+
+def test_github_login_failure(page):
+    """测试 GitHub 登录失败场景"""
+    login_page = LoginPage(page)
+    
+    # 导航到登录页面
+    login_page.navigate()
+    
+    # 使用错误的凭据登录
+    login_page.login("wrong_username", "wrong_password")
+    
+    # 验证显示错误消息
+    assert login_page.is_error_message_displayed()
+    assert "Incorrect username or password" in login_page.get_error_message()
+```
+
+## API 测试
+
+Playwright 不仅可以用于 UI 测试，还可以用于 API 测试：
+
+```python:e:\MyProjects\e2e_test_framework\api_testing.py
+from playwright.sync_api import sync_playwright
+import json
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    context = browser.new_context()
+    
+    # 创建一个新页面
+    page = context.new_page()
+    
+    # 1. 基本 GET 请求
+    response = page.request.get('https://jsonplaceholder.typicode.com/posts/1')
+    
+    # 检查状态码
+    assert response.status == 200
+    
+    # 解析 JSON 响应
+    data = response.json()
+    print(f"GET 响应: {data}")
+    assert data['id'] == 1
+    
+    # 2. POST 请求
+    post_data = {
+        'title': 'Playwright API 测试',
+        'body': '这是使用 Playwright 进行的 API 测试',
+        'userId': 1
+    }
+    
+    response = page.request.post(
+        'https://jsonplaceholder.typicode.com/posts',
+        data=json.dumps(post_data),
+        headers={'Content-Type': 'application/json'}
+    )
+    
+    # 检查状态码
+    assert response.status == 201
+    
+    # 解析 JSON 响应
+    data = response.json()
+    print(f"POST 响应: {data}")
+    assert data['title'] == post_data['title']
+    
+    # 3. PUT 请求
+    put_data = {
+        'id': 1,
+        'title': '更新的标题',
+        'body': '更新的内容',
+        'userId': 1
+    }
+    
+    response = page.request.put(
+        'https://jsonplaceholder.typicode.com/posts/1',
+        data=json.dumps(put_data),
+        headers={'Content-Type': 'application/json'}
+    )
+    
+    # 检查状态码
+    assert response.status == 200
+    
+    # 解析 JSON 响应
+    data = response.json()
+    print(f"PUT 响应: {data}")
+    assert data['title'] == put_data['title']
+    
+    # 4. DELETE 请求
+    response = page.request.delete('https://jsonplaceholder.typicode.com/posts/1')
+    
+    # 检查状态码
+    assert response.status == 200
+    
+    # 5. 带查询参数的请求
+    response = page.request.get(
+        'https://jsonplaceholder.typicode.com/posts',
+        params={'userId': '1'}
+    )
+    
+    # 检查状态码
+    assert response.status == 200
+    
+    # 解析 JSON 响应
+    data = response.json()
+    print(f"带查询参数的 GET 响应: {len(data)} 条记录")
+    assert len(data) > 0
+    assert all(item['userId'] == 1 for item in data)
+    
+    # 6. 带认证的请求
+    response = page.request.get(
+        'https://httpbin.org/basic-auth/user/passwd',
+        headers={
+            'Authorization': 'Basic dXNlcjpwYXNzd2Q='  # user:passwd 的 Base64 编码
+        }
+    )
+    
+    # 检查状态码
+    assert response.status == 200
+    
+    # 解析 JSON 响应
+    data = response.json()
+    print(f"带认证的 GET 响应: {data}")
+    assert data['authenticated'] == True
+    
+    browser.close()
+```
+
+## 并发测试
+
+```python:e:\MyProjects\e2e_test_framework\concurrent_testing.py
+import asyncio
+from playwright.async_api import async_playwright
+import time
+
+async def run_test(browser_type, url, search_term):
+    """运行单个测试"""
+    async with async_playwright() as p:
+        # 根据浏览器类型选择浏览器
+        if browser_type == 'chromium':
+            browser = await p.chromium.launch()
+        elif browser_type == 'firefox':
+            browser = await p.firefox.launch()
+        elif browser_type == 'webkit':
+            browser = await p.webkit.launch()
+        else:
+            raise ValueError(f"不支持的浏览器类型: {browser_type}")
+        
+        # 创建上下文和页面
+        context = await browser.new_context()
+        page = await context.new_page()
+        
+        # 记录开始时间
+        start_time = time.time()
+        
+        # 导航到 URL
+        await page.goto(url)
+        
+        # 根据不同网站执行不同操作
+        if 'baidu.com' in url:
+            await page.fill('#kw', search_term)
+            await page.click('#su')
+            await page.wait_for_selector('.result-op')
+        elif 'bing.com' in url:
+            await page.fill('#sb_form_q', search_term)
+            await page.press('#sb_form_q', 'Enter')
+            await page.wait_for_selector('#b_results')
+        elif 'sogou.com' in url:
+            await page.fill('#query', search_term)
+            await page.click('#stb')
+            await page.wait_for_load_state('networkidle')
+        
+        # 截图
+        screenshot_path = f"e:\\MyProjects\\e2e_test_framework\\screenshots\\{browser_type}_{url.split('.')[-2]}.png"
+        await page.screenshot(path=screenshot_path)
+        
+        # 记录结束时间
+        end_time = time.time()
+        execution_time = end_time - start_time
+        
+        # 关闭浏览器
+        await browser.close()
+        
+        return {
+            'browser': browser_type,
+            'url': url,
+            'search_term': search_term,
+            'execution_time': execution_time,
+            'screenshot': screenshot_path
+        }
+
+async def main():
+    # 定义测试任务
+    test_tasks = [
+        run_test('chromium', 'https://www.baidu.com', 'Playwright 并发测试'),
+        run_test('firefox', 'https://www.bing.com', 'Playwright 并发测试'),
+        run_test('webkit', 'https://www.sogou.com', 'Playwright 并发测试'),
+        run_test('chromium', 'https://www.bing.com', 'Python 自动化'),
+        run_test('firefox', 'https://www.baidu.com', 'Python 自动化'),
+        run_test('webkit', 'https://www.bing.com', 'Python 自动化')
+    ]
+    
+    # 并发执行所有测试
+    start_time = time.time()
+    results = await asyncio.gather(*test_tasks)
+    end_time = time.time()
+    
+    # 输出结果
+    print(f"所有测试完成，总耗时: {end_time - start_time:.2f} 秒")
+    
+    for result in results:
+        print(f"浏览器: {result['browser']}, URL: {result['url']}")
+        print(f"搜索词: {result['search_term']}, 执行时间: {result['execution_time']:.2f} 秒")
+        print(f"截图保存在: {result['screenshot']}")
+        print("-" * 50)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## 自定义报告生成
+
+```python:e:\MyProjects\e2e_test_framework\custom_reporting.py
+import pytest
+from playwright.sync_api import sync_playwright, Page
+import os
+import json
+
+
+
+# Python Playwright 自动化测试详尽教程 (第六篇)
+
+接着上一篇内容，我们继续探讨 Playwright 的高级功能和实际应用场景。
+
+## 自定义报告生成（续）
+
+```python:e:\MyProjects\e2e_test_framework\custom_reporting.py
+import pytest
+from playwright.sync_api import sync_playwright, Page
+import os
+import json
+import datetime
+import shutil
+from jinja2 import Environment, FileSystemLoader
+
+# 测试结果存储
+class TestResults:
+    def __init__(self):
+        self.results = []
+        self.start_time = datetime.datetime.now()
+        self.end_time = None
+    
+    def add_result(self, test_name, status, duration, screenshot=None, error=None):
+        self.results.append({
+            'test_name': test_name,
+            'status': status,
+            'duration': duration,
+            'screenshot': screenshot,
+            'error': error,
+            'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    
+    def set_end_time(self):
+        self.end_time = datetime.datetime.now()
+    
+    def get_summary(self):
+        passed = sum(1 for r in self.results if r['status'] == 'passed')
+        failed = sum(1 for r in self.results if r['status'] == 'failed')
+        skipped = sum(1 for r in self.results if r['status'] == 'skipped')
+        
+        duration = (self.end_time - self.start_time).total_seconds() if self.end_time else 0
+        
+        return {
+            'total': len(self.results),
+            'passed': passed,
+            'failed': failed,
+            'skipped': skipped,
+            'duration': duration,
+            'start_time': self.start_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'end_time': self.end_time.strftime('%Y-%m-%d %H:%M:%S') if self.end_time else None
+        }
+    
+    def save_to_json(self, file_path):
+        data = {
+            'summary': self.get_summary(),
+            'results': self.results
+        }
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+# 创建 HTML 报告
+def generate_html_report(json_report_path, output_path):
+    # 加载 JSON 报告
+    with open(json_report_path, 'r', encoding='utf-8') as f:
+        report_data = json.load(f)
+    
+    # 创建报告目录
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
+    # 创建模板目录
+    template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+    os.makedirs(template_dir, exist_ok=True)
+    
+    # 创建 HTML 模板
+    html_template = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Playwright 测试报告</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .summary { background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+            .passed { color: green; }
+            .failed { color: red; }
+            .skipped { color: orange; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .screenshot { max-width: 300px; cursor: pointer; }
+            .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.9); }
+            .modal-content { margin: auto; display: block; max-width: 90%; max-height: 90%; }
+            .close { position: absolute; top: 15px; right: 35px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; }
+        </style>
+    </head>
+    <body>
+        <h1>Playwright 测试报告</h1>
+        
+        <div class="summary">
+            <h2>测试摘要</h2>
+            <p>开始时间: {{ summary.start_time }}</p>
+            <p>结束时间: {{ summary.end_time }}</p>
+            <p>总耗时: {{ summary.duration|round(2) }} 秒</p>
+            <p>总测试数: {{ summary.total }}</p>
+            <p class="passed">通过: {{ summary.passed }}</p>
+            <p class="failed">失败: {{ summary.failed }}</p>
+            <p class="skipped">跳过: {{ summary.skipped }}</p>
+        </div>
+        
+        <h2>测试详情</h2>
+        <table>
+            <tr>
+                <th>测试名称</th>
+                <th>状态</th>
+                <th>耗时 (秒)</th>
+                <th>时间戳</th>
+                <th>截图</th>
+                <th>错误信息</th>
+            </tr>
+            {% for result in results %}
+            <tr>
+                <td>{{ result.test_name }}</td>
+                <td class="{{ result.status }}">{{ result.status }}</td>
+                <td>{{ result.duration|round(2) }}</td>
+                <td>{{ result.timestamp }}</td>
+                <td>
+                    {% if result.screenshot %}
+                    <img src="{{ result.screenshot }}" class="screenshot" onclick="showModal(this.src)">
+                    {% else %}
+                    无截图
+                    {% endif %}
+                </td>
+                <td>{{ result.error or '无' }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        
+        <div id="imageModal" class="modal">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <img class="modal-content" id="modalImage">
+        </div>
+        
+        <script>
+            function showModal(src) {
+                var modal = document.getElementById('imageModal');
+                var modalImg = document.getElementById('modalImage');
+                modal.style.display = "block";
+                modalImg.src = src;
+            }
+            
+            function closeModal() {
+                document.getElementById('imageModal').style.display = "none";
+            }
+        </script>
+    </body>
+    </html>
+    """
+    
+    # 保存模板文件
+    with open(os.path.join(template_dir, 'report_template.html'), 'w', encoding='utf-8') as f:
+        f.write(html_template)
+    
+    # 使用 Jinja2 渲染模板
+    env = Environment(loader=FileSystemLoader(template_dir))
+    template = env.get_template('report_template.html')
+    
+    # 渲染 HTML
+    html_content = template.render(
+        summary=report_data['summary'],
+        results=report_data['results']
+    )
+    
+    # 保存 HTML 报告
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    
+    # 复制截图到报告目录
+    report_dir = os.path.dirname(output_path)
+    screenshots_dir = os.path.join(report_dir, 'screenshots')
+    os.makedirs(screenshots_dir, exist_ok=True)
+    
+    for result in report_data['results']:
+        if result['screenshot']:
+            src_path = result['screenshot']
+            if os.path.exists(src_path):
+                dest_path = os.path.join(screenshots_dir, os.path.basename(src_path))
+                shutil.copy2(src_path, dest_path)
+                # 更新报告中的截图路径为相对路径
+                result['screenshot'] = 'screenshots/' + os.path.basename(src_path)
+    
+    # 重新保存更新后的 HTML
+    html_content = template.render(
+        summary=report_data['summary'],
+        results=report_data['results']
+    )
+    
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    
+    return output_path
+
+# 示例测试
+@pytest.fixture(scope="module")
+def test_results():
+    results = TestResults()
+    yield results
+    
+    # 测试完成后设置结束时间
+    results.set_end_time()
+    
+    # 保存 JSON 报告
+    report_dir = 'e:\\MyProjects\\e2e_test_framework\\reports'
+    os.makedirs(report_dir, exist_ok=True)
+    
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    json_report_path = os.path.join(report_dir, f'report_{timestamp}.json')
+    results.save_to_json(json_report_path)
+    
+    # 生成 HTML 报告
+    html_report_path = os.path.join(report_dir, f'report_{timestamp}.html')
+    generate_html_report(json_report_path, html_report_path)
+    
+    print(f"测试报告已生成: {html_report_path}")
+
+@pytest.fixture(scope="function")
+def browser_page(test_results):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        context = browser.new_context()
+        page = context.new_page()
+        
+        # 创建截图目录
+        screenshots_dir = 'e:\\MyProjects\\e2e_test_framework\\screenshots'
+        os.makedirs(screenshots_dir, exist_ok=True)
+        
+        yield page, test_results, screenshots_dir
+        
+        context.close()
+        browser.close()
+
+def test_baidu_search(browser_page):
+    page, test_results, screenshots_dir = browser_page
+    test_name = "百度搜索测试"
+    screenshot_path = None
+    error = None
+    
+    start_time = datetime.datetime.now()
+    
+    try:
+        # 执行测试
+        page.goto('https://www.baidu.com')
+        page.fill('#kw', 'Playwright Python')
+        page.click('#su')
+        page.wait_for_selector('.result-op')
+        
+        # 断言
+        assert 'Playwright' in page.content()
+        
+        # 截图
+        screenshot_path = os.path.join(screenshots_dir, f'baidu_search_pass_{start_time.strftime("%Y%m%d_%H%M%S")}.png')
+        page.screenshot(path=screenshot_path)
+        
+        status = 'passed'
+    except Exception as e:
+        status = 'failed'
+        error = str(e)
+        
+        # 失败截图
+        screenshot_path = os.path.join(screenshots_dir, f'baidu_search_fail_{start_time.strftime("%Y%m%d_%H%M%S")}.png')
+        page.screenshot(path=screenshot_path)
+    
+    # 计算耗时
+    duration = (datetime.datetime.now() - start_time).total_seconds()
+    
+    # 添加测试结果
+    test_results.add_result(test_name, status, duration, screenshot_path, error)
+
+def test_bing_search(browser_page):
+    page, test_results, screenshots_dir = browser_page
+    test_name = "Bing搜索测试"
+    screenshot_path = None
+    error = None
+    
+    start_time = datetime.datetime.now()
+    
+    try:
+        # 执行测试
+        page.goto('https://www.bing.com')
+        page.fill('#sb_form_q', 'Playwright Python')
+        page.press('#sb_form_q', 'Enter')
+        page.wait_for_selector('#b_results')
+        
+        # 断言
+        assert 'Playwright' in page.content()
+        
+        # 截图
+        screenshot_path = os.path.join(screenshots_dir, f'bing_search_pass_{start_time.strftime("%Y%m%d_%H%M%S")}.png')
+        page.screenshot(path=screenshot_path)
+        
+        status = 'passed'
+    except Exception as e:
+        status = 'failed'
+        error = str(e)
+        
+        # 失败截图
+        screenshot_path = os.path.join(screenshots_dir, f'bing_search_fail_{start_time.strftime("%Y%m%d_%H%M%S")}.png')
+        page.screenshot(path=screenshot_path)
+    
+    # 计算耗时
+    duration = (datetime.datetime.now() - start_time).total_seconds()
+    
+    # 添加测试结果
+    test_results.add_result(test_name, status, duration, screenshot_path, error)
+```
+
+## 自动化测试框架设计
+
+下面我们将设计一个完整的自动化测试框架，整合前面所学的所有内容：
+
+```python:e:\MyProjects\e2e_test_framework\framework\__init__.py
+# 自动化测试框架初始化文件
+```
+
+```python:e:\MyProjects\e2e_test_framework\framework\config.py
+import os
+import json
+import yaml
+
+class Config:
+    """配置管理类"""
+    
+    def __init__(self, config_path=None):
+        self.config = {}
+        
+        # 默认配置
+        self.config = {
+            'browser': {
+                'type': 'chromium',  # chromium, firefox, webkit
+                'headless': False,
+                'slow_mo': 0,
+                'viewport': {
+                    'width': 1280,
+                    'height': 720
+                },
+                'timeout': 30000,  # 毫秒
+                'screenshots': True,
+                'video': False,
+                'trace': False
+            },
+            'test': {
+                'base_url': 'https://www.baidu.com',
+                'retry_count': 1,
+                'parallel': False,
+                'workers': 1
+            },
+            'report': {
+                'output_dir': 'e:\\MyProjects\\e2e_test_framework\\reports',
+                'screenshots_dir': 'e:\\MyProjects\\e2e_test_framework\\screenshots',
+                'videos_dir': 'e:\\MyProjects\\e2e_test_framework\\videos',
+                'traces_dir': 'e:\\MyProjects\\e2e_test_framework\\traces'
+            }
+        }
+        
+        # 加载配置文件
+        if config_path:
+            self.load_config(config_path)
+    
+    def load_config(self, config_path):
+        """加载配置文件"""
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"配置文件不存在: {config_path}")
+        
+        file_ext = os.path.splitext(config_path)[1].lower()
+
+
+
+# Python Playwright 自动化测试详尽教程 (第七篇)
+
+接着上一篇内容，我们继续完善自动化测试框架的设计。
+
+## 自动化测试框架设计（续）
+
+```python:e:\MyProjects\e2e_test_framework\framework\config.py
+        file_ext = os.path.splitext(config_path)[1].lower()
+        
+        if file_ext == '.json':
+            with open(config_path, 'r', encoding='utf-8') as f:
+                user_config = json.load(f)
+        elif file_ext in ['.yml', '.yaml']:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                user_config = yaml.safe_load(f)
+        else:
+            raise ValueError(f"不支持的配置文件格式: {file_ext}")
+        
+        # 合并配置
+        self._merge_config(self.config, user_config)
+    
+    def _merge_config(self, base, update):
+        """递归合并配置字典"""
+        for key, value in update.items():
+            if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                self._merge_config(base[key], value)
+            else:
+                base[key] = value
+    
+    def get(self, key, default=None):
+        """获取配置项"""
+        keys = key.split('.')
+        value = self.config
+        
+        for k in keys:
+            if isinstance(value, dict) and k in value:
+                value = value[k]
+            else:
+                return default
+        
+        return value
+    
+    def set(self, key, value):
+        """设置配置项"""
+        keys = key.split('.')
+        config = self.config
+        
+        for i, k in enumerate(keys[:-1]):
+            if k not in config:
+                config[k] = {}
+            config = config[k]
+        
+        config[keys[-1]] = value
+    
+    def save(self, file_path):
+        """保存配置到文件"""
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        file_ext = os.path.splitext(file_path)[1].lower()
+        
+        if file_ext == '.json':
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, indent=2, ensure_ascii=False)
+        elif file_ext in ['.yml', '.yaml']:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                yaml.dump(self.config, f, default_flow_style=False, allow_unicode=True)
+        else:
+            raise ValueError(f"不支持的配置文件格式: {file_ext}")
+```
+
+```python:e:\MyProjects\e2e_test_framework\framework\browser.py
+from playwright.sync_api import sync_playwright
+import os
+
+class BrowserManager:
+    """浏览器管理类"""
+    
+    def __init__(self, config):
+        self.config = config
+        self.playwright = None
+        self.browser = None
+        self.context = None
+    
+    def start(self):
+        """启动 Playwright 和浏览器"""
+        self.playwright = sync_playwright().start()
+        
+        # 获取浏览器类型
+        browser_type = self.config.get('browser.type', 'chromium')
+        
+        if browser_type == 'chromium':
+            browser_instance = self.playwright.chromium
+        elif browser_type == 'firefox':
+            browser_instance = self.playwright.firefox
+        elif browser_type == 'webkit':
+            browser_instance = self.playwright.webkit
+        else:
+            raise ValueError(f"不支持的浏览器类型: {browser_type}")
+        
+        # 启动浏览器
+        self.browser = browser_instance.launch(
+            headless=self.config.get('browser.headless', False),
+            slow_mo=self.config.get('browser.slow_mo', 0)
+        )
+        
+        return self
+    
+    def new_context(self, **kwargs):
+        """创建新的浏览器上下文"""
+        context_options = {
+            'viewport': self.config.get('browser.viewport', {'width': 1280, 'height': 720})
+        }
+        
+        # 录制视频
+        if self.config.get('browser.video', False):
+            videos_dir = self.config.get('report.videos_dir')
+            os.makedirs(videos_dir, exist_ok=True)
+            context_options['record_video_dir'] = videos_dir
+        
+        # 合并额外选项
+        context_options.update(kwargs)
+        
+        # 创建上下文
+        self.context = self.browser.new_context(**context_options)
+        
+        # 启用跟踪
+        if self.config.get('browser.trace', False):
+            traces_dir = self.config.get('report.traces_dir')
+            os.makedirs(traces_dir, exist_ok=True)
+            self.context.tracing.start(
+                screenshots=True,
+                snapshots=True
+            )
+        
+        return self.context
+    
+    def new_page(self):
+        """创建新页面"""
+        if not self.context:
+            self.new_context()
+        
+        page = self.context.new_page()
+        
+        # 设置默认超时
+        timeout = self.config.get('browser.timeout', 30000)
+        page.set_default_timeout(timeout)
+        
+        return page
+    
+    def stop_tracing(self, path=None):
+        """停止跟踪并保存"""
+        if self.context and self.config.get('browser.trace', False):
+            if not path:
+                traces_dir = self.config.get('report.traces_dir')
+                os.makedirs(traces_dir, exist_ok=True)
+                path = os.path.join(traces_dir, 'trace.zip')
+            
+            self.context.tracing.stop(path=path)
+    
+    def close(self):
+        """关闭浏览器和 Playwright"""
+        if self.context:
+            self.stop_tracing()
+            self.context.close()
+            self.context = None
+        
+        if self.browser:
+            self.browser.close()
+            self.browser = None
+        
+        if self.playwright:
+            self.playwright.stop()
+            self.playwright = None
+```
+
+```python:e:\MyProjects\e2e_test_framework\framework\page_base.py
+from playwright.sync_api import Page, expect
+import os
+import datetime
+
+class BasePage:
+    """页面基类"""
+    
+    def __init__(self, page: Page, config=None):
+        self.page = page
+        self.config = config
+    
+    def navigate(self, url, wait_until='load'):
+        """导航到指定 URL"""
+        if not url.startswith(('http://', 'https://')):
+            base_url = self.config.get('test.base_url', '') if self.config else ''
+            url = f"{base_url.rstrip('/')}/{url.lstrip('/')}"
+        
+        return self.page.goto(url, wait_until=wait_until)
+    
+    def get_title(self):
+        """获取页面标题"""
+        return self.page.title()
+    
+    def get_url(self):
+        """获取当前 URL"""
+        return self.page.url
+    
+    def wait_for_selector(self, selector, state="visible", timeout=None):
+        """等待元素可见"""
+        if timeout is None and self.config:
+            timeout = self.config.get('browser.timeout', 30000)
+        
+        return self.page.wait_for_selector(selector, state=state, timeout=timeout)
+    
+    def wait_for_navigation(self, url=None, wait_until="load", timeout=None):
+        """等待导航完成"""
+        if timeout is None and self.config:
+            timeout = self.config.get('browser.timeout', 30000)
+        
+        if url:
+            self.page.wait_for_url(url, wait_until=wait_until, timeout=timeout)
+        else:
+            self.page.wait_for_load_state(wait_until, timeout=timeout)
+    
+    def fill(self, selector, value):
+        """填充文本"""
+        return self.page.fill(selector, value)
+    
+    def click(self, selector, **kwargs):
+        """点击元素"""
+        return self.page.click(selector, **kwargs)
+    
+    def hover(self, selector):
+        """悬停在元素上"""
+        return self.page.hover(selector)
+    
+    def press(self, selector, key):
+        """按键操作"""
+        return self.page.press(selector, key)
+    
+    def check(self, selector):
+        """选中复选框"""
+        return self.page.check(selector)
+    
+    def uncheck(self, selector):
+        """取消选中复选框"""
+        return self.page.uncheck(selector)
+    
+    def select_option(self, selector, **kwargs):
+        """选择下拉选项"""
+        return self.page.select_option(selector, **kwargs)
+    
+    def get_text(self, selector):
+        """获取元素文本"""
+        return self.page.locator(selector).text_content()
+    
+    def get_attribute(self, selector, name):
+        """获取元素属性"""
+        return self.page.locator(selector).get_attribute(name)
+    
+    def is_visible(self, selector):
+        """检查元素是否可见"""
+        return self.page.locator(selector).is_visible()
+    
+    def is_enabled(self, selector):
+        """检查元素是否启用"""
+        return self.page.locator(selector).is_enabled()
+    
+    def is_checked(self, selector):
+        """检查元素是否选中"""
+        return self.page.locator(selector).is_checked()
+    
+    def screenshot(self, path=None):
+        """截图"""
+        if not path and self.config:
+            screenshots_dir = self.config.get('report.screenshots_dir')
+            os.makedirs(screenshots_dir, exist_ok=True)
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            path = os.path.join(screenshots_dir, f'screenshot_{timestamp}.png')
+        
+        return self.page.screenshot(path=path)
+    
+    def expect_element(self, selector):
+        """创建元素断言"""
+        return expect(self.page.locator(selector))
+    
+    def expect_navigation(self, url=None, **kwargs):
+        """期望导航"""
+        return self.page.expect_navigation(url=url, **kwargs)
+    
+    def expect_download(self, **kwargs):
+        """期望下载"""
+        return self.page.expect_download(**kwargs)
+    
+    def expect_dialog(self, **kwargs):
+        """期望对话框"""
+        return self.page.expect_dialog(**kwargs)
+```
+
+```python:e:\MyProjects\e2e_test_framework\framework\test_case.py
+import pytest
+import os
+import datetime
+import traceback
+from .browser import BrowserManager
+
+class BaseTestCase:
+    """测试用例基类"""
+    
+    @pytest.fixture(autouse=True)
+    def setup_test(self, config):
+        """设置测试环境"""
+        self.config = config
+        self.browser_manager = BrowserManager(config)
+        self.browser_manager.start()
+        self.context = self.browser_manager.new_context()
+        self.page = self.browser_manager.new_page()
+        
+        # 记录开始时间
+        self.start_time = datetime.datetime.now()
+        
+        # 测试信息
+        self.test_name = self.__class__.__name__
+        self.test_result = {
+            'name': self.test_name,
+            'status': 'pending',
+            'start_time': self.start_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'end_time': None,
+            'duration': 0,
+            'screenshot': None,
+            'error': None
+        }
+        
+        yield
+        
+        # 记录结束时间
+        self.end_time = datetime.datetime.now()
+        self.test_result['end_time'] = self.end_time.strftime('%Y-%m-%d %H:%M:%S')
+        self.test_result['duration'] = (self.end_time - self.start_time).total_seconds()
+        
+        # 关闭浏览器
+        self.browser_manager.close()
+    
+    def take_screenshot(self, name=None):
+        """截图"""
+        if not name:
+            name = f"{self.test_name}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        screenshots_dir = self.config.get('report.screenshots_dir')
+        os.makedirs(screenshots_dir, exist_ok=True)
+        
+        path = os.path.join(screenshots_dir, f"{name}.png")
+        self.page.screenshot(path=path)
+        
+        return path
+    
+    def on_test_pass(self):
+        """测试通过处理"""
+        self.test_result['status'] = 'passed'
+        
+        # 如果配置了截图，则截图
+        if self.config.get('browser.screenshots', True):
+            self.test_result['screenshot'] = self.take_screenshot(f"{self.test_name}_pass")
+    
+    def on_test_fail(self, error):
+        """测试失败处理"""
+        self.test_result['status'] = 'failed'
+        self.test_result['error'] = str(error)
+        
+        # 失败截图
+        self.test_result['screenshot'] = self.take_screenshot(f"{self.test_name}_fail")
+    
+    def run_test(self, test_method):
+        """运行测试方法"""
+        try:
+            # 执行测试方法
+            test_method()
+            self.on_test_pass()
+        except Exception as e:
+            self.on_test_fail(e)
+            traceback.print_exc()
+            raise
+        finally:
+            # 返回测试结果
+            return self.test_result
+```
+
+```python:e:\MyProjects\e2e_test_framework\framework\reporter.py
+import os
+import json
+import datetime
+import shutil
+from jinja2 import Environment, FileSystemLoader
+
+class Reporter:
+    """测试报告生成器"""
+    
+    def __init__(self, config):
+        self.config = config
+        self.results = []
+        self.start_time = datetime.datetime.now()
+        self.end_time = None
+    
+    def add_result(self, result):
+        """添加测试结果"""
+        self.results.append(result)
+    
+    def set_end_time(self):
+        """设置结束时间"""
+        self.end_time = datetime.datetime.now()
+    
+    def get_summary(self):
+        """获取测试摘要"""
+        passed = sum(1 for r in self.results if r['status'] == 'passed')
+        failed = sum(1 for r in self.results if r['status'] == 'failed')
+        skipped = sum(1 for r in self.results if r['status'] == 'skipped')
+        
+        duration = (self.end_time - self.start_time).total_seconds() if self.end_time else 0
+        
+        return {
+            'total': len(self.results),
+            'passed': passed,
+            'failed': failed,
+            'skipped':
+
+
+
+# Python Playwright 自动化测试详尽教程 (第八篇)
+
+接着上一篇内容，我们继续完善自动化测试框架的设计。
+
+## 自动化测试框架设计（续）
+
+```python:e:\MyProjects\e2e_test_framework\framework\reporter.py
+        return {
+            'total': len(self.results),
+            'passed': passed,
+            'failed': failed,
+            'skipped': skipped,
+            'duration': duration,
+            'start_time': self.start_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'end_time': self.end_time.strftime('%Y-%m-%d %H:%M:%S') if self.end_time else None,
+            'pass_rate': f"{(passed / len(self.results) * 100) if self.results else 0:.2f}%"
+        }
+    
+    def save_to_json(self, file_path=None):
+        """保存测试结果为 JSON 文件"""
+        if not file_path:
+            report_dir = self.config.get('report.output_dir')
+            os.makedirs(report_dir, exist_ok=True)
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            file_path = os.path.join(report_dir, f'report_{timestamp}.json')
+        
+        data = {
+            'summary': self.get_summary(),
+            'results': self.results
+        }
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        
+        return file_path
+    
+    def generate_html_report(self, json_report_path=None, output_path=None):
+        """生成 HTML 报告"""
+        # 如果没有提供 JSON 报告路径，先保存 JSON 报告
+        if not json_report_path:
+            json_report_path = self.save_to_json()
+        
+        # 如果没有提供输出路径，生成默认路径
+        if not output_path:
+            report_dir = self.config.get('report.output_dir')
+            os.makedirs(report_dir, exist_ok=True)
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            output_path = os.path.join(report_dir, f'report_{timestamp}.html')
+        
+        # 加载 JSON 报告
+        with open(json_report_path, 'r', encoding='utf-8') as f:
+            report_data = json.load(f)
+        
+        # 创建报告目录
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        # 创建模板目录
+        template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+        os.makedirs(template_dir, exist_ok=True)
+        
+        # 创建 HTML 模板
+        html_template = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Playwright 自动化测试报告</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .summary { background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                .passed { color: green; }
+                .failed { color: red; }
+                .skipped { color: orange; }
+                .pending { color: blue; }
+                table { border-collapse: collapse; width: 100%; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                tr:nth-child(even) { background-color: #f9f9f9; }
+                .screenshot { max-width: 300px; cursor: pointer; }
+                .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.9); }
+                .modal-content { margin: auto; display: block; max-width: 90%; max-height: 90%; }
+                .close { position: absolute; top: 15px; right: 35px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; }
+                .chart-container { width: 400px; height: 400px; margin: 20px auto; }
+            </style>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        </head>
+        <body>
+            <h1>Playwright 自动化测试报告</h1>
+            
+            <div class="summary">
+                <h2>测试摘要</h2>
+                <p>开始时间: {{ summary.start_time }}</p>
+                <p>结束时间: {{ summary.end_time }}</p>
+                <p>总耗时: {{ summary.duration|round(2) }} 秒</p>
+                <p>总测试数: {{ summary.total }}</p>
+                <p class="passed">通过: {{ summary.passed }}</p>
+                <p class="failed">失败: {{ summary.failed }}</p>
+                <p class="skipped">跳过: {{ summary.skipped }}</p>
+                <p>通过率: {{ summary.pass_rate }}</p>
+                
+                <div class="chart-container">
+                    <canvas id="resultChart"></canvas>
+                </div>
+            </div>
+            
+            <h2>测试详情</h2>
+            <table>
+                <tr>
+                    <th>测试名称</th>
+                    <th>状态</th>
+                    <th>耗时 (秒)</th>
+                    <th>开始时间</th>
+                    <th>结束时间</th>
+                    <th>截图</th>
+                    <th>错误信息</th>
+                </tr>
+                {% for result in results %}
+                <tr>
+                    <td>{{ result.name }}</td>
+                    <td class="{{ result.status }}">{{ result.status }}</td>
+                    <td>{{ result.duration|round(2) }}</td>
+                    <td>{{ result.start_time }}</td>
+                    <td>{{ result.end_time }}</td>
+                    <td>
+                        {% if result.screenshot %}
+                        <img src="{{ result.screenshot }}" class="screenshot" onclick="showModal(this.src)">
+                        {% else %}
+                        无截图
+                        {% endif %}
+                    </td>
+                    <td>{{ result.error or '无' }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            
+            <div id="imageModal" class="modal">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <img class="modal-content" id="modalImage">
+            </div>
+            
+            <script>
+                // 初始化图表
+                var ctx = document.getElementById('resultChart').getContext('2d');
+                var resultChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['通过', '失败', '跳过'],
+                        datasets: [{
+                            data: [{{ summary.passed }}, {{ summary.failed }}, {{ summary.skipped }}],
+                            backgroundColor: ['#4CAF50', '#F44336', '#FF9800']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: '测试结果统计'
+                            }
+                        }
+                    }
+                });
+                
+                function showModal(src) {
+                    var modal = document.getElementById('imageModal');
+                    var modalImg = document.getElementById('modalImage');
+                    modal.style.display = "block";
+                    modalImg.src = src;
+                }
+                
+                function closeModal() {
+                    document.getElementById('imageModal').style.display = "none";
+                }
+            </script>
+        </body>
+        </html>
+        """
+        
+        # 保存模板文件
+        with open(os.path.join(template_dir, 'report_template.html'), 'w', encoding='utf-8') as f:
+            f.write(html_template)
+        
+        # 使用 Jinja2 渲染模板
+        env = Environment(loader=FileSystemLoader(template_dir))
+        template = env.get_template('report_template.html')
+        
+        # 渲染 HTML
+        html_content = template.render(
+            summary=report_data['summary'],
+            results=report_data['results']
+        )
+        
+        # 保存 HTML 报告
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        
+        # 复制截图到报告目录
+        report_dir = os.path.dirname(output_path)
+        screenshots_dir = os.path.join(report_dir, 'screenshots')
+        os.makedirs(screenshots_dir, exist_ok=True)
+        
+        for result in report_data['results']:
+            if result['screenshot']:
+                src_path = result['screenshot']
+                if os.path.exists(src_path):
+                    dest_path = os.path.join(screenshots_dir, os.path.basename(src_path))
+                    shutil.copy2(src_path, dest_path)
+                    # 更新报告中的截图路径为相对路径
+                    result['screenshot'] = 'screenshots/' + os.path.basename(src_path)
+        
+        # 重新保存更新后的 HTML
+        html_content = template.render(
+            summary=report_data['summary'],
+            results=report_data['results']
+        )
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        
+        return output_path
+```
+
+```python:e:\MyProjects\e2e_test_framework\framework\utils.py
+import os
+import random
+import string
+import time
+import json
+import csv
+import logging
+from datetime import datetime
+
+# 配置日志
+def setup_logger(log_file=None, level=logging.INFO):
+    """设置日志记录器"""
+    logger = logging.getLogger('playwright_framework')
+    logger.setLevel(level)
+    
+    # 创建控制台处理器
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(level)
+    
+    # 创建格式化器
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    
+    # 添加处理器到记录器
+    logger.addHandler(console_handler)
+    
+    # 如果提供了日志文件路径，添加文件处理器
+    if log_file:
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(level)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    
+    return logger
+
+# 数据生成工具
+def random_string(length=10):
+    """生成随机字符串"""
+    return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
+
+def random_email():
+    """生成随机电子邮件"""
+    domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'qq.com', '163.com']
+    username = random_string(8).lower()
+    domain = random.choice(domains)
+    return f"{username}@{domain}"
+
+def random_phone():
+    """生成随机手机号码（中国格式）"""
+    prefixes = ['130', '131', '132', '133', '134', '135', '136', '137', '138', '139',
+                '150', '151', '152', '153', '155', '156', '157', '158', '159',
+                '180', '181', '182', '183', '184', '185', '186', '187', '188', '189']
+    prefix = random.choice(prefixes)
+    suffix = ''.join(random.choice(string.digits) for _ in range(8))
+    return f"{prefix}{suffix}"
+
+# 数据加载工具
+def load_json_data(file_path):
+    """加载 JSON 数据"""
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def load_csv_data(file_path):
+    """加载 CSV 数据"""
+    data = []
+    with open(file_path, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            data.append(row)
+    return data
+
+# 时间工具
+def get_timestamp():
+    """获取当前时间戳"""
+    return int(time.time())
+
+def get_formatted_time(format_str='%Y-%m-%d %H:%M:%S'):
+    """获取格式化的当前时间"""
+    return datetime.now().strftime(format_str)
+
+def wait_until(condition_func, timeout=30, interval=0.5):
+    """等待直到条件满足或超时"""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        if condition_func():
+            return True
+        time.sleep(interval)
+    return False
+```
+
+```python:e:\MyProjects\e2e_test_framework\framework\runner.py
+import os
+import sys
+import pytest
+import argparse
+from .config import Config
+from .reporter import Reporter
+
+class TestRunner:
+    """测试运行器"""
+    
+    def __init__(self, config_path=None):
+        # 加载配置
+        self.config = Config(config_path)
+        
+        # 创建报告生成器
+        self.reporter = Reporter(self.config)
+    
+    def run(self, test_paths=None, markers=None, keywords=None):
+        """运行测试"""
+        # 设置 pytest 参数
+        pytest_args = []
+        
+        # 添加测试路径
+        if test_paths:
+            if isinstance(test_paths, str):
+                test_paths = [test_paths]
+            pytest_args.extend(test_paths)
+        
+        # 添加标记
+        if markers:
+            if isinstance(markers, str):
+                markers = [markers]
+            for marker in markers:
+                pytest_args.append(f"-m {marker}")
+        
+        # 添加关键字
+        if keywords:
+            pytest_args.append(f"-k {keywords}")
+        
+        # 设置并行运行
+        if self.config.get('test.parallel', False):
+            workers = self.config.get('test.workers', 1)
+            pytest_args.append(f"--numprocesses={workers}")
+        
+        # 设置重试次数
+        retry_count = self.config.get('test.retry_count', 1)
+        if retry_count > 1:
+            pytest_args.append(f"--reruns={retry_count - 1}")
+        
+        # 设置详细输
+
+
+# Python Playwright 自动化测试详尽教程 (第九篇)
+
+接着上一篇内容，我们继续完善自动化测试框架的设计。
+
+## 自动化测试框架设计（续）
+
+```python:e:\MyProjects\e2e_test_framework\framework\runner.py
+        # 设置详细输出
+        pytest_args.append("-v")
+        
+        # 设置报告格式
+        report_dir = self.config.get('report.output_dir')
+        os.makedirs(report_dir, exist_ok=True)
+        
+        # 运行测试
+        print(f"开始运行测试，参数: {' '.join(pytest_args)}")
+        result = pytest.main(pytest_args)
+        
+        # 设置报告结束时间
+        self.reporter.set_end_time()
+        
+        # 生成报告
+        json_report = self.reporter.save_to_json()
+        html_report = self.reporter.generate_html_report(json_report)
+        
+        print(f"测试完成，退出代码: {result}")
+        print(f"JSON 报告: {json_report}")
+        print(f"HTML 报告: {html_report}")
+        
+        return result
+```
+
+现在，让我们创建一个示例项目，展示如何使用我们的框架：
+
+```python:e:\MyProjects\e2e_test_framework\conftest.py
+import pytest
+import os
+from framework.config import Config
+from framework.reporter import Reporter
+from framework.utils import setup_logger
+
+# 创建配置
+@pytest.fixture(scope="session")
+def config():
+    config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+    
+    # 如果配置文件不存在，创建默认配置
+    if not os.path.exists(config_path):
+        default_config = Config()
+        default_config.save(config_path)
+    
+    return Config(config_path)
+
+# 创建报告生成器
+@pytest.fixture(scope="session")
+def reporter(config):
+    reporter = Reporter(config)
+    yield reporter
+    
+    # 测试会话结束时生成报告
+    reporter.set_end_time()
+    json_report = reporter.save_to_json()
+    html_report = reporter.generate_html_report(json_report)
+    
+    print(f"测试报告已生成: {html_report}")
+
+# 设置日志记录器
+@pytest.fixture(scope="session")
+def logger(config):
+    log_dir = os.path.join(os.path.dirname(__file__), 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    
+    log_file = os.path.join(log_dir, 'test.log')
+    return setup_logger(log_file)
+
+# 测试结果收集
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+    
+    if report.when == "call":
+        # 获取测试函数
+        test_fn = item.obj
+        
+        # 获取 reporter 实例
+        reporter = item.funcargs.get("reporter")
+        
+        if reporter:
+            # 创建测试结果
+            result = {
+                'name': item.nodeid,
+                'status': report.outcome,  # passed, failed, skipped
+                'duration': report.duration,
+                'start_time': None,  # 需要在测试开始时记录
+                'end_time': None,    # 需要在测试结束时记录
+                'screenshot': None,
+                'error': str(report.longrepr) if report.longrepr else None
+            }
+            
+            # 添加结果到报告
+            reporter.add_result(result)
+```
+
+```python:e:\MyProjects\e2e_test_framework\config.json
+{
+  "browser": {
+    "type": "chromium",
+    "headless": false,
+    "slow_mo": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "screenshots": true,
+    "video": false,
+    "trace": false
+  },
+  "test": {
+    "base_url": "https://www.baidu.com",
+    "retry_count": 1,
+    "parallel": false,
+    "workers": 1
+  },
+  "report": {
+    "output_dir": "e:\\MyProjects\\e2e_test_framework\\reports",
+    "screenshots_dir": "e:\\MyProjects\\e2e_test_framework\\screenshots",
+    "videos_dir": "e:\\MyProjects\\e2e_test_framework\\videos",
+    "traces_dir": "e:\\MyProjects\\e2e_test_framework\\traces"
+  }
+}
+```
+
+```python:e:\MyProjects\e2e_test_framework\pages\baidu_page.py
+from framework.page_base import BasePage
+
+class BaiduPage(BasePage):
+    """百度搜索页面对象"""
+    
+    # URL
+    URL = "https://www.baidu.com"
+    
+    # 选择器
+    SEARCH_INPUT = "#kw"
+    SEARCH_BUTTON = "#su"
+    SEARCH_RESULT = ".result-op"
+    
+    def __init__(self, page, config=None):
+        super().__init__(page, config)
+    
+    def navigate(self):
+        """导航到百度首页"""
+        super().navigate(self.URL)
+        return self
+    
+    def search(self, keyword):
+        """执行搜索操作"""
+        self.fill(self.SEARCH_INPUT, keyword)
+        self.click(self.SEARCH_BUTTON)
+        self.wait_for_selector(self.SEARCH_RESULT)
+        return self
+    
+    def get_search_results(self):
+        """获取搜索结果"""
+        return self.page.locator(self.SEARCH_RESULT).all()
+    
+    def get_first_result_text(self):
+        """获取第一个搜索结果的文本"""
+        return self.page.locator(self.SEARCH_RESULT).first.text_content()
+    
+    def is_result_contains(self, text):
+        """检查搜索结果是否包含指定文本"""
+        results = self.page.locator(self.SEARCH_RESULT)
+        return text in results.text_content()
+```
+
+```python:e:\MyProjects\e2e_test_framework\tests\test_baidu_search.py
+import pytest
+from framework.test_case import BaseTestCase
+from framework.browser import BrowserManager
+from pages.baidu_page import BaiduPage
+
+class TestBaiduSearch(BaseTestCase):
+    """百度搜索测试"""
+    
+    def test_search_playwright(self):
+        """测试搜索 Playwright"""
+        # 创建页面对象
+        baidu_page = BaiduPage(self.page, self.config)
+        
+        # 导航到百度首页
+        baidu_page.navigate()
+        
+        # 执行搜索
+        baidu_page.search("Playwright Python")
+        
+        # 验证搜索结果
+        assert baidu_page.is_result_contains("Playwright")
+        
+        # 截图
+        self.take_screenshot("baidu_search_playwright")
+    
+    def test_search_selenium(self):
+        """测试搜索 Selenium"""
+        # 创建页面对象
+        baidu_page = BaiduPage(self.page, self.config)
+        
+        # 导航到百度首页
+        baidu_page.navigate()
+        
+        # 执行搜索
+        baidu_page.search("Selenium Python")
+        
+        # 验证搜索结果
+        assert baidu_page.is_result_contains("Selenium")
+        
+        # 截图
+        self.take_screenshot("baidu_search_selenium")
+    
+    @pytest.mark.parametrize("keyword,expected_text", [
+        ("Python 自动化测试", "自动化"),
+        ("Web 测试框架", "测试框架"),
+        ("Playwright vs Selenium", "Playwright")
+    ])
+    def test_search_multiple(self, keyword, expected_text):
+        """参数化测试多个搜索关键词"""
+        # 创建页面对象
+        baidu_page = BaiduPage(self.page, self.config)
+        
+        # 导航到百度首页
+        baidu_page.navigate()
+        
+        # 执行搜索
+        baidu_page.search(keyword)
+        
+        # 验证搜索结果
+        assert baidu_page.is_result_contains(expected_text)
+        
+        # 截图
+        self.take_screenshot(f"baidu_search_{keyword.replace(' ', '_')}")
+```
+
+```python:e:\MyProjects\e2e_test_framework\main.py
+import os
+import sys
+import argparse
+from framework.runner import TestRunner
+
+def main():
+    """主函数"""
+    parser = argparse.ArgumentParser(description='Playwright 自动化测试框架')
+    
+    parser.add_argument('--config', type=str, help='配置文件路径')
+    parser.add_argument('--tests', type=str, nargs='+', help='测试文件或目录路径')
+    parser.add_argument('--markers', type=str, nargs='+', help='要运行的测试标记')
+    parser.add_argument('--keywords', type=str, help='要运行的测试关键字')
+    
+    args = parser.parse_args()
+    
+    # 创建测试运行器
+    runner = TestRunner(args.config)
+    
+    # 运行测试
+    result = runner.run(args.tests, args.markers, args.keywords)
+    
+    # 返回退出代码
+    return result
+
+if __name__ == "__main__":
+    sys.exit(main())
+```
+
+## 使用示例
+
+现在我们已经完成了自动化测试框架的设计，让我们看看如何使用它：
+
+1. 首先，确保安装了所有必要的依赖：
+
+```bash
+pip install playwright pytest pytest-playwright jinja2 pyyaml
+playwright install
+```
+
+2. 运行测试：
+
+```bash
+python e:\MyProjects\e2e_test_framework\main.py --tests e:\MyProjects\e2e_test_framework\tests
+```
+
+3. 运行特定标记的测试：
+
+```bash
+python e:\MyProjects\e2e_test_framework\main.py --tests e:\MyProjects\e2e_test_framework\tests --markers parametrize
+```
+
+4. 运行包含特定关键字的测试：
+
+```bash
+python e:\MyProjects\e2e_test_framework\main.py --tests e:\MyProjects\e2e_test_framework\tests --keywords selenium
+```
+
+## 框架扩展
+
+我们的框架已经具备了基本功能，但还可以进一步扩展：
+
+1. 添加更多的页面对象
+2. 实现更多的测试用例
+3. 添加数据驱动测试支持
+4. 添加 API 测试支持
+5. 添加性能测试支持
+6. 添加移动设备测试支持
+7. 添加并行测试支持
+8. 添加持续集成支持
+
+## 总结
+
+在这个系列教程中，我们深入探讨了 Playwright 的各种功能和用法，并设计了一个完整的自动化测试框架。这个框架具有以下特点：
+
+1. 模块化设计，易于扩展
+2. 页面对象模式，提高代码复用性
+3. 配置管理，灵活适应不同环境
+4. 报告生成，直观展示测试结果
+5. 截图和视频录制，方便问题排查
+6. 参数化测试，提高测试覆盖率
+7. 日志记录，便于调试和分析
+
+通过使用这个框架，你可以更高效地进行 Web 自动化测试，提高测试质量和效率。
+
+希望这个教程对你有所帮助！如果有任何问题或建议，欢迎随时提出。
+    
