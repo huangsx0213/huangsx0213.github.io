@@ -110,6 +110,12 @@
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_robot_case_web_generator_py">web_generator.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_robot_case_web_pt_robot_generator_py">web_pt_robot_generator.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_robot_case___init___py">__init__.py</a>
+│   │   │   ├── report/
+│   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_robot_report_robot_dashboard_generator_py">robot_dashboard_generator.py</a>
+│   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_robot_report_robot_report_data_py">robot_report_data.py</a>
+│   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_robot_report_robot_result_visitor_py">robot_result_visitor.py</a>
+│   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_robot_report_summary_report_generator_py">summary_report_generator.py</a>
+│   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_robot_report___init___py">__init__.py</a>
 │   │   ├── web/
 │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_webdriver_factory_py">webdriver_factory.py</a>
 │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_actions_py">web_actions.py</a>
@@ -121,9 +127,11 @@
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_cookie_actions_py">cookie_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_decorators_py">decorators.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_element_actions_py">element_actions.py</a>
+│   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_interceptor_actions_py">interceptor_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_javascript_actions_py">javascript_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_js_py">js.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_navigation_actions_py">navigation_actions.py</a>
+│   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_request_interceptor_py">request_interceptor.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_table_actions_py">table_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_table_verifier_py">table_verifier.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_utils_actions_py">utils_actions.py</a>
@@ -131,6 +139,8 @@
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_wait_actions_py">wait_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_window_actions_py">window_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action___init___py">__init__.py</a>
+│   ├── report/
+│   │   ├── <a href="#E:_MyProjects_e2e_test_framework_report_test_summary_html">test_summary.html</a>
 │   ├── templates/
 │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_templates_rf_report_template_html">rf_report_template.html</a>
 │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_templates_test_summary_template_html">test_summary_template.html</a>
@@ -1966,7 +1976,7 @@ class Logger:
             with open(self.config_path, 'r', encoding='utf-8') as file:
                 config = yaml.safe_load(file)
 
-            log_file_path = os.path.join(PROJECT_ROOT, 'report', f"{self.log_file_name}.log")
+            log_file_path = os.path.join(PROJECT_ROOT, 'reports', f"{self.log_file_name}.log")
             os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
 
             if 'file' in config['handlers']:
@@ -3174,7 +3184,7 @@ class WebPerformanceReporter:
         return self._save_fig_as_base64()
 
     def save_to_csv(self):
-        output_dir = os.path.join(PROJECT_ROOT, 'report')
+        output_dir = os.path.join(PROJECT_ROOT, 'reports')
         response_time_data_path = os.path.join(output_dir, 'response_time_data.csv')
         memory_usage_data_path = os.path.join(output_dir, 'memory_usage_data.csv')
 
@@ -3983,11 +3993,531 @@ class CustomActionExecutor:
                 raise ValueError(f"Use of '{node.func.id}' is not allowed in custom action '{action_name}'")</pre>
 </div>
 
+<div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_robot_report___init___py">
+    <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\robot\report\__init__.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre></pre>
+</div>
+
+<div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_robot_report_robot_dashboard_generator_py">
+    <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\robot\report\robot_dashboard_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import os
+import codecs
+from robot.api import ExecutionResult
+from jinja2 import Environment, FileSystemLoader
+
+from libraries.robot.report.robot_result_visitor import CustomResultVisitor
+from libraries.robot.report.robot_report_data import ReportData
+from libraries.common.utility_helpers import PROJECT_ROOT
+
+
+class DashboardGenerator:
+    def __init__(self):
+        self.result = None
+        self.visitor = CustomResultVisitor()
+        self.suite_list = []
+        self.test_list = []
+        self.suite_stats = {}
+        self.test_stats = {}
+
+    def _load_data(self, robot_output_path):
+        self.result = ExecutionResult(robot_output_path)
+        self.result.visit(self.visitor)
+        self.suite_list = self.visitor.suite_list
+        self.test_list = self.visitor.test_list
+        report_data = ReportData()
+        self.suite_stats = report_data.get_suite_statistics(self.suite_list)
+        self.test_stats = report_data.get_test_statistics(self.test_list)
+
+    def generate_dashboard(self, robot_output_path):
+        self._load_data(robot_output_path)
+        result_file_name = 'dashboard.html'
+        result_file_directory = os.path.join(PROJECT_ROOT, 'reports')
+        os.makedirs(result_file_directory, exist_ok=True)
+        result_file_path = os.path.join(result_file_directory, result_file_name)
+        templates_dir = os.path.join(PROJECT_ROOT, 'templates')
+        file_loader = FileSystemLoader(templates_dir)
+        env = Environment(loader=file_loader)
+        template = env.get_template('rf_report_template.html')
+        with codecs.open(result_file_path, 'w', 'utf-8') as fh:
+            fh.write(template.render(
+                suite_stats=self.suite_stats,
+                test_stats=self.test_stats,
+                suites=self.suite_list,
+                tests=self.test_list,
+            ))
+
+
+if __name__ == '__main__':
+    # Example usage:
+    generator = DashboardGenerator()
+    generator.generate_dashboard(os.path.join(PROJECT_ROOT, 'reports', 'output.xml'))
+</pre>
+</div>
+
+<div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_robot_report_robot_report_data_py">
+    <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\robot\report\robot_report_data.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import pandas as pd
+
+
+class ReportData:
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def get_suite_statistics(self, suite_list):
+        suite_data_frame = pd.DataFrame.from_records(suite_list)
+        suite_stats = {
+            "Total": suite_data_frame.Name.count(),
+            "Pass": (suite_data_frame.Status == 'PASS').sum(),
+            "Fail": (suite_data_frame.Status == 'FAIL').sum(),
+            "Skip": (suite_data_frame.Status == 'SKIP').sum(),
+            "Time": suite_data_frame.Time.sum(),
+            "Min": suite_data_frame.Time.min(),
+            "Max": suite_data_frame.Time.max(),
+            "Avg": suite_data_frame.Time.mean()
+        }
+        return suite_stats
+
+    @classmethod
+    def get_test_statistics(self, test_list):
+        test_data_frame = pd.DataFrame.from_records(test_list)
+        test_stats = {
+            "Total": test_data_frame.Status.count(),
+            "Pass": (test_data_frame.Status == 'PASS').sum(),
+            "Fail": (test_data_frame.Status == 'FAIL').sum(),
+            "Skip": (test_data_frame.Status == 'SKIP').sum(),
+            "Time": test_data_frame.Time.sum(),
+            "Min": test_data_frame.Time.min(),
+            "Max": test_data_frame.Time.max(),
+            "Avg": test_data_frame.Time.mean()
+        }
+        return test_stats
+</pre>
+</div>
+
+<div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_robot_report_robot_result_visitor_py">
+    <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\robot\report\robot_result_visitor.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>from robot.api import ResultVisitor
+
+
+class CustomResultVisitor(ResultVisitor):
+
+    def __init__(self):
+        self.suite_list = []
+        self.test_list = []
+
+    def start_suite(self, suite):
+        if suite.tests:
+            try:
+                stats = suite.statistics.all
+            except:
+                stats = suite.statistics
+
+            try:
+                skipped = stats.skipped
+            except:
+                skipped = 0
+
+            suite_json = {
+                "Name": suite.longname,
+                "Id": suite.id,
+                "Status": suite.status,
+                "Total": stats.total,
+                "Pass": stats.passed,
+                "Fail": stats.failed,
+                "Skip": skipped,
+                "startTime": suite.starttime,
+                "endTime": suite.endtime,
+                "Time": suite.elapsedtime
+            }
+            self.suite_list.append(suite_json)
+
+    def visit_test(self, test):
+        test_json = {
+            "Suite Name": test.parent.longname,
+            "Suite Id": test.parent.id,
+            "Test Name": test.name,
+            "Test Id": test.id,
+            "Status": test.status,
+            "startTime": test.starttime,
+            "endTime": test.endtime,
+            "Time": test.elapsedtime,
+            "Message": test.message,
+            "Tags": test.tags
+        }
+        self.test_list.append(test_json)
+</pre>
+</div>
+
+<div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_robot_report_summary_report_generator_py">
+    <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\robot\report\summary_report_generator.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import codecs
+import logging
+import os
+from typing import Dict, List, Any, Generator
+from jinja2 import FileSystemLoader, Environment, TemplateNotFound
+from pandas import DataFrame
+from robot.api import ExecutionResult
+from libraries.common.utility_helpers import PROJECT_ROOT
+import re
+
+
+class SummaryReportGenerator:
+    def __init__(self, output_xml_path: str):
+        self.output_xml_path = output_xml_path
+        self.templates_dir = os.path.join(PROJECT_ROOT, 'templates')
+        self.test_results = self._parse_robot_output()
+
+    def _parse_robot_output(self) -&gt; List[Dict]:
+        """Parses the robot output.xml and extracts test results."""
+        try:
+            result = ExecutionResult(self.output_xml_path)
+            all_results = []
+            self._traverse_suite(result.suite, all_results)
+            return all_results
+
+        except Exception as e:
+            logging.error(f"SummaryReportGenerator: Error parsing Robot output.xml: {e}")
+            return []
+
+    def _traverse_suite(self, suite, all_results: List[Dict]):
+        """Recursively traverses suites to extract all test results in order."""
+        # Process tests in the current suite in order
+        for test in suite.tests:
+            test_results = self._extract_results_from_test(test)
+            all_results.extend(test_results)
+        # Recursively process child suites
+        for child_suite in suite.suites:
+            self._traverse_suite(child_suite, all_results)
+
+    def _extract_results_from_test(self, test) -&gt; List[Dict]:
+        """Extracts all test results from a robot test case."""
+        test_results = []
+        for keyword in test.body:
+            if keyword.name == 'Execute Api Test Case':
+                test_case_id = keyword.args[0]
+
+                for log_msg in keyword.messages:
+                    if "Main Test=&gt; ResponseValidator: Asserting" in log_msg.message:
+                        parsed = self._parse_assertion_log(log_msg.message, test_case_id, test.doc)
+                        if parsed:
+                            test_results.append(parsed)
+
+                    elif "Main Test=&gt; ResponseValidator: Dynamic check" in log_msg.message:
+                        parsed = self._parse_dynamic_check_log(log_msg.message, test_case_id, test.doc)
+                        if parsed:
+                            test_results.append(parsed)
+
+                    elif "Main Test=&gt; ResponseValidator: Postcheck" in log_msg.message:
+                        parsed = self._parse_pre_post_check_log(log_msg.message, "Postcheck", test_case_id, test.doc)
+                        if parsed:
+                            test_results.append(parsed)
+
+                    elif "Main Test=&gt; ResponseValidator: Precheck" in log_msg.message:
+                        parsed = self._parse_pre_post_check_log(log_msg.message, "Precheck", test_case_id, test.doc)
+                        if parsed:
+                            test_results.append(parsed)
+
+                    elif "Main Test=&gt; ResponseValidator: Database validation" in log_msg.message:
+                        parsed = self._parse_database_validation_log(log_msg.message, test_case_id, test.doc)
+                        if parsed:
+                            test_results.append(parsed)
+            elif keyword.name == 'Execute Module':
+                test_name_parts = test.name.split('.')
+                test_case_id = f'{test_name_parts[-2]}.{test_name_parts[-1]}'
+                for log_msg in keyword.messages:
+                    if "UI Verification: Asserting" in log_msg.message:
+                        parsed = self._parse_ui_verification_log(log_msg.message, test_case_id,test.doc)
+                        if parsed:
+                            test_results.append(parsed)
+        return test_results
+
+    def _parse_assertion_log(self, log_message, tcid, description):
+        parts = re.split(r"Main Test=&gt; ResponseValidator: Asserting:\s*(.*?),\s*Expected:\s*(.*?),\s*Actual:\s*([^&lt;]*)", log_message,
+                         flags=re.DOTALL | re.MULTILINE)
+        if len(parts) != 5:
+            logging.error(f"Could not parse assertion log message: {log_message}")
+            return {}
+
+        field, expected, actual = parts[1].strip(), parts[2].strip(), parts[3].strip()
+
+        return {
+             "TCID": tcid,
+             "Description": description,
+             "Type": "Self",
+             "Field": field,
+             "Pre Value": '',
+             "Post Value": '',
+             "Expected": expected,
+             "Actual": actual,
+             "Result": "Pass" if actual == expected else "Fail",
+         }
+
+    def _parse_dynamic_check_log(self, log_message, tcid, description):
+        parts = re.split(
+            r"Main Test=&gt; ResponseValidator: Dynamic check for\s*(.*?)\.\s*(?:Pre Value:\s*(.*?),\s*Post Value:\s*(.*?),\s*)?Expected diff:\s*([^&lt;]*?),\s*Actual diff:\s*([^&lt;]*)",
+            log_message, flags=re.DOTALL | re.MULTILINE)
+        if len(parts) != 7:
+            logging.error(f"Could not parse dynamic check log message: {log_message}")
+            return {}
+
+        field, pre_value, post_value, expected_diff_str, actual_diff_str = parts[1].strip(), parts[2].strip() if parts[2] else None, parts[3].strip() if parts[3] else None, parts[
+            4].strip(), parts[5].strip()
+        actual_diff = float(actual_diff_str)
+        expected_diff = float(expected_diff_str)
+
+        return {
+            "TCID": tcid,
+            "Description": description,
+            "Type": "Diff",
+            "Field": field,
+            "Pre Value": pre_value if pre_value else '',
+            "Post Value": post_value if post_value else '',
+            "Actual Diff": actual_diff_str,
+            "Expected Diff": expected_diff_str,
+            "Result": "Pass" if actual_diff == expected_diff else "Fail",
+        }
+
+    def _parse_pre_post_check_log(self, log_message, check_type, tcid, description):
+        parts = re.split(rf"Main Test=&gt; ResponseValidator: {check_type} for\s*(.*?)\s*- Expected value:\s*([^&lt;]*?),\s*Actual value:\s*([^&lt;]*)", log_message, flags=re.DOTALL | re.MULTILINE)
+        if len(parts) != 5:
+            logging.error(f"Could not parse pre/post check log message: {log_message}")
+            return {}
+
+        field, expected_value, actual_value = parts[1].strip(), parts[2].strip(), parts[3].strip()
+
+        return {
+            "TCID": tcid,
+            "Description": description,
+            "Type": f"{check_type}",
+            "Field": field,
+            "Pre Value": '',
+            "Post Value": '',
+            "Expected": expected_value,
+            "Actual": actual_value,
+            "Result": "Pass" if actual_value == expected_value else "Fail",
+        }
+
+    def _parse_database_validation_log(self, log_message, tcid, description):
+        """Parses the database validation log message."""
+        parts = re.split(
+            r"Main Test=&gt; ResponseValidator: Database validation for '([^']*)' in table '([^']*)'\. Expected: '([^']*)', Actual: '([^']*)'\.",
+            log_message,
+            flags=re.DOTALL | re.MULTILINE
+        )
+
+        if len(parts) != 6:
+            logging.error(f"Could not parse database validation log message: {log_message}")
+            return {}
+
+        field, table_name, expected_value, actual_value = parts[1].strip(), parts[2].strip(), parts[3].strip(), parts[4].strip()
+
+        return {
+            "TCID": tcid,
+            "Description": description,
+            "Type": "DB",
+            "Field": f"{table_name}.{field}",  # added table name to the field
+            "Pre Value": '',
+            "Post Value": '',
+            "Expected": expected_value,
+            "Actual": actual_value,
+            "Result": "Pass" if actual_value == expected_value else "Fail",
+        }
+
+    def _parse_ui_verification_log(self, log_message, tcid,description):
+        parts = re.split(r"UI Verification: Asserting:\s*(.*?),\s*(.*?),\s*Expected:\s*(.*?),\s*Actual:\s*([^&lt;]*)", log_message)
+        if len(parts) != 6:
+            logging.error(f"Could not parse UI verification log message: {log_message}")
+            return {}
+
+        field, field_type, expected, actual = parts[1].strip(), parts[2].strip(), parts[3].strip(), parts[4].strip()
+
+        result = self._evaluate_ui_verification_result(field_type, expected, actual)
+
+        return {
+            "TCID": tcid,
+            "Description": description,
+            "Type": field_type,
+            "Field": field,
+            "Expected": expected,
+            "Actual": actual,
+            "Result": "Pass" if result else "Fail",
+        }
+
+    def _evaluate_ui_verification_result(self, field_type, expected, actual):
+        if 'contains' in field_type.lower():
+            return expected in actual
+        else:
+            return actual == expected
+
+    def generate_html_report(self) -&gt; str:
+        """
+        Generates the HTML report content.
+        """
+        try:
+            file_loader = FileSystemLoader(self.templates_dir)
+            env = Environment(loader=file_loader)
+            template = env.get_template('test_summary_template.html')
+
+            flattened_data = list(self._flatten_results(self.test_results))
+            if not flattened_data:  # Check if flattened_data is empty
+                return "No test results to display."
+
+            df = DataFrame(flattened_data)
+
+            # Reorder columns if needed
+            # Ensure columns exist before trying to reorder
+            columns_to_order = [
+                "TCID",
+                "Description",
+                "Type",
+                "Field",
+                "Pre Value",
+                "Post Value",
+                "Expected",
+                "Actual",
+                "Result",
+            ]
+            df = df[[col for col in columns_to_order if col in df.columns]]
+
+            # Create the HTML table with ordered rows and color-coded results
+            html_table = self._create_html_table(df)
+            html_content = template.render(html_table=html_table)
+
+            # Save the HTML report to a file
+            report_file = os.path.join(PROJECT_ROOT, "report", "test_summary.html")
+            os.makedirs(os.path.dirname(report_file), exist_ok=True)  # Ensure the directory exists
+            with codecs.open(report_file, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            logging.info(f"SummaryReportGenerator: Test report saved to: {report_file}")
+
+        except TemplateNotFound as e:
+            logging.error(f"SummaryReportGenerator: Template not found: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"SummaryReportGenerator: Error generating HTML report: {e}")
+            raise
+
+    def _flatten_results(self, test_results: List[Dict]) -&gt; Generator[Dict, None, None]:
+        """
+        Flattens the test results data while maintaining the original order.
+        """
+        for result in test_results:
+            row = {
+                "TCID": result["TCID"],
+                "Description": result["Description"],
+                "Type": result["Type"],
+                "Field": result["Field"],
+                "Pre Value": result.get("Pre Value", ""),
+                "Post Value": result.get("Post Value", ""),
+                "Expected": result.get("Expected Diff", "") if result.get("Expected Diff") else result.get("Expected", ""),
+                "Actual": result.get("Actual Diff", "") if result.get("Actual Diff") else result.get("Actual", ""),
+                "Result": result["Result"]
+            }
+            yield row
+
+    def _create_html_table(self, df: DataFrame) -&gt; str:
+        html_table = '&lt;table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;"&gt;\n'
+
+        # Add table headers
+        html_table += '&lt;tr&gt;\n'
+        for col in df.columns:
+            if col == "Description":
+                html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;{col}&lt;/th&gt;\n'
+            elif col == "Field":
+                html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;{col}&lt;/th&gt;\n'
+            else:
+                html_table += f'&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;{col}&lt;/th&gt;\n'
+        html_table += '&lt;/tr&gt;\n'
+
+        # Add table rows
+        current_tcid = None
+        current_description = None
+        tcid_rowspan = 1
+        description_rowspan = 1
+        for i, row in df.iterrows():
+            if row["TCID"] == current_tcid and row["Description"] == current_description:
+                tcid_rowspan += 1
+                description_rowspan += 1
+                html_table += '&lt;tr&gt;\n'
+                for col in df.columns[2:]:  # Skip TCID and Description columns
+                    if col == "Result":
+                        color = "green" if row[col].upper() == "PASS" else ("red" if row[col].upper() == "FAIL" else "orange")
+                        html_table += f'&lt;td style="text-align: center; color: {color};"&gt;{row[col]}&lt;/td&gt;\n'
+                    elif col == "Field":
+                        html_table += f'&lt;td class="field-cell" title="{row[col]}"&gt;{row[col]}&lt;/td&gt;\n'
+                    elif col == "Type":
+                        html_table += f'&lt;td class="type-cell"&gt;{row[col]}&lt;/td&gt;\n'
+                    else:
+                        html_table += f'&lt;td style="text-align: center;"&gt;{row[col]}&lt;/td&gt;\n'
+                html_table += '&lt;/tr&gt;\n'
+            else:
+                if current_tcid is not None:
+                    # Update the rowspan for the previous TCID and Description groups
+                    html_table = html_table.replace(
+                        f'&lt;td rowspan="placeholder_tcid"&gt;{current_tcid}&lt;/td&gt;',
+                        f'&lt;td rowspan="{tcid_rowspan}" style="text-align: center; vertical-align: middle;"&gt;{current_tcid}&lt;/td&gt;',
+                        1
+                    )
+                    html_table = html_table.replace(
+                        f'&lt;td rowspan="placeholder_description"&gt;{current_description}&lt;/td&gt;',
+                        f'&lt;td rowspan="{description_rowspan}" style="text-align: left; vertical-align: middle;" class="description-cell"&gt;{current_description}&lt;/td&gt;',
+                        1
+                    )
+                current_tcid = row["TCID"]
+                current_description = row["Description"]
+                tcid_rowspan = 1
+                description_rowspan = 1
+                html_table += '&lt;tr&gt;\n'
+                html_table += f'&lt;td rowspan="placeholder_tcid"&gt;{row["TCID"]}&lt;/td&gt;\n'  # Placeholder for TCID rowspan
+                html_table += f'&lt;td rowspan="placeholder_description"&gt;{row["Description"]}&lt;/td&gt;\n'  # Placeholder for Description rowspan
+                for col in df.columns[2:]:  # Skip TCID and Description columns
+                    if col == "Result":
+                        color = "green" if row[col].upper() == "PASS" else ("red" if row[col].upper() == "FAIL" else "orange")
+                        html_table += f'&lt;td style="text-align: center; color: {color};"&gt;{row[col]}&lt;/td&gt;\n'
+                    elif col == "Field":
+                        html_table += f'&lt;td class="field-cell" title="{row[col]}"&gt;{row[col]}&lt;/td&gt;\n'
+                    elif col == "Type":
+                        html_table += f'&lt;td class="type-cell"&gt;{row[col]}&lt;/td&gt;\n'
+                    else:
+                        html_table += f'&lt;td style="text-align: center;"&gt;{row[col]}&lt;/td&gt;\n'
+                html_table += '&lt;/tr&gt;\n'
+
+        # Update the rowspan for the last TCID and Description groups
+        if current_tcid is not None:
+            html_table = html_table.replace(
+                f'&lt;td rowspan="placeholder_tcid"&gt;{current_tcid}&lt;/td&gt;',
+                f'&lt;td rowspan="{tcid_rowspan}" style="text-align: center; vertical-align: middle;"&gt;{current_tcid}&lt;/td&gt;',
+                1
+            )
+            html_table = html_table.replace(
+                f'&lt;td rowspan="placeholder_description"&gt;{current_description}&lt;/td&gt;',
+                f'&lt;td rowspan="{description_rowspan}" style="text-align: left; vertical-align: middle;" class="description-cell"&gt;{current_description}&lt;/td&gt;',
+                1
+            )
+
+        html_table += '&lt;/table&gt;'
+        return html_table
+</pre>
+</div>
+
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_robot_robot_test_executor_py">
     <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\robot\robot_test_executor.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import json
+    <pre>import asyncio
+import json
 import logging
 import os
 import re
@@ -4183,7 +4713,9 @@ class RobotTestExecutor:
             if 'locator' in action.__code__.co_varnames:
                 kwargs['element_desc'] = element_desc
                 result = action(element, *args, **kwargs)
-            elif 'locator' not in action.__code__.co_varnames:
+            elif action_name == "modify_server_side_cookie":
+                result = asyncio.run(action(*args, **kwargs))
+            elif 'locator' not in action.__code__.co_varnames and action_name != "modify_server_side_cookie":
                 result = action(*args, **kwargs)
             else:
                 raise ValueError(f"Action '{action_name}' requires a WebElement, but none was provided.")
@@ -4512,6 +5044,76 @@ class ElementActions(Base):
 </pre>
 </div>
 
+<div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_web_action_interceptor_actions_py">
+    <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\web\web_action\interceptor_actions.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import logging
+from playwright.async_api import async_playwright
+from .base import Base
+from .request_interceptor import RequestInterceptor
+
+
+class InterceptorActions(Base):
+    async def modify_server_side_cookie(self, url,intercept_url_pattern, cookie):
+        try:
+            playwright, browser, page = await self.setup_playwright()
+            interceptor = RequestInterceptor()
+            cookie_name = cookie.get("name")
+            cookie_value = cookie.get("value")
+            await interceptor.modify_cookie(page, intercept_url_pattern, cookie_name, cookie_value, exact_match=True)
+
+            # Navigate to the target site to trigger interception
+            await page.goto(url)
+            logging.info(f"{self.__class__.__name__}: Navigating to {url} to trigger interception.")
+
+            cookie_value = self.driver.get_cookie(cookie_name)["value"]
+            logging.info(f"{self.__class__.__name__}: {cookie_name} value after triggering interception: {cookie_value}")
+            await interceptor.stop()
+            # await playwright.stop()
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: An error occurred while modifying server-side cookie: {e}")
+
+    async def setup_playwright(self):
+        # Get debugger address
+        capabilities = self.driver.capabilities
+        debugger_address = None
+
+        # Try to find debugger address in different browser capabilities
+        if 'goog:chromeOptions' in capabilities:
+            debugger_address = capabilities['goog:chromeOptions']['debuggerAddress']
+        elif 'ms:edgeOptions' in capabilities:
+            debugger_address = capabilities['ms:edgeOptions']['debuggerAddress']
+        else:
+            for key in capabilities:
+                if isinstance(capabilities[key], dict) and 'debuggerAddress' in capabilities[key]:
+                    debugger_address = capabilities[key]['debuggerAddress']
+                    break
+
+        if not debugger_address:
+            raise ValueError("Could not find debugger address in browser capabilities")
+
+        # Connect Playwright to the browser
+        playwright = await async_playwright().start()
+        browser = await playwright.chromium.connect_over_cdp(f"http://{debugger_address}")
+        # Get first context and page
+        contexts = browser.contexts
+        if not contexts:
+            await playwright.stop()
+            raise ValueError("No browser contexts found")
+
+        pages = contexts[0].pages
+        if not pages:
+            await playwright.stop()
+            raise ValueError("No pages found in browser context")
+
+        page = pages[0]
+        logging.info(f"{self.__class__.__name__}: Successfully connected to page: {page.url}.")
+
+        return playwright, browser, page
+</pre>
+</div>
+
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_web_action_javascript_actions_py">
     <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\web\web_action\javascript_actions.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -4698,6 +5300,171 @@ class NavigationActions(Base):
         url = self.driver.current_url
         logging.info(f"{self.__class__.__name__}: Current URL is: '{url}'")
         return url</pre>
+</div>
+
+<div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_web_action_request_interceptor_py">
+    <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\web\web_action\request_interceptor.py</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>import re
+
+class RequestInterceptor:
+    def __init__(self):
+        self.page = None
+        self.active = False
+        self.routes = []
+
+    async def modify_cookie(self, page, url_pattern, cookie_name, new_cookie_value, exact_match=False):
+        """
+        Intercept requests and modify the specified cookie in the response header.
+        """
+        if self.active:
+            print("Interception is already active. Please stop the current interception before starting a new one.")
+            return False
+
+        self.page = page
+        self.active = True
+        url_pattern_lower = url_pattern.lower()
+        pattern = None if exact_match else re.compile(url_pattern_lower)
+
+        async def handler(route):
+            request_url = route.request.url.lower()
+            match = (request_url == url_pattern_lower) if exact_match else (pattern.search(request_url) is not None)
+            if match:
+                print(f"Intercepted request: {request_url}")
+                response = await route.fetch()
+                body = await response.body()
+                status = response.status
+                headers = response.headers.copy()
+                modified = False
+
+                if "set-cookie" in headers:
+                    cookies = headers["set-cookie"].split(", ")
+                    new_cookies = []
+                    for group in cookies:
+                        parts = group.split("; ")
+                        new_parts = []
+                        for cookie in parts:
+                            if cookie.startswith(f"{cookie_name}="):
+                                new_parts.append(f"{cookie_name}={new_cookie_value}")
+                                modified = True
+                                print(f"Modified cookie: {cookie_name}={new_cookie_value}")
+                            else:
+                                new_parts.append(cookie)
+                        new_cookies.append("; ".join(new_parts))
+                    headers["set-cookie"] = ", ".join(new_cookies)
+
+                if not modified:
+                    print(f"Target cookie '{cookie_name}' not found.")
+                await route.fulfill(status=status, headers=headers, body=body)
+            else:
+                await route.continue_()
+
+        handler_info = {"pattern": "**", "handler": handler}
+        self.routes.append(handler_info)
+        await self.page.route("**", handler)
+        print(f"Cookie interception started using {'exact' if exact_match else 'regex'} match for pattern: {url_pattern}")
+        return True
+
+    async def modify_body(self, page, url_pattern, new_body, exact_match=False):
+        """
+        Intercept requests and replace the response body with a new body.
+
+        Parameters:
+        - page: Playwright page object.
+        - url_pattern: URL pattern to match.
+        - new_body: The new response body (bytes) to set.
+        - exact_match: If True, perform an exact URL match; otherwise use regex matching.
+        """
+        if self.active:
+            print("Interception is already active. Please stop the current interception before starting a new one.")
+            return False
+
+        self.page = page
+        self.active = True
+        url_pattern_lower = url_pattern.lower()
+        pattern = None if exact_match else re.compile(url_pattern_lower)
+
+        async def handler(route):
+            request_url = route.request.url.lower()
+            match = (request_url == url_pattern_lower) if exact_match else (pattern.search(request_url) is not None)
+            if match:
+                print(f"Intercepted request for body modification: {request_url}")
+                response = await route.fetch()
+                status = response.status
+                headers = response.headers.copy()
+                print("Response body replaced.")
+                await route.fulfill(status=status, headers=headers, body=new_body)
+            else:
+                await route.continue_()
+
+        handler_info = {"pattern": "**", "handler": handler}
+        self.routes.append(handler_info)
+        await self.page.route("**", handler)
+        print(f"Body interception started using {'exact' if exact_match else 'regex'} match for pattern: {url_pattern}")
+        return True
+
+    async def modify_header(self, page, url_pattern, header_mods, exact_match=False):
+        """
+        Intercept requests and modify the response headers.
+
+        Parameters:
+        - page: Playwright page object.
+        - url_pattern: URL pattern to match.
+        - header_mods: Dictionary of headers to modify or add.
+        - exact_match: If True, perform an exact URL match; otherwise use regex matching.
+        """
+        if self.active:
+            print("Interception is already active. Please stop the current interception before starting a new one.")
+            return False
+
+        self.page = page
+        self.active = True
+        url_pattern_lower = url_pattern.lower()
+        pattern = None if exact_match else re.compile(url_pattern_lower)
+
+        async def handler(route):
+            request_url = route.request.url.lower()
+            match = (request_url == url_pattern_lower) if exact_match else (pattern.search(request_url) is not None)
+            if match:
+                print(f"Intercepted request for header modification: {request_url}")
+                response = await route.fetch()
+                body = await response.body()
+                status = response.status
+                headers = response.headers.copy()
+                for key, value in header_mods.items():
+                    headers[key] = value
+                    print(f"Modified header: {key} =&gt; {value}")
+                await route.fulfill(status=status, headers=headers, body=body)
+            else:
+                await route.continue_()
+
+        handler_info = {"pattern": "**", "handler": handler}
+        self.routes.append(handler_info)
+        await self.page.route("**", handler)
+        print(f"Header interception started using {'exact' if exact_match else 'regex'} match for pattern: {url_pattern}")
+        return True
+
+    async def stop(self):
+        """
+        Stop all active interceptions.
+        """
+        try:
+            if not self.active or not self.page:
+                print("No active interception to stop.")
+                return False
+
+            for r in self.routes:
+                await self.page.unroute(r["pattern"], r["handler"])
+            self.routes = []
+            self.active = False
+
+            print("All interceptions stopped.")
+            return True
+        except Exception as e:
+            print(f"Error stopping interception: {e}")
+            return False
+</pre>
 </div>
 
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_web_action_table_actions_py">
@@ -5582,6 +6349,7 @@ class WindowActions(Base):
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from libraries.web.web_action.alert_actions import AlertActions
 from libraries.web.web_action.element_actions import ElementActions
+from libraries.web.web_action.interceptor_actions import InterceptorActions
 from libraries.web.web_action.navigation_actions import NavigationActions
 from libraries.web.web_action.cookie_actions import CookieActions
 from libraries.web.web_action.window_actions import WindowActions
@@ -5602,7 +6370,8 @@ class WebActions(
     NavigationActions,
     CookieActions,
     AlertActions,
-    UtilsActions):
+    UtilsActions,
+    InterceptorActions):
     pass
 </pre>
 </div>
@@ -6016,7 +6785,7 @@ class ExitOnFailureListener:
 
 def run_test_suite(suite):
     listener = ExitOnFailureListener()
-    output_dir = os.path.join(PROJECT_ROOT, 'report')
+    output_dir = os.path.join(PROJECT_ROOT, 'reports')
     output_xml = os.path.join(output_dir, 'output.xml')
     report_file = os.path.join(output_dir, 'report.html')
     log_file = os.path.join(output_dir, 'log.html')
@@ -6058,6 +6827,128 @@ if __name__ == "__main__":
 </pre>
 </div>
 
+<div class="code-container" id="E:_MyProjects_e2e_test_framework_report_test_summary_html">
+    <div class="class-header">E:\MyProjects\e2e_test_framework\report\test_summary.html</div>
+    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+    <button class="return-button" onclick="returnToDirectory()">Return</button>
+    <pre>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Test Summary Report&lt;/title&gt;
+    &lt;style&gt;
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .pass {
+            color: green;
+        }
+
+        .fail {
+            color: red;
+        }
+
+        .warning {
+            color: orange;
+        }
+        .description-cell {
+        max-width: 200px;
+        word-wrap: break-word;
+        white-space: normal;
+        font-size: 0.8em;
+        }
+        .field-cell {
+        max-width: 300px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.8em;
+        }
+        .type-cell {
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.8em;
+        }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h1&gt;Test Summary Report&lt;/h1&gt;
+&lt;table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;"&gt;
+&lt;tr&gt;
+&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;TCID&lt;/th&gt;
+&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Description&lt;/th&gt;
+&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Type&lt;/th&gt;
+&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Field&lt;/th&gt;
+&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Pre Value&lt;/th&gt;
+&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Post Value&lt;/th&gt;
+&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Expected&lt;/th&gt;
+&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Actual&lt;/th&gt;
+&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Result&lt;/th&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td rowspan="1" style="text-align: center; vertical-align: middle;"&gt;Baidu_Search1.1&lt;/td&gt;
+&lt;td rowspan="1" style="text-align: left; vertical-align: middle;" class="description-cell"&gt;Search for software testing&lt;/td&gt;
+&lt;td class="type-cell"&gt;verify_title_contains&lt;/td&gt;
+&lt;td class="field-cell" title="Page Title"&gt;Page Title&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;百度搜索&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;TC001功能测试_百度搜索&lt;/td&gt;
+&lt;td style="text-align: center; color: green;"&gt;Pass&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td rowspan="1" style="text-align: center; vertical-align: middle;"&gt;Baidu_Search1.2&lt;/td&gt;
+&lt;td rowspan="1" style="text-align: left; vertical-align: middle;" class="description-cell"&gt;Search for software testing&lt;/td&gt;
+&lt;td class="type-cell"&gt;verify_title_contains&lt;/td&gt;
+&lt;td class="field-cell" title="Page Title"&gt;Page Title&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;百度搜索&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;TC001性能测试_百度搜索&lt;/td&gt;
+&lt;td style="text-align: center; color: green;"&gt;Pass&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td rowspan="1" style="text-align: center; vertical-align: middle;"&gt;Baidu_Search2.1&lt;/td&gt;
+&lt;td rowspan="1" style="text-align: left; vertical-align: middle;" class="description-cell"&gt;Search for frontend development&lt;/td&gt;
+&lt;td class="type-cell"&gt;verify_title_contains&lt;/td&gt;
+&lt;td class="field-cell" title="Page Title"&gt;Page Title&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;百度2&lt;/td&gt;
+&lt;td style="text-align: center;"&gt;TC002自动化测试_百度搜索&lt;/td&gt;
+&lt;td style="text-align: center; color: red;"&gt;Fail&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+</div>
+
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_requirements_txt">
     <div class="class-header">E:\MyProjects\e2e_test_framework\requirements.txt</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -6069,7 +6960,7 @@ openpyxl~=3.1.5
 PyYAML==6.0.1
 requests==2.32.2
 xmltodict~=0.13.0
-selenium~=4.22.0
+selenium~=4.29.0
 robotframework~=7.0.1
 jsonpath-ng~=1.6.1
 pillow~=10.4.0
@@ -6740,14 +7631,14 @@ function openInNewTab(url) {
             }
         },
         "CNY": {
-            "2025-03-05": {
+            "2024-08-25": {
                 "inbound": {
-                    "count": 6,
-                    "total_amount": 600.0
+                    "count": 0,
+                    "total_amount": 0.0
                 },
                 "outbound": {
-                    "count": 6,
-                    "total_amount": 600.0
+                    "count": 1,
+                    "total_amount": 100.0
                 }
             }
         }

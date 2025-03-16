@@ -10,180 +10,360 @@ tags:
     - Testing
 ---
 
-以下是针对 Selenium 4.22 及最新版本的 CDP 方法适配性确认和完整修正方案：
 
----
-
-### **Selenium 4.22+ 中 CDP 的正确用法**
-Selenium 4.x 开始原生支持 Chrome DevTools Protocol (CDP)，但需通过 **`execute_cdp_cmd`** 和 **`get_cdp_session`** 方法操作。以下是对关键 API 的验证和修正说明：
-
----
-
-### **1. 核心方法验证**
-#### **(1) `execute_cdp_cmd`**
-- **功能**：直接执行 CDP 命令。
-- **适配性**：Selenium 4.22+ 官方支持，最新版本仍有效。
-- **正确用法**：
   ```python
-  # 启用 Network 域
-  driver.execute_cdp_cmd("Network.enable", {})
-
-  # 设置请求拦截规则
-  driver.execute_cdp_cmd("Network.setRequestInterception", {
-      "patterns": [{
-          "urlPattern": "*",
-          "resourceType": "XHR",
-          "interceptionStage": "HeadersReceived"
-      }]
-  })
-  ```
-
-#### **(2) `get_cdp_session`**
-- **功能**：获取 CDP 会话对象以监听事件。
-- **适配性**：Selenium 4.22+ 支持，但需注意参数和事件注册方式。
-- **正确用法**：
-  ```python
-  # 获取与当前页面关联的 CDP 会话
-  cdp_session = driver.get_cdp_session("page")
-
-  # 注册事件监听器
-  def handle_request_intercepted(**event):
-      # 处理事件逻辑
-
-  cdp_session.add_event_listener("Network.requestIntercepted", handle_request_intercepted)
-  ```
-
----
-
-### **2. 完整适配代码示例**
-```python
+import asyncio
 from selenium import webdriver
-from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from playwright.async_api import async_playwright
+import os
+import re
 
-def modify_cookie_value(driver, target_cookie_name, new_value):
-    # 启用 Network 域
-    driver.execute_cdp_cmd("Network.enable", {})
 
-    # 设置拦截规则（匹配所有 XHR 请求的响应头阶段）
-    driver.execute_cdp_cmd("Network.setRequestInterception", {
-        "patterns": [{
-            "urlPattern": "*",
-            "resourceType": "XHR",
-            "interceptionStage": "HeadersReceived"
-        }]
-    })
+class RequestInterceptor:
+    def __init__(self):
+        self.browser = None
+        self.page = None
+        self.is_intercepting = False
+        self.interception_routes = []
 
-    # 获取 CDP 会话对象
-    cdp_session = driver.get_cdp_session("page")
+    async def start_interception(self, page, url_pattern, cookie_name, new_cookie_value, exact_match=False):
+        """
+        Start intercepting requests matching the URL pattern and modifying specified cookies.
 
-    # 定义事件处理函数
-    def handle_request_intercepted(**event):
-        params = event.get("params", {})
-        interception_id = params.get("interceptionId")
-        headers = params.get("responseHeaders", [])
+        Parameters:
+        - page: Playwright page object
+        - url_pattern: URL pattern to match
+        - cookie_name: Name of the cookie to modify
+        - new_cookie_value: New value to set for the cookie
+        - exact_match: If True, match URL exactly; if False, use pattern matching
+        """
+        if self.is_intercepting:
+            print("Interception is already active. Stop it first before starting a new one.")
+            return False
 
-        modified_headers = []
-        for header in headers:
-            if header.get("name", "").lower() == "set-cookie":
-                cookie_str = header.get("value", "")
-                parts = cookie_str.split(";")
-                name_value = parts[0].split("=", 1)
-                if len(name_value) == 2:
-                    cookie_name = name_value[0].strip()
-                    if cookie_name == target_cookie_name:
-                        # 修改 Cookie 值，保留其他属性
-                        new_cookie_str = f"{cookie_name}={new_value};" + ";".join(parts[1:])
-                        header["value"] = new_cookie_str.strip(";")
-            modified_headers.append(header)
+        self.page = page
+        self.is_intercepting = True
 
-        # 继续请求并传递修改后的头信息
-        driver.execute_cdp_cmd("Network.continueInterceptedRequest", {
-            "interceptionId": interception_id,
-            "responseHeaders": modified_headers
-        })
+        # Convert to lowercase to prevent case sensitivity issues
+        url_pattern = url_pattern.lower()
 
-    # 注册事件监听器
-    cdp_session.add_event_listener("Network.requestIntercepted", handle_request_intercepted)
+        # Create regex pattern for flexible matching if not exact match
+        if not exact_match:
+            pattern = re.compile(url_pattern)
 
-# 使用示例
-driver = webdriver.Chrome()
-driver.get("https://your-target-site.com")
+        async def handle_route(route):
+            request_url = route.request.url.lower()
 
-# 修改名为 "user_token" 的 Cookie 值为 "new_token_456"
-modify_cookie_value(driver, "user_token", "new_token_456")
+            # Check if URL matches based on exact_match parameter
+            url_matches = False
+            if exact_match:
+                url_matches = request_url == url_pattern
+            else:
+                url_matches = pattern.search(request_url) is not None
 
-# 触发 API 请求（例如点击按钮）
-# driver.find_element(By.CSS_SELECTOR, "#api-button").click()
+            if url_matches:
+                print(f"Intercepted matching request: {request_url}")
+                match_type = "exact match" if exact_match else "pattern match"
+                print(f"Match type: {match_type}")
 
-# 验证 Cookie 值
-print("修改后的 Cookies:", driver.get_cookies())
+                # Get original response
+                response = await route.fetch()
 
-driver.quit()
-```
+                # Read response body
+                body = await response.body()
 
----
+                # Copy response status and headers
+                status = response.status
+                headers = response.headers.copy()
 
-### **3. 关键适配点说明**
-| 方法/属性                | Selenium 4.22+ 支持情况 | 注意事项                                                                 |
-|--------------------------|-------------------------|--------------------------------------------------------------------------|
-| `execute_cdp_cmd`        | ✅ 支持                 | 直接调用 CDP 命令，参数需严格匹配协议要求。                              |
-| `get_cdp_session`        | ✅ 支持                 | 参数需为 `"page"`，表示绑定到页面级会话。                               |
-| `add_event_listener`     | ✅ 支持                 | 通过 CDP 会话对象注册，事件名需完整（如 `Network.requestIntercepted`）。|
-| `Network.enable`         | ✅ 支持                 | 必须调用以启用 Network 域，否则无法拦截请求。                           |
-| `Network.setRequestInterception` | ✅ 支持         | `interceptionStage` 必须为 `HeadersReceived`。                          |
+                # Print debug information
+                print(f"Response status: {status}")
+                print(f"Response headers: {headers}")
 
----
+                # If set-cookie header exists, modify the specified cookie
+                modified = False
+                if "set-cookie" in headers:
+                    cookies = headers["set-cookie"].split(", ")
+                    all_cookies = []
 
-### **4. 常见问题排查**
-#### **问题 1：事件未触发**
-- **可能原因**：
-  - 未正确调用 `Network.enable`。
-  - `urlPattern` 或 `resourceType` 未匹配到目标请求。
-  - 浏览器或驱动版本不兼容。
-- **解决方案**：
-  1. 确保调用顺序：先 `Network.enable`，再 `Network.setRequestInterception`。
-  2. 调整 `urlPattern` 为更精确的匹配模式（如 `"*api*"`）。
-  3. 检查 Chrome 和 ChromeDriver 版本（要求 Chrome 90+，ChromeDriver 与浏览器版本一致）。
+                    # Process potentially multiple Set-Cookie headers
+                    for cookie_group in cookies:
+                        # Split compound cookie string
+                        individual_cookies = cookie_group.split("; ")
+                        new_cookies = []
 
-#### **问题 2：修改后的 Cookie 未生效**
-- **可能原因**：
-  - Cookie 值格式错误（如未保留 `Path`、`Domain` 等属性）。
-  - 目标 Cookie 不存在于响应头中。
-- **解决方案**：
-  1. 使用开发者工具检查原始响应头中的 `Set-Cookie` 字段。
-  2. 确保代码中修改逻辑正确拼接 Cookie 字符串。
+                        for cookie in individual_cookies:
+                            # Check if this is the cookie we want to modify
+                            if cookie.startswith(f"{cookie_name}="):
+                                new_cookies.append(f"{cookie_name}={new_cookie_value}")
+                                modified = True
+                                print(f"Modified cookie: {cookie_name}={new_cookie_value}")
+                            else:
+                                new_cookies.append(cookie)
 
-#### **问题 3：`execute_cdp_cmd` 报错**
-- **错误示例**：
-  ```python
-  selenium.common.exceptions.WebDriverException: Message: unknown command: Unknown command
+                        all_cookies.append("; ".join(new_cookies))
+
+                    # Recombine cookie headers
+                    headers["set-cookie"] = ", ".join(all_cookies)
+
+                # Print modification result
+                if modified:
+                    print(f"Cookie modified: {cookie_name}")
+                else:
+                    print(f"Target cookie not found: {cookie_name}")
+
+                # Fulfill the request with modified response
+                await route.fulfill(
+                    status=status,
+                    headers=headers,
+                    body=body
+                )
+            else:
+                # If URL doesn't match, continue with the request normally
+                await route.continue_()
+
+        # Set up route handler and store it for later removal
+        # Use ** wildcard to match all URLs
+        route_handler = {"pattern": "**", "handler": handle_route}
+        self.interception_routes.append(route_handler)
+
+        # Start intercepting all requests, then filter in the handler function
+        await self.page.route("**", handle_route)
+        match_type = "exact" if exact_match else "pattern"
+        print(f"Interception started for URL ({match_type} matching): {url_pattern}")
+        return True
+
+    async def stop_interception(self):
+        """Stop all active interceptions."""
+        if not self.is_intercepting or not self.page:
+            print("No active interception to stop.")
+            return False
+
+        # Remove all routes
+        for route in self.interception_routes:
+            await self.page.unroute(route["pattern"], route["handler"])
+
+        self.interception_routes = []
+        self.is_intercepting = False
+        print("All interceptions stopped.")
+        return True
+
+
+async def setup_browser(chrome_path, chromedriver_path):
+    """Set up and return configured Selenium WebDriver and Playwright browser."""
+    # Verify paths exist
+    if not os.path.exists(chrome_path):
+        raise FileNotFoundError(f"Chrome browser not found at path: {chrome_path}")
+    if not os.path.exists(chromedriver_path):
+        raise FileNotFoundError(f"ChromeDriver not found at path: {chromedriver_path}")
+
+    # Configure Chrome options
+    chrome_options = Options()
+    chrome_options.add_argument("--remote-debugging-port=9222")
+    chrome_options.add_argument("--headless")
+    chrome_options.binary_location = chrome_path
+
+    # Set up Chrome driver
+    service = Service(executable_path=chromedriver_path)
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver.maximize_window()
+
+    # Navigate to initial page
+    driver.get("https://www.baidu.com")
+
+    # Get debugger address
+    capabilities = driver.capabilities
+    debugger_address = None
+
+    # Try to find debugger address in different browser capabilities
+    if 'goog:chromeOptions' in capabilities:
+        debugger_address = capabilities['goog:chromeOptions']['debuggerAddress']
+    elif 'ms:edgeOptions' in capabilities:
+        debugger_address = capabilities['ms:edgeOptions']['debuggerAddress']
+    else:
+        for key in capabilities:
+            if isinstance(capabilities[key], dict) and 'debuggerAddress' in capabilities[key]:
+                debugger_address = capabilities[key]['debuggerAddress']
+                break
+
+    if not debugger_address:
+        driver.quit()
+        raise ValueError("Could not find debugger address in browser capabilities")
+
+    print(f"Browser debugger address: {debugger_address}")
+
+    # Connect Playwright to the browser
+    playwright = await async_playwright().start()
+    browser = await playwright.chromium.connect_over_cdp(f"http://{debugger_address}")
+
+    # Get first context and page
+    contexts = browser.contexts
+    if not contexts:
+        driver.quit()
+        await playwright.stop()
+        raise ValueError("No browser contexts found")
+
+    pages = contexts[0].pages
+    if not pages:
+        driver.quit()
+        await playwright.stop()
+        raise ValueError("No pages found in browser context")
+
+    page = pages[0]
+    print(f"Successfully connected to page: {page.url}")
+
+    return driver, playwright, browser, page
+
+
+async def main():
+    chrome_path = r"E:\Downloads\my files\chrome-win64\chrome.exe"
+    chromedriver_path = r"E:\Downloads\my files\chromedriver-win64\chromedriver.exe"
+
+    driver = None
+    playwright = None
+
+    try:
+        # Set up browser
+        driver, playwright, browser, page = await setup_browser(chrome_path, chromedriver_path)
+
+        # Create interceptor
+        interceptor = RequestInterceptor()
+
+        # Test with exact matching
+        print("\n--- Testing with exact URL matching ---")
+        await interceptor.start_interception(
+            page,
+            "https://www.baidu.com/",
+            "H_PS_PSSID",
+            "111222333",
+            exact_match=True  # Use exact matching
+        )
+
+        # Navigate to the target site to trigger interception
+        print("Navigating to target site...")
+        await page.goto("https://www.baidu.com/")
+        print("Navigation complete, cookies should be modified if URL matched exactly")
+
+        # Wait for a while to observe the results
+        await asyncio.sleep(1)
+
+        # Check the cookie value
+        try:
+            cookie_value = driver.get_cookie("H_PS_PSSID")["value"]
+            print(f"The H_PS_PSSID in the cookie is: {cookie_value}")
+        except Exception as e:
+            print(f"Could not retrieve cookie: {e}")
+
+        # Stop interception
+        await interceptor.stop_interception()
+        print("Exact matching interception stopped")
+        # Test with exact matching
+        print("\n--- Testing with exact URL matching ---")
+        await interceptor.start_interception(
+            page,
+            "https://www.baidu.com/",
+            "H_PS_PSSID",
+            "333444555",
+            exact_match=True  # Use exact matching
+        )
+
+        # Navigate to the target site to trigger interception
+        print("Navigating to target site...")
+        await page.goto("https://www.baidu.com/")
+        print("Navigation complete, cookies should be modified if URL matched exactly")
+
+        # Wait for a while to observe the results
+        await asyncio.sleep(1)
+
+        # Check the cookie value
+        try:
+            cookie_value = driver.get_cookie("H_PS_PSSID")["value"]
+            print(f"The H_PS_PSSID in the cookie is: {cookie_value}")
+        except Exception as e:
+            print(f"Could not retrieve cookie: {e}")
+
+        # Stop interception
+        await interceptor.stop_interception()
+        print("Exact matching interception stopped")
+
+        # Test with exact matching
+        print("\n--- Testing with exact URL matching ---")
+        await interceptor.start_interception(
+            page,
+            "https://www.baidu.com/",
+            "H_PS_PSSID",
+            "777888999",
+            exact_match=True  # Use exact matching
+        )
+
+        # Navigate to the target site to trigger interception
+        print("Navigating to target site...")
+        await page.goto("https://www.baidu.com/")
+        print("Navigation complete, cookies should be modified if URL matched exactly")
+
+        # Wait for a while to observe the results
+        await asyncio.sleep(1)
+
+        # Check the cookie value
+        try:
+            cookie_value = driver.get_cookie("H_PS_PSSID")["value"]
+            print(f"The H_PS_PSSID in the cookie is: {cookie_value}")
+        except Exception as e:
+            print(f"Could not retrieve cookie: {e}")
+
+        # Stop interception
+        await interceptor.stop_interception()
+        print("Exact matching interception stopped")
+        # # Test with pattern matching
+        # print("\n--- Testing with pattern URL matching ---")
+        # await interceptor.start_interception(
+        #     page,
+        #     "baidu",  # This will match any URL containing "baidu"
+        #     "H_PS_PSSID",
+        #     "444555666",
+        #     exact_match=False  # Use pattern matching
+        # )
+        #
+        # # Navigate again to trigger pattern matching
+        # print("Navigating to target site again...")
+        # await page.goto("https://www.baidu.com/")
+        # print("Navigation complete, cookies should be modified if URL contains pattern")
+        #
+        # # Wait for a while to observe the results
+        # await asyncio.sleep(1)
+        #
+        # # Check the cookie value again
+        # try:
+        #     cookie_value = driver.get_cookie("H_PS_PSSID")["value"]
+        #     print(f"The H_PS_PSSID in the cookie is now: {cookie_value}")
+        # except Exception as e:
+        #     print(f"Could not retrieve cookie: {e}")
+        #
+        # # Stop interception when done
+        # await interceptor.stop_interception()
+        # print("Pattern matching interception stopped")
+        #
+        # # Continue browsing without interception
+        # await page.goto("https://www.baidu.com/")
+        # print("Navigated again without any interception")
+        #
+        # # Wait before closing
+        # await asyncio.sleep(1)
+
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        # Clean up
+        if driver:
+            driver.quit()
+            print("Selenium WebDriver closed")
+        if playwright:
+            await playwright.stop()
+            print("Playwright stopped")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
   ```
-- **解决方案**：
-  - 检查 CDP 命令名称拼写（如 `Network.enable` 应为 `Network.enable`）。
-  - 参考 [CDP 官方文档](https://chromedevtools.github.io/devtools-protocol/) 确认命令参数格式。
-
----
-
-### **5. 替代方案：使用 `selenium-wire`**
-如果原生 CDP 操作过于复杂，可改用 **`selenium-wire`** 库简化拦截逻辑：
-```python
-from seleniumwire import webdriver
-
-def modify_response(request):
-    if request.url == "https://api.example.com/data":
-        # 直接修改 Set-Cookie 值
-        request.response.headers["Set-Cookie"] = "user_token=new_token_456; Path=/"
-
-driver = webdriver.Chrome()
-driver.request_interceptor = modify_response
-driver.get("https://example.com")
-```
-- **优点**：无需手动处理 CDP 协议，API 更简洁。
-- **缺点**：需安装第三方库（`pip install selenium-wire`）。
-
----
-
-### **总结**
-- **Selenium 4.22+ 完全支持**通过 `execute_cdp_cmd` 和 `get_cdp_session` 操作 CDP。
-- 需严格遵循 CDP 协议的命令和参数格式，优先参考官方文档。
-- 若追求开发效率，可评估 `selenium-wire` 等第三方库，但需权衡依赖性和灵活性。
