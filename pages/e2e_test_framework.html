@@ -139,8 +139,6 @@
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_wait_actions_py">wait_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_window_actions_py">window_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action___init___py">__init__.py</a>
-│   ├── report/
-│   │   ├── <a href="#E:_MyProjects_e2e_test_framework_report_test_summary_html">test_summary.html</a>
 │   ├── templates/
 │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_templates_rf_report_template_html">rf_report_template.html</a>
 │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_templates_test_summary_template_html">test_summary_template.html</a>
@@ -1652,8 +1650,8 @@ class ResponseFieldSaver(ResponseHandler):
     def save_fields_to_robot_variables(self, response: Union[str, Response], test_case: dict) -&gt; None:
         response_content, _ = self.get_content_and_format(response)
         save_fields = test_case.get('Save Fields', '').splitlines()
-        # Regular expression to match patterns like: assign_value($.result.amount,my_amount) or assign_value($.result.amount)
-        transform_pattern = re.compile(r'^\s*(\w+)\(([^,]+)(?:,\s*([^)]+))?\)\s*$')
+        # Regular expression to match patterns like: assign_value($.result.amount,my_amount) or assign_value($.result.amount) or assign_value($.result.amount,arg1,arg2,...)
+        transform_pattern = re.compile(r'^\s*(\w+)\(([^,]+)(?:,\s*([^)]+?))?(?:,\s*([^)]+?))*\)\s*$')
 
         for field in save_fields:
             if not field.strip():
@@ -1662,12 +1660,14 @@ class ResponseFieldSaver(ResponseHandler):
             # Check if field matches transform format
             match = transform_pattern.match(field)
             if match:
-                method_name, input_field, output_field = match.groups()
-                # If no second parameter, use JSON Path as Robot variable name
-                if output_field is None:
-                    output_field = input_field
+                method_name, input_field, output_field, *args = match.groups()
                 input_value = self._extract_value_from_response(response_content, input_field)
-                self.variable_transformer.transform_and_save(method_name, input_value, output_field)
+                if args[0]:
+                    # Handle transformation with arguments
+                    self.variable_transformer.transform_and_save(method_name, input_value, output_field, *args)
+                else:
+                    # Handle transformation without arguments
+                    self.variable_transformer.transform_and_save(method_name, input_value, output_field)
             else:
                 # Handle standard field format
                 try:
@@ -1716,6 +1716,11 @@ class SavedFieldsManager:
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Failed to load saved fields from the yaml file: {str(e)}")
             raise
+
+    def load_saved_fields_and_set_robot_global_variables(self) -&gt; None:
+        saved_fields: Dict[str, Any] = self.load_saved_fields()
+        for key, value in saved_fields.items():
+            builtin_lib.set_global_variable(f'${{{key}}}', value)
 
     def save_fields(self, field_data: Dict[str, Any]) -&gt; None:
         saved_fields: Dict[str, Any] = self.load_saved_fields()
@@ -2206,11 +2211,10 @@ class VariableGenerator:
     <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\common\variable_transformer.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import re
-import datetime
-import pytz
+    <pre>import datetime
+from zoneinfo import ZoneInfo
 from robot.libraries.BuiltIn import BuiltIn
-from typing import Any, Dict
+from typing import Any
 from robot.api import logger
 from libraries.common.log_manager import ColorLogger
 
@@ -2226,16 +2230,16 @@ class VariableTransformer:
             'assign_value': lambda x: x,
         }
 
-    def transform(self, function_name, input_value) -&gt; Any:
+    def transform(self, function_name, input_value, *args) -&gt; Any:
         if function_name not in self.functions:
             raise ValueError(f"Unknown function: {function_name}")
-        output_value = self.functions[function_name](input_value)
-        return output_value
+        result = self.functions[function_name](input_value, *args)
+        return result
 
-    def transform_and_save(self, function_name, input_value, output_field) -&gt; None:
+    def transform_and_save(self, function_name, input_value, output_field, *args) -&gt; None:
         if function_name not in self.functions:
             raise ValueError(f"Unknown function: {function_name}")
-        output_value = self.functions[function_name](input_value)
+        output_value = self.functions[function_name](input_value, *args)
         self._save_as_global_variable(output_field, output_value)
 
     def _save_as_global_variable(self, output_field: str, value: Any) -&gt; None:
@@ -2255,7 +2259,7 @@ class VariableTransformer:
     # e.g. 2023-10-05T12:00:00.000Z -&gt; 2023-10-05T14:00:00+02:00
     def _utc_to_poland_iso_datetime(self, utc_datetime_str: str) -&gt; str:
         utc_datetime = datetime.datetime.strptime(utc_datetime_str, "%Y-%m-%dT%H:%M:%S.%fZ").replace(microsecond=0)
-        poland_zone = pytz.timezone('Europe/Warsaw')
+        poland_zone = ZoneInfo("Europe/Warsaw")
         poland_datetime = utc_datetime.astimezone(poland_zone)
         return poland_datetime.isoformat()
 
@@ -4396,7 +4400,7 @@ class SummaryReportGenerator:
             html_content = template.render(html_table=html_table)
 
             # Save the HTML report to a file
-            report_file = os.path.join(PROJECT_ROOT, "report", "test_summary.html")
+            report_file = os.path.join(PROJECT_ROOT, "reports", "test_summary.html")
             os.makedirs(os.path.dirname(report_file), exist_ok=True)  # Ensure the directory exists
             with codecs.open(report_file, "w", encoding="utf-8") as f:
                 f.write(html_content)
@@ -4523,6 +4527,8 @@ import os
 import re
 from typing import Dict, Tuple, List
 from robot.api.deco import keyword
+
+from libraries.api.saved_fields_manager import SavedFieldsManager
 from libraries.web.web_actions import WebActions
 from libraries.common.utility_helpers import PROJECT_ROOT
 from libraries.common.config_manager import ConfigManager
@@ -4601,6 +4607,8 @@ class RobotTestExecutor:
         self.page_elements = self._load_page_elements()
         self.page_modules = self._load_page_modules()
         self.custom_action_executor = CustomActionExecutor(self.web_test_loader.get_custom_actions())
+        self.saved_fields_manager = SavedFieldsManager()
+        self.saved_fields_manager.load_saved_fields_and_set_robot_global_variables()
 
     @property
     def driver(self):
@@ -4762,6 +4770,15 @@ class RobotTestExecutor:
                         logging.info(
                             f"{self.__class__.__name__}: Replaced {match} with value: {replacement_value} for web_action: {action}"
                         )
+            elif isinstance(arg, dict):
+                for key, value in arg.items():
+                    if isinstance(value, str):
+                        matches = re.findall(r'\$\{([^}]+)\}', value)
+                        if matches:
+                            for match in matches:
+                                replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
+                                arg[key] = value.replace(f'${{{match}}}', str(replacement_value))
+                                logging.info(f"{self.__class__.__name__}: Replaced {match} with value: {replacement_value} for web_action: {action}")
             new_args.append(arg)
         return new_args
 </pre>
@@ -4941,7 +4958,7 @@ def timer(func):
     <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\web\web_action\element_actions.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from selenium.webdriver import ActionChains
+    <pre>from selenium.webdriver import ActionChains, Keys
 from selenium.webdriver.support.select import Select
 import logging
 from .base import Base
@@ -5041,76 +5058,97 @@ class ElementActions(Base):
         logging.debug(f"{self.__class__.__name__}: Selecting radio button with value '{value}' in radio group [ {element_desc}:{formatted_locator} ].")
         element.click()
         logging.info(f"{self.__class__.__name__}: Selected radio button with value '{value}' in radio group [ {element_desc}:{formatted_locator} ] successfully.")
-</pre>
+
+    def send_custom_key(self,locator, key='ENTER', element_desc=None, condition="clickable"):
+        element = self._resolve_element(locator, element_desc, condition)
+        element_desc = element_desc or self._get_element_description(locator)
+        logging.debug(f"{self.__class__.__name__}: Sending custom key '{key}' to element [ {element_desc}:{locator} ] with ActionChains.")
+        key_to_send = getattr(Keys, key.upper(), key)
+        ActionChains(self.driver).send_keys_to_element(element, key_to_send).perform()
+        logging.info(f"{self.__class__.__name__}: Sent custom key '{key}' to element [ {element_desc}:{locator} ] with ActionChains successfully.")</pre>
 </div>
 
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_web_action_interceptor_actions_py">
     <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\web\web_action\interceptor_actions.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import logging
+    <pre>import asyncio
+import logging
 from playwright.async_api import async_playwright
 from .base import Base
 from .request_interceptor import RequestInterceptor
 
 
 class InterceptorActions(Base):
-    async def modify_server_side_cookie(self, url,intercept_url_pattern, cookie):
+    async def modify_server_side_cookies(self, url, cookies):
+        """
+        Modify multiple server-side cookies at once.
+
+        Args:
+            url (str): The domain URL for the cookies
+            cookies (list): List of cookie dictionaries to set
+        """
         try:
-            playwright, browser, page = await self.setup_playwright()
-            interceptor = RequestInterceptor()
-            cookie_name = cookie.get("name")
-            cookie_value = cookie.get("value")
-            await interceptor.modify_cookie(page, intercept_url_pattern, cookie_name, cookie_value, exact_match=True)
+            playwright, browser, page, client = await self.setup_playwright()
 
-            # Navigate to the target site to trigger interception
-            await page.goto(url)
-            logging.info(f"{self.__class__.__name__}: Navigating to {url} to trigger interception.")
+            # Process all cookies
+            for cookie in cookies:
+                cookie_name = cookie.get("name")
+                cookie_value = cookie.get("value")
 
-            cookie_value = self.driver.get_cookie(cookie_name)["value"]
-            logging.info(f"{self.__class__.__name__}: {cookie_name} value after triggering interception: {cookie_value}")
-            await interceptor.stop()
-            # await playwright.stop()
+                # Additional cookie parameters with defaults
+                domain = cookie.get("domain", url)
+                path = cookie.get("path", "/")
+                secure = cookie.get("secure", True)
+                httpOnly = cookie.get("httpOnly", True)
+                sameSite = cookie.get("sameSite", "None")
+
+                await client.send("Network.setCookie", {
+                    "name": cookie_name,
+                    "value": cookie_value,
+                    "domain": domain,
+                    "path": path,
+                    "secure": secure,
+                    "httpOnly": httpOnly,
+                    "sameSite": sameSite
+                })
+
+            await asyncio.sleep(1)
+            await playwright.stop()
         except Exception as e:
-            logging.error(f"{self.__class__.__name__}: An error occurred while modifying server-side cookie: {e}")
+            logging.error(f"{self.__class__.__name__}: An error occurred while modifying server-side cookies: {e}")
 
     async def setup_playwright(self):
-        # Get debugger address
+        """Connect Playwright to browser and return essential objects."""
         capabilities = self.driver.capabilities
         debugger_address = None
 
-        # Try to find debugger address in different browser capabilities
-        if 'goog:chromeOptions' in capabilities:
-            debugger_address = capabilities['goog:chromeOptions']['debuggerAddress']
-        elif 'ms:edgeOptions' in capabilities:
-            debugger_address = capabilities['ms:edgeOptions']['debuggerAddress']
-        else:
-            for key in capabilities:
-                if isinstance(capabilities[key], dict) and 'debuggerAddress' in capabilities[key]:
-                    debugger_address = capabilities[key]['debuggerAddress']
-                    break
+        # Simplified method to find debugger address
+        for key, value in capabilities.items():
+            if isinstance(value, dict) and 'debuggerAddress' in value:
+                debugger_address = value['debuggerAddress']
+                break
 
         if not debugger_address:
-            raise ValueError("Could not find debugger address in browser capabilities")
+            raise ValueError("Could not find browser debugger address")
 
-        # Connect Playwright to the browser
-        playwright = await async_playwright().start()
-        browser = await playwright.chromium.connect_over_cdp(f"http://{debugger_address}")
-        # Get first context and page
-        contexts = browser.contexts
-        if not contexts:
-            await playwright.stop()
-            raise ValueError("No browser contexts found")
+        try:
+            playwright = await async_playwright().start()
+            browser = await playwright.chromium.connect_over_cdp(f"http://{debugger_address}")
 
-        pages = contexts[0].pages
-        if not pages:
-            await playwright.stop()
-            raise ValueError("No pages found in browser context")
+            # Directly get the first context and page
+            context = browser.contexts[0]
+            page = context.pages[0]
+            client = await context.new_cdp_session(page)
 
-        page = pages[0]
-        logging.info(f"{self.__class__.__name__}: Successfully connected to page: {page.url}.")
+            logging.info(f"{self.__class__.__name__}: Connected to page: {page.url}")
+            return playwright, browser, page, client
 
-        return playwright, browser, page
+        except Exception as e:
+            if 'playwright' in locals():
+                await playwright.stop()
+            logging.error(f"{self.__class__.__name__}: Failed to set up Playwright: {e}")
+            raise
 </pre>
 </div>
 
@@ -5568,12 +5606,36 @@ class TableActions(Base):
             table_element = self.wait_for_element(locator, element_desc=element_desc) if isinstance(locator, tuple) else locator
             table_desc = element_desc or self._get_element_description(table_element)
             result = self.table_verifier.verify_value_in_table(table_element, search_value)
+            assert result,f"Value '{search_value}' not found in table"
             logging.debug(f"{self.__class__.__name__}: Value verification in table completed successfully for table: {table_desc}")
             return result
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error verifying value in table: {str(e)}")
             raise
 
+    def verify_value_not_in_table(self, locator: Union[tuple, WebElement], search_value: str, element_desc=None):
+        logging.debug(f"{self.__class__.__name__}: Verifying value '{search_value}' does not exist in table")
+        try:
+            table_element = self.wait_for_element(locator, element_desc=element_desc) if isinstance(locator, tuple) else locator
+            table_desc = element_desc or self._get_element_description(table_element)
+            result = self.table_verifier.verify_value_not_in_table(table_element, search_value)
+            assert result,f"Value '{search_value}' found in table when it should not be present"
+            logging.debug(f"{self.__class__.__name__}: Value absence verification in table completed successfully for table: {table_desc}")
+            return result
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying value not in table: {str(e)}")
+            raise
+
+    def click_table_header_column(self, locator: Union[tuple, WebElement], column: Union[str, int], element_desc=None):
+        logging.debug(f"{self.__class__.__name__}: Clicking header column '{column}' in table")
+        try:
+            table_element = self.wait_for_element(locator, element_desc=element_desc) if isinstance(locator, tuple) else locator
+            table_desc = element_desc or self._get_element_description(table_element)
+            self.table_verifier.click_table_header_column(table_element, column)
+            logging.debug(f"{self.__class__.__name__}: Clicked header column '{column}' successfully in table: {table_desc}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error clicking table header column: {str(e)}")
+            raise
     def verify_row_count(self, locator: Union[tuple, WebElement], expected_row_count: int, element_desc=None):
         logging.debug(f"{self.__class__.__name__}: Verifying row count: expected {expected_row_count}")
         try:
@@ -5816,6 +5878,7 @@ class TableVerifier:
 
         :param table_element: WebElement of the table
         :param search_value: The value to search for in the table
+        :return: True if the value is found, False if not
         """
         try:
             rows = table_element.find_elements(By.TAG_NAME, "tr")
@@ -5827,9 +5890,34 @@ class TableVerifier:
                         self.logger.info(f"Value '{search_value}' found in table.")
                         return True
 
-            raise ValueError(f"Value '{search_value}' not found in the table.")
+            self.logger.info(f"Value '{search_value}' not found in the table.")
+            return False
         except Exception as e:
             self.logger.error(f"Error verifying presence of value in table: {str(e)}")
+            raise
+
+    def verify_value_not_in_table(self, table_element, search_value):
+        """
+        Verify if a specific value does not exist in the table.
+
+        :param table_element: WebElement of the table
+        :param search_value: The value to verify is not in the table
+        :return: True if the value is not found, False if it is found
+        """
+        try:
+            rows = table_element.find_elements(By.TAG_NAME, "tr")
+
+            for row in rows[1:]:  # Skip header row
+                cells = row.find_elements(By.XPATH, ".//td|.//th")
+                for cell in cells:
+                    if search_value in cell.text.strip():
+                        self.logger.info(f"Value '{search_value}' found in table when it should not be present.")
+                        return False
+
+            self.logger.info(f"Value '{search_value}' not found in the table as expected.")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error verifying absence of value in table: {str(e)}")
             raise
 
     def verify_row_count(self, table_element, expected_row_count):
@@ -5945,7 +6033,35 @@ class TableVerifier:
         """Logs the result of a check with appropriate color."""
         logging.debug(f"{self.__class__.__name__}: {message}")
         logger.info(
-            ColorLogger.success(f"=&gt; {message}") if success else ColorLogger.error(f"=&gt; {message}"), html=True)</pre>
+            ColorLogger.success(f"=&gt; {message}") if success else ColorLogger.error(f"=&gt; {message}"), html=True)
+
+    def click_table_header_column(self, table_element, column):
+        """
+        Click on a specific column header in the table.
+
+        :param table_element: WebElement of the table
+        :param column: Column name or index (1-based if index) to click
+        :return: None
+        """
+        try:
+            # Get the first row (header row)
+            header_row = table_element.find_element(By.TAG_NAME, "tr")
+            headers = [header.text.strip().lower() for header in header_row.find_elements(By.XPATH, ".//th | .//td")]
+
+            # Use existing _get_cell_index method to find the column index
+            column_index = self._get_cell_index(headers, column)
+
+            # Get all header elements and click the one at the determined index
+            header_elements = header_row.find_elements(By.XPATH, ".//th | .//td")
+            if column_index &gt;= len(header_elements):
+                raise ValueError(f"Column index {column_index} is out of range. Found {len(header_elements)} header columns.")
+
+            header_elements[column_index].click()
+            self.logger.info(f"Clicked on table header column: '{column}'")
+
+        except Exception as e:
+            self.logger.error(f"Error clicking table header column: {str(e)}")
+            raise</pre>
 </div>
 
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_web_action_utils_actions_py">
@@ -6817,7 +6933,7 @@ if __name__ == "__main__":
     }
     
     # 获取第一个为True的测试类型，如果都为False则使用默认值
-    default_test_type = 'e2e'
+    default_test_type = 'api'
     test_type = next((t for t, enabled in test_type_map.items() if enabled), default_test_type)
     
     robot_case_generator = UnifiedRobotCaseGenerator(test_type)
@@ -6825,128 +6941,6 @@ if __name__ == "__main__":
     run_test_suite(suite_to_run)
 
 </pre>
-</div>
-
-<div class="code-container" id="E:_MyProjects_e2e_test_framework_report_test_summary_html">
-    <div class="class-header">E:\MyProjects\e2e_test_framework\report\test_summary.html</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>&lt;!DOCTYPE html&gt;
-&lt;html lang="en"&gt;
-&lt;head&gt;
-    &lt;meta charset="UTF-8"&gt;
-    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
-    &lt;title&gt;Test Summary Report&lt;/title&gt;
-    &lt;style&gt;
-        body {
-            font-family: sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
-
-        h1 {
-            text-align: center;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 8px;
-            border: 1px solid #ddd;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        .pass {
-            color: green;
-        }
-
-        .fail {
-            color: red;
-        }
-
-        .warning {
-            color: orange;
-        }
-        .description-cell {
-        max-width: 200px;
-        word-wrap: break-word;
-        white-space: normal;
-        font-size: 0.8em;
-        }
-        .field-cell {
-        max-width: 300px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 0.8em;
-        }
-        .type-cell {
-        max-width: 200px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 0.8em;
-        }
-    &lt;/style&gt;
-&lt;/head&gt;
-&lt;body&gt;
-&lt;h1&gt;Test Summary Report&lt;/h1&gt;
-&lt;table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;"&gt;
-&lt;tr&gt;
-&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;TCID&lt;/th&gt;
-&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Description&lt;/th&gt;
-&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Type&lt;/th&gt;
-&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Field&lt;/th&gt;
-&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Pre Value&lt;/th&gt;
-&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Post Value&lt;/th&gt;
-&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Expected&lt;/th&gt;
-&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Actual&lt;/th&gt;
-&lt;th style="background-color: #f2f2f2; text-align: center;"&gt;Result&lt;/th&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td rowspan="1" style="text-align: center; vertical-align: middle;"&gt;Baidu_Search1.1&lt;/td&gt;
-&lt;td rowspan="1" style="text-align: left; vertical-align: middle;" class="description-cell"&gt;Search for software testing&lt;/td&gt;
-&lt;td class="type-cell"&gt;verify_title_contains&lt;/td&gt;
-&lt;td class="field-cell" title="Page Title"&gt;Page Title&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;百度搜索&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;TC001功能测试_百度搜索&lt;/td&gt;
-&lt;td style="text-align: center; color: green;"&gt;Pass&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td rowspan="1" style="text-align: center; vertical-align: middle;"&gt;Baidu_Search1.2&lt;/td&gt;
-&lt;td rowspan="1" style="text-align: left; vertical-align: middle;" class="description-cell"&gt;Search for software testing&lt;/td&gt;
-&lt;td class="type-cell"&gt;verify_title_contains&lt;/td&gt;
-&lt;td class="field-cell" title="Page Title"&gt;Page Title&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;百度搜索&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;TC001性能测试_百度搜索&lt;/td&gt;
-&lt;td style="text-align: center; color: green;"&gt;Pass&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td rowspan="1" style="text-align: center; vertical-align: middle;"&gt;Baidu_Search2.1&lt;/td&gt;
-&lt;td rowspan="1" style="text-align: left; vertical-align: middle;" class="description-cell"&gt;Search for frontend development&lt;/td&gt;
-&lt;td class="type-cell"&gt;verify_title_contains&lt;/td&gt;
-&lt;td class="field-cell" title="Page Title"&gt;Page Title&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;百度2&lt;/td&gt;
-&lt;td style="text-align: center;"&gt;TC002自动化测试_百度搜索&lt;/td&gt;
-&lt;td style="text-align: center; color: red;"&gt;Fail&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/table&gt;
-&lt;/body&gt;
-&lt;/html&gt;</pre>
 </div>
 
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_requirements_txt">
@@ -6973,8 +6967,7 @@ psycopg2~=2.9.10
 matplotlib~=3.9.4
 colorama~=0.4.6
 pyreadline3~=3.5.4
-SQLAlchemy~=2.0.38
-pytz~=2024.1</pre>
+SQLAlchemy~=2.0.38</pre>
 </div>
 
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_templates_rf_report_template_html">
@@ -7591,7 +7584,7 @@ function openInNewTab(url) {
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 55900.0
+        "CNY": 56300.0
     },
     "transactions": {
         "USD": {
@@ -7631,14 +7624,14 @@ function openInNewTab(url) {
             }
         },
         "CNY": {
-            "2024-08-25": {
+            "2025-03-20": {
                 "inbound": {
-                    "count": 0,
-                    "total_amount": 0.0
+                    "count": 7,
+                    "total_amount": 700.0
                 },
                 "outbound": {
-                    "count": 1,
-                    "total_amount": 100.0
+                    "count": 3,
+                    "total_amount": 300.0
                 }
             }
         }
