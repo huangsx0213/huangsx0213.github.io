@@ -5080,7 +5080,7 @@ from .request_interceptor import RequestInterceptor
 
 
 class InterceptorActions(Base):
-    async def modify_server_side_cookies(self, url, cookies):
+    async def modify_server_side_cookies(self, cookies):
         """
         Modify multiple server-side cookies at once.
 
@@ -5091,27 +5091,25 @@ class InterceptorActions(Base):
         try:
             playwright, browser, page, client = await self.setup_playwright()
 
-            # Process all cookies
-            for cookie in cookies:
-                cookie_name = cookie.get("name")
-                cookie_value = cookie.get("value")
+            cookie_name = cookies.get("name")
+            cookie_value = cookies.get("value")
 
-                # Additional cookie parameters with defaults
-                domain = cookie.get("domain", url)
-                path = cookie.get("path", "/")
-                secure = cookie.get("secure", True)
-                httpOnly = cookie.get("httpOnly", True)
-                sameSite = cookie.get("sameSite", "None")
+            # Additional cookies parameters with defaults
+            domain = cookies.get("domain", '')
+            path = cookies.get("path", "/")
+            secure = cookies.get("secure", True)
+            httpOnly = cookies.get("httpOnly", True)
+            sameSite = cookies.get("sameSite", "None")
 
-                await client.send("Network.setCookie", {
-                    "name": cookie_name,
-                    "value": cookie_value,
-                    "domain": domain,
-                    "path": path,
-                    "secure": secure,
-                    "httpOnly": httpOnly,
-                    "sameSite": sameSite
-                })
+            await client.send("Network.setCookie", {
+                "name": cookie_name,
+                "value": cookie_value,
+                "domain": domain,
+                "path": path,
+                "secure": secure,
+                "httpOnly": httpOnly,
+                "sameSite": sameSite
+            })
 
             await asyncio.sleep(1)
             await playwright.stop()
@@ -5123,11 +5121,16 @@ class InterceptorActions(Base):
         capabilities = self.driver.capabilities
         debugger_address = None
 
-        # Simplified method to find debugger address
-        for key, value in capabilities.items():
-            if isinstance(value, dict) and 'debuggerAddress' in value:
-                debugger_address = value['debuggerAddress']
-                break
+        # Try to find debugger address in different browser capabilities
+        if 'goog:chromeOptions' in capabilities:
+            debugger_address = capabilities['goog:chromeOptions']['debuggerAddress']
+        elif 'ms:edgeOptions' in capabilities:
+            debugger_address = capabilities['ms:edgeOptions']['debuggerAddress']
+        else:
+            for key in capabilities:
+                if isinstance(capabilities[key], dict) and 'debuggerAddress' in capabilities[key]:
+                    debugger_address = capabilities[key]['debuggerAddress']
+                    break
 
         if not debugger_address:
             raise ValueError("Could not find browser debugger address")
