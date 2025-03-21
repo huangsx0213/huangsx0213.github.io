@@ -1746,8 +1746,10 @@ class SavedFieldsManager:
 
     def apply_suite_variables(self, test_case) -&gt; None:
         try:
-            # Regular expression to match patterns like: assign_value($.result.amount,my_amount) or assign_value($.result.amount)
-            transform_pattern = re.compile(r'(\w+)\(([^,]+)(?:,\s*([^)]+))?\)')
+            # Enhanced regular expression to match patterns like:
+            # assign_value($.result.amount) or
+            # assign_value($.result.amount,arg1,arg2,...)
+            transform_pattern = re.compile(r'(\w+)\(([^,)]+)(?:,\s*([^)]+))?\)')
 
             for key in ['Body Override', 'Exp Result']:
                 if key not in test_case or not test_case[key]:
@@ -1765,18 +1767,27 @@ class SavedFieldsManager:
                     match = transform_pattern.search(line.strip())
                     if match:
                         # Handle transformation format
-                        method_name, input_field, output_field = match.groups()
-                        # If no second parameter, use input field as output variable name
-                        if output_field is None:
-                            output_field = input_field
+                        method_name, input_field = match.groups()[0:2]
+                        remaining_args_str = match.groups()[2]
 
-                        # Extract input field value and transform it
+                        # Process additional arguments if they exist
+                        args = []
+                        if remaining_args_str:
+                            # Split remaining args by comma and strip whitespace
+                            args = [arg.strip() for arg in remaining_args_str.split(',')]
+
+                        # Extract input field value
                         input_value = BuiltIn().get_variable_value(input_field)
-                        transformed_value = self.variable_transformer.transform(method_name, input_value)
+
+                        # Transform with dynamic arguments
+                        transformed_value = self.variable_transformer.transform(method_name, input_value, *args)
 
                         # Replace entire pattern with transformed value
                         line = transform_pattern.sub(str(transformed_value), line)
-                        logging.info(f"{self.__class__.__name__}: [{key}] Replaced transform pattern {match.group(0)} with [{transformed_value}]")
+
+                        # Log the transformation
+                        args_log = ", ".join([input_field] + args)
+                        logging.info(f"{self.__class__.__name__}: [{key}] Applied {method_name}({args_log}) -&gt; [{transformed_value}]")
                     else:
                         # Handle standard variable replacement
                         matches = re.findall(r'\$\{[^}]+\}', line)
@@ -4759,26 +4770,93 @@ class RobotTestExecutor:
 
     def _resolve_variable_in_parameters(self, action_params, action):
         new_args = []
+        # Enhanced regular expression to match patterns like:
+        # assign_value($.result.amount) or
+        # assign_value($.result.amount,arg1,arg2,...)
+        transform_pattern = re.compile(r'(\w+)\(([^,)]+)(?:,\s*([^)]+))?\)')
+
         for arg in action_params:
             if isinstance(arg, str):
-                # 使用正则匹配所有 ${...} 格式的变量
-                matches = re.findall(r'\$\{([^}]+)\}', arg)
-                if matches:
-                    for match in matches:
-                        replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
-                        arg = arg.replace(f'${{{match}}}', str(replacement_value))
-                        logging.info(
-                            f"{self.__class__.__name__}: Replaced {match} with value: {replacement_value} for web_action: {action}"
-                        )
+                # First check if the arg matches a transformation pattern
+                match = transform_pattern.search(arg.strip())
+                if match:
+                    method_name, input_field = match.groups()[0:2]
+                    remaining_args_str = match.groups()[2]
+
+                    # Process additional arguments if they exist
+                    args_list = []
+                    if remaining_args_str:
+                        # Split remaining args by comma and strip whitespace
+                        args_list = [arg.strip() for arg in remaining_args_str.split(',')]
+
+                    # Extract input field value
+                    input_value = builtin_lib.get_variable_value(input_field)
+
+                    # Transform with dynamic arguments
+                    transformed_value = self.saved_fields_manager.variable_transformer.transform(
+                        method_name, input_value, *args_list
+                    )
+
+                    # Replace entire pattern with transformed value
+                    arg = transform_pattern.sub(str(transformed_value), arg)
+
+                    # Log the transformation
+                    args_log = ", ".join([input_field] + args_list)
+                    logging.info(
+                        f"{self.__class__.__name__}: Applied {method_name}({args_log}) -&gt; [{transformed_value}] for web_action: {action}"
+                    )
+                else:
+                    # Use regular expression to match all ${...} format variables
+                    matches = re.findall(r'\$\{([^}]+)\}', arg)
+                    if matches:
+                        for match in matches:
+                            replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
+                            arg = arg.replace(f'${{{match}}}', str(replacement_value))
+                            logging.info(
+                                f"{self.__class__.__name__}: Replaced {match} with value: {replacement_value} for web_action: {action}"
+                            )
             elif isinstance(arg, dict):
+                # Handle dictionary arguments
                 for key, value in arg.items():
                     if isinstance(value, str):
-                        matches = re.findall(r'\$\{([^}]+)\}', value)
-                        if matches:
-                            for match in matches:
-                                replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
-                                arg[key] = value.replace(f'${{{match}}}', str(replacement_value))
-                                logging.info(f"{self.__class__.__name__}: Replaced {match} with value: {replacement_value} for web_action: {action}")
+                        # First check if the value matches a transformation pattern
+                        match = transform_pattern.search(value.strip())
+                        if match:
+                            method_name, input_field = match.groups()[0:2]
+                            remaining_args_str = match.groups()[2]
+
+                            # Process additional arguments if they exist
+                            args_list = []
+                            if remaining_args_str:
+                                # Split remaining args by comma and strip whitespace
+                                args_list = [a.strip() for a in remaining_args_str.split(',')]
+
+                            # Extract input field value
+                            input_value = builtin_lib.get_variable_value(input_field)
+
+                            # Transform with dynamic arguments
+                            transformed_value = self.saved_fields_manager.variable_transformer.transform(
+                                method_name, input_value, *args_list
+                            )
+
+                            # Replace entire pattern with transformed value
+                            arg[key] = transform_pattern.sub(str(transformed_value), value)
+
+                            # Log the transformation
+                            args_log = ", ".join([input_field] + args_list)
+                            logging.info(
+                                f"{self.__class__.__name__}: Applied {method_name}({args_log}) -&gt; [{transformed_value}] for web_action: {action}"
+                            )
+                        else:
+                            # Handle regular variable replacements
+                            matches = re.findall(r'\$\{([^}]+)\}', value)
+                            if matches:
+                                for match in matches:
+                                    replacement_value = builtin_lib.get_variable_value(f'${{{match}}}')
+                                    arg[key] = value.replace(f'${{{match}}}', str(replacement_value))
+                                    logging.info(
+                                        f"{self.__class__.__name__}: Replaced {match} with value: {replacement_value} for web_action: {action}"
+                                    )
             new_args.append(arg)
         return new_args
 </pre>
@@ -5661,6 +5739,17 @@ class TableActions(Base):
             logging.error(f"{self.__class__.__name__}: Error verifying column sorting: {str(e)}")
             raise
 
+    def verify_numeric_column_sorted(self, locator: Union[tuple, WebElement], column: Union[str, int], expected_order='ascending', strip_spaces=True, element_desc=None):
+        logging.debug(f"{self.__class__.__name__}: Verifying numeric column '{column}' is sorted in {expected_order} order")
+        try:
+            table_element = self.wait_for_element(locator, element_desc=element_desc) if isinstance(locator, tuple) else locator
+            table_desc = element_desc or self._get_element_description(table_element)
+            self.table_verifier.verify_numeric_column_sorted(table_element, column, expected_order, strip_spaces)
+            logging.debug(f"{self.__class__.__name__}: Numeric column sorting verification completed successfully for table: {table_desc}, column: {column}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Error verifying numeric column sorting: {str(e)}")
+            raise
+
     def select_table_row_checkbox(self, locator: Union[tuple, WebElement], identifier_column: Union[str, int], identifier_value: str, checkbox_column: int = 1, element_desc=None):
         logging.debug(f"{self.__class__.__name__}: Selecting checkbox for row with {identifier_column}: {identifier_value}")
         try:
@@ -5982,6 +6071,48 @@ class TableVerifier:
             self.logger.info(f"Column '{column}' is correctly sorted in {expected_order} order.")
         except Exception as e:
             self.logger.error(f"Error verifying sorting for column '{column}': {str(e)}")
+            raise
+
+    def verify_numeric_column_sorted(self, table_element, column, expected_order='ascending', strip_spaces=True):
+
+        try:
+            # Retrieve all rows and headers of the table
+            rows = table_element.find_elements(By.TAG_NAME, "tr")
+            headers = [header.text.strip().lower() for header in rows[0].find_elements(By.XPATH, ".//th | .//td")]
+
+            # Get the index of the target column using the existing helper method
+            column_index = self._get_cell_index(headers, column)
+
+            # Collect numeric values from the target column (skipping the header row)
+            numeric_data = []
+            for row in rows[1:]:
+                cells = row.find_elements(By.XPATH, ".//td|.//th")
+                if column_index &lt; len(cells):
+                    cell_text = cells[column_index].text
+                    if strip_spaces:
+                        cell_text = cell_text.strip()
+                    # Remove commas if present
+                    cell_text_no_comma = cell_text.replace(",", "")
+                    try:
+                        # Convert the processed string to a float
+                        numeric_value = float(cell_text_no_comma)
+                    except ValueError:
+                        raise ValueError(f"Cell value '{cell_text}' in column '{column}' is not a valid number.")
+                    numeric_data.append(numeric_value)
+                else:
+                    raise ValueError(f"Column '{column}' is out of range. This row has {len(cells)} columns.")
+
+            # Sort the numeric data based on the expected order
+            sorted_data = sorted(numeric_data)
+            if expected_order == 'descending':
+                sorted_data.reverse()
+
+            # Validate if the column data is sorted as expected
+            assert numeric_data == sorted_data, f"Column '{column}' is not sorted in {expected_order} order. Actual order: {numeric_data}"
+
+            self.logger.info(f"Numeric column '{column}' is correctly sorted in {expected_order} order.")
+        except Exception as e:
+            self.logger.error(f"Error verifying numeric sorting for column '{column}': {str(e)}")
             raise
 
     def select_table_row_checkbox(self, table_element, identifier_column, identifier_value, checkbox_column=1):
@@ -6936,7 +7067,7 @@ if __name__ == "__main__":
     }
     
     # 获取第一个为True的测试类型，如果都为False则使用默认值
-    default_test_type = 'api'
+    default_test_type = 'e2e'
     test_type = next((t for t, enabled in test_type_map.items() if enabled), default_test_type)
     
     robot_case_generator = UnifiedRobotCaseGenerator(test_type)
@@ -7587,7 +7718,7 @@ function openInNewTab(url) {
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 56300.0
+        "CNY": 56600.0
     },
     "transactions": {
         "USD": {
@@ -7627,14 +7758,14 @@ function openInNewTab(url) {
             }
         },
         "CNY": {
-            "2025-03-20": {
+            "2025-03-21": {
                 "inbound": {
                     "count": 7,
                     "total_amount": 700.0
                 },
                 "outbound": {
-                    "count": 3,
-                    "total_amount": 300.0
+                    "count": 4,
+                    "total_amount": 400.0
                 }
             }
         }
