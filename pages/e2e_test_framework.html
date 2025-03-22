@@ -1648,6 +1648,7 @@ class ResponseFieldSaver(ResponseHandler):
         self.variable_transformer = VariableTransformer()
 
     def save_fields_to_robot_variables(self, response: Union[str, Response], test_case: dict) -&gt; None:
+        tcid = test_case['TCID']
         response_content, _ = self.get_content_and_format(response)
         save_fields = test_case.get('Save Fields', '').splitlines()
         # Regular expression to match patterns like: assign_value($.result.amount,my_amount) or assign_value($.result.amount) or assign_value($.result.amount,arg1,arg2,...)
@@ -1661,13 +1662,23 @@ class ResponseFieldSaver(ResponseHandler):
             match = transform_pattern.match(field)
             if match:
                 method_name, input_field, output_field, *args = match.groups()
+
+                if output_field:
+                    output_field = f"{tcid}.{output_field.strip()}"
+
                 input_value = self._extract_value_from_response(response_content, input_field)
+
+                if input_value is None:
+                    logging.warning(f"{self.__class__.__name__}: Robot variable {input_field} not found. Skipping transformation.")
+
                 if args[0]:
                     # Handle transformation with arguments
                     self.variable_transformer.transform_and_save(method_name, input_value, output_field, *args)
+                    logging.info(f"{self.__class__.__name__}: Transformed {input_field} to {output_field} using {method_name} with arguments {args}.")
                 else:
                     # Handle transformation without arguments
                     self.variable_transformer.transform_and_save(method_name, input_value, output_field)
+                    logging.info(f"{self.__class__.__name__}: Transformed {input_field} to {output_field} using {method_name}.")
             else:
                 # Handle standard field format
                 try:
@@ -1778,6 +1789,9 @@ class SavedFieldsManager:
 
                         # Extract input field value
                         input_value = BuiltIn().get_variable_value(input_field)
+
+                        if input_value is None:
+                            logging.warning(f"{self.__class__.__name__}: Robot variable '{input_field}' not found.")
 
                         # Transform with dynamic arguments
                         transformed_value = self.variable_transformer.transform(method_name, input_value, *args)
@@ -4792,19 +4806,18 @@ class RobotTestExecutor:
                     # Extract input field value
                     input_value = builtin_lib.get_variable_value(input_field)
 
+                    if input_value is None:
+                        logging.warning(f"{self.__class__.__name__}: Robot variable {input_field} not found for web_action: {action} while transforming")
+
                     # Transform with dynamic arguments
-                    transformed_value = self.saved_fields_manager.variable_transformer.transform(
-                        method_name, input_value, *args_list
-                    )
+                    transformed_value = self.saved_fields_manager.variable_transformer.transform(method_name, input_value, *args_list)
 
                     # Replace entire pattern with transformed value
                     arg = transform_pattern.sub(str(transformed_value), arg)
 
                     # Log the transformation
                     args_log = ", ".join([input_field] + args_list)
-                    logging.info(
-                        f"{self.__class__.__name__}: Applied {method_name}({args_log}) -&gt; [{transformed_value}] for web_action: {action}"
-                    )
+                    logging.info(f"{self.__class__.__name__}: Applied {method_name}({args_log}) -&gt; [{transformed_value}] for web_action: {action}")
                 else:
                     # Use regular expression to match all ${...} format variables
                     matches = re.findall(r'\$\{([^}]+)\}', arg)
@@ -5010,7 +5023,38 @@ class CookieActions(Base):
     def delete_all_cookies(self):
         logging.info(f"{self.__class__.__name__}: Deleting all cookies")
         self.driver.delete_all_cookies()
-        logging.info(f"{self.__class__.__name__}: All cookies deleted successfully")</pre>
+        logging.info(f"{self.__class__.__name__}: All cookies deleted successfully")
+
+    def set_cookie(self, cookies: dict):
+        # Validate required fields
+        for key in ("name", "value"):
+            if key not in cookies:
+                logging.error(f"{self.__class__.__name__}: Missing required cookie key: '{key}'")
+                return
+
+        # Prepare cookie with defaults if not provided
+        cookie = {
+            "name": cookies["name"],
+            "value": cookies["value"],
+            "domain": cookies.get("domain", ""),
+            "path": cookies.get("path", "/"),
+            "secure": cookies.get("secure", True),
+            "httpOnly": cookies.get("httpOnly", True),
+            "sameSite": cookies.get("sameSite", "None")
+        }
+
+        try:
+            # Attempt to set the cookie via Chrome DevTools Protocol command
+            response = self.driver.execute_cdp_cmd('Network.setCookie', cookie)
+            logging.info(f"{self.__class__.__name__}: Set cookie '{cookie['name']}' successfully, response: {response}")
+        except Exception as e:
+            logging.error(f"{self.__class__.__name__}: Failed to set cookie '{cookie['name']}': {e}")
+            return
+
+        # Optionally, verify the cookie was set
+        cookie_after = self.driver.get_cookie(cookie["name"])
+        logging.info(f"{self.__class__.__name__}: Cookie after setting: {cookie_after}")
+</pre>
 </div>
 
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_web_action_decorators_py">
@@ -7718,7 +7762,7 @@ function openInNewTab(url) {
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 56600.0
+        "CNY": 56900.0
     },
     "transactions": {
         "USD": {
@@ -7758,7 +7802,7 @@ function openInNewTab(url) {
             }
         },
         "CNY": {
-            "2025-03-21": {
+            "2025-03-22": {
                 "inbound": {
                     "count": 7,
                     "total_amount": 700.0
