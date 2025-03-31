@@ -786,17 +786,13 @@ tags:
 import re
 import base64
 import shutil
+from robot.api import ExecutionResult, ResultVisitor
 from docx import Document
-from docx.enum.section import WD_SECTION
-from docx.enum.table import WD_ALIGN_VERTICAL
-from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.shared import Inches, RGBColor, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from datetime import datetime
 import io
 from PIL import Image
-from docx.oxml.ns import nsdecls, qn
-from docx.oxml import OxmlElement
-from robot.api import ExecutionResult, ResultVisitor
 from libraries.common.utility_helpers import PROJECT_ROOT
 
 
@@ -841,13 +837,15 @@ class ScreenshotCollector(ResultVisitor):
         self.current_keyword = step_info
 
         for msg in keyword.messages:
-            if "Executing action" in msg.message:
-                step_info['messages'].append(msg.message)
-                if "RobotTestExecutor: Executing action" in msg.message:
-                    self.last_action_step = {
-                        'name': self.current_keyword['name'],
-                        'message': msg.message
-                    }
+            if "Screenshot captured successfully at:" in msg.message:
+                description_match = re.search(r'description:\s*(.+?)(?:$|\s)', msg.message)
+                if description_match:
+                    description = description_match.group(1)
+                    if description:
+                        self.last_action_step = {
+                            'name': self.current_keyword['name'],
+                            'description': description
+                        }
 
             if msg.html and "img src=" in msg.message:
                 base64_match = re.search(r'img src="data:image/[^;]+;base64,([^"]+)"', msg.message)
@@ -871,239 +869,267 @@ class ScreenshotCollector(ResultVisitor):
         return suites
 
 
+def parse_robot_output(xml_path):
+    result = ExecutionResult(xml_path)
+    collector = ScreenshotCollector()
+    result.visit(collector)
+    print(f"Found {len(collector.test_results)} test cases")
+    return collector.test_results
+
+
 class WordReportGenerator:
     def __init__(self, base_dir=None):
         self.base_dir = base_dir or PROJECT_ROOT
         self.temp_dir = None
-        self.styles = {
-            'title': {'font': '微软雅黑', 'size': 24, 'bold': True, 'color': RGBColor(0, 32, 96)},
-            'heading1': {'font': '微软雅黑', 'size': 16, 'bold': True, 'color': RGBColor(0, 32, 96)},
-            'heading2': {'font': '微软雅黑', 'size': 14, 'bold': True, 'color': RGBColor(0, 64, 128)},
-            'status_pass': {'bold': True, 'color': RGBColor(0, 128, 0)},
-            'status_fail': {'bold': True, 'color': RGBColor(255, 0, 0)},
-            'screenshot_caption': {'italic': True, 'color': RGBColor(128, 128, 128)},
-            'error_msg': {'color': RGBColor(255, 0, 0), 'highlight': True}
-        }
 
-    def _apply_style(self, paragraph, style_name):
-        """应用预定义样式"""
-        style = self.styles.get(style_name, {})
-        run = paragraph.runs[0] if paragraph.runs else paragraph.add_run()
+    def format_action_message(self, message):
+        if not message or "RobotTestExecutor: Executing action" not in message:
+            return message
+        try:
+            action_match = re.search(r'action:$$([^$$]+)\]', message)
+            page_match = re.search(r'page:$$([^$$]+)\]', message)
+            module_match = re.search(r'module:$$([^$$]+)\]', message)
+            element_match = re.search(r'element:$$([^$$]+)\]', message)
+            params_match = re.search(r'with parameters:$$(.+?)$$(?:\s|$)', message)
 
-        if 'font' in style:
-            run.font.name = style['font']
-            paragraph.style.font.name = style['font']
-        if 'size' in style:
-            run.font.size = Pt(style['size'])
-        if 'bold' in style:
-            run.bold = style['bold']
-        if 'italic' in style:
-            run.italic = style['italic']
-        if 'color' in style:
-            run.font.color.rgb = style['color']
-        if 'highlight' in style:
-            run.font.highlight_color = style['highlight']
+            action = action_match.group(1) if action_match else 'Unknown Action'
+            page = page_match.group(1) if page_match else 'Unknown Page'
+            module = module_match.group(1) if module_match else 'Unknown Module'
+            element = element_match.group(1) if element_match else None
+            params = params_match.group(1) if params_match else None
 
-    def _add_header_footer(self, doc):
-        """添加页眉页脚"""
-        # 页眉
-        header = doc.sections[0].header
-        header.is_linked_to_previous = False
-        header_para = header.paragraphs[0]
-        header_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        header_run = header_para.add_run("自动化测试报告 | 机密文件")
-        header_run.font.size = Pt(9)
-        header_run.font.color.rgb = RGBColor(128, 128, 128)
+            base_msg = f'Execute [{action}] in [{page}] page [{module}] module'
+            if element:
+                base_msg = f'{base_msg}, target element: [{element}]'
+            if params:
+                base_msg = f'{base_msg}, parameters: [{params}]'
+            return base_msg
+        except Exception as e:
+            print(f"Error formatting message: {str(e)}")
+            return message
 
-        # 页脚
-        footer = doc.sections[0].footer
-        footer.is_linked_to_previous = False
-        footer_para = footer.paragraphs[0]
-        footer_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        footer_para.text = f"生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}   |   第 "
+    def process_base64_image(self, base64_data):
+        if isinstance(base64_data, dict) and 'data' in base64_data:
+            base64_data = base64_data['data']
+        try:
+            image_data = base64.b64decode(base64_data)
+            return Image.open(io.BytesIO(image_data))
+        except Exception:
+            try:
+                cleaned_data = base64_data.replace(" ", "").replace("\n", "")
+                padding = 4 - (len(cleaned_data) % 4) if len(cleaned_data) % 4 != 0 else 0
+                cleaned_data += "=" * padding
+                image_data = base64.b64decode(cleaned_data)
+                return Image.open(io.BytesIO(image_data))
+            except Exception as e2:
+                print(f"Failed to decode base64 data: {str(e2)}")
+                return None
 
-        # Fix for fldChar (WordprocessingML)
-        fldChar = OxmlElement('w:fldChar')
-        fldChar.set(qn('w:fldCharType'), 'begin')
+    def save_image_for_word(self, img, output_dir, index, test_name):
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+            safe_test_name = re.sub(r'[\\/*?:"&lt;&gt;|]', "_", test_name)
+            filename = f"{safe_test_name}_{index}.jpg"
+            filepath = os.path.join(output_dir, filename)
 
-        instrText = OxmlElement('w:instrText')
-        instrText.text = 'PAGE'
-
-        fldChar2 = OxmlElement('w:fldChar')
-        fldChar2.set(qn('w:fldCharType'), 'end')
-
-        footer_para._p.append(fldChar)
-        footer_para._p.append(instrText)
-        footer_para._p.append(fldChar2)
-        footer_para.add_run(" 页/共 ")
-
-        fldChar3 = OxmlElement('w:fldChar')
-        fldChar3.set(qn('w:fldCharType'), 'begin')
-
-        instrText2 = OxmlElement('w:instrText')
-        instrText2.text = 'NUMPAGES'
-
-        fldChar4 = OxmlElement('w:fldChar')
-        fldChar4.set(qn('w:fldCharType'), 'end')
-
-        footer_para._p.append(fldChar3)
-        footer_para._p.append(instrText2)
-        footer_para._p.append(fldChar4)
-        footer_para.add_run(" 页   |   报告生成器 v2.1")
-
-    def _create_toc(self, doc):
-        """创建目录"""
-        doc.add_paragraph("目录（生成后右键更新域）", style='Intense Quote')
-        toc_para = doc.add_paragraph()
-        run = toc_para.add_run()
-        fldChar = OxmlElement('w:fldChar')
-        fldChar.set(qn('w:fldCharType'), 'begin')
-        instrText = OxmlElement('w:instrText')
-        instrText.text = 'TOC \\o "1-3" \\h \\z \\u'
-        fldChar2 = OxmlElement('w:fldChar')
-        fldChar2.set(qn('w:fldCharType'), 'separate')
-        fldChar3 = OxmlElement('w:t')
-        fldChar3.text = '右键此处选择“更新域”刷新目录'
-        fldChar2.append(fldChar3)
-        fldChar4 = OxmlElement('w:fldChar')
-        fldChar4.set(qn('w:fldCharType'), 'end')
-        run._r.append(fldChar)
-        run._r.append(instrText)
-        run._r.append(fldChar2)
-        run._r.append(fldChar4)
-        doc.add_page_break()
+            if img.mode == 'RGBA':
+                rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                rgb_img.paste(img, mask=img.split()[3])
+                rgb_img.save(filepath, 'JPEG', quality=95)
+            else:
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                img.save(filepath, 'JPEG', quality=95)
+            return filepath
+        except Exception as e:
+            print(f"Error saving image: {str(e)}")
+            return None
 
     def generate_report(self, xml_path=None, output_file=None):
         xml_path = xml_path or os.path.join(self.base_dir, 'reports', 'output.xml')
-        output_file = output_file or os.path.join(self.base_dir, 'reports', 'Test_Report.docx')
+        output_file = output_file or os.path.join(self.base_dir, 'reports', 'test_evidences.docx')
 
         self.temp_dir = os.path.join(os.path.dirname(output_file), 'temp_screenshots')
         os.makedirs(self.temp_dir, exist_ok=True)
 
         test_results = parse_robot_output(xml_path)
         if not test_results:
-            print('没有找到测试用例')
+            print('No test cases found')
             return None
 
+        return self._generate_word_report(test_results, output_file)
+
+    def _generate_word_report(self, test_results, output_file):
         doc = Document()
-        self._add_header_footer(doc)
 
-        # 封面页
-        title_para = doc.add_paragraph()
-        title_run = title_para.add_run('自动化测试报告\n')
-        title_run.font.size = Pt(28)
-        title_run.bold = True
-        doc.add_paragraph('\n' * 5)
-        doc.add_paragraph(f'生成时间：{datetime.now().strftime("%Y-%m-%d %H:%M")}', style='Intense Quote')
-        doc.add_page_break()
+        # Cover Page
+        title = doc.add_paragraph()
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = title.add_run("Robot Test Evidences")
+        run.bold = True
+        run.font.size = Pt(28)
 
-        # 目录
-        self._create_toc(doc)
+        doc.add_paragraph("\nGenerated: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        doc.add_paragraph("\nThis report includes test results, details, and screenshots.")
 
-        # 测试摘要
-        doc.add_heading('测试概览', level=1)
-        total = len(test_results)
-        passed = sum(1 for t in test_results if t['status'] == 'PASS')
-        failed = total - passed
-        self._add_summary_table(doc, passed, failed, total)
+        # Test Statistics
+        total_cases = len(test_results)
+        passed_cases = sum(1 for test in test_results if test["status"] == "PASS")
+        failed_cases = sum(1 for test in test_results if test["status"] == "FAIL")
+        skipped_cases = total_cases - (passed_cases + failed_cases)
 
-        # 测试用例详情
-        doc.add_heading('测试详情', level=1)
-        for idx, test in enumerate(test_results):
-            # 每个用例单独分节
-            if idx &gt; 0:
-                doc.add_section(WD_SECTION.NEW_PAGE)
+        doc.add_heading("Test Summary", level=1)
+        stats_table = doc.add_table(rows=2, cols=4)
+        stats_table.style = 'Table Grid'
 
-            # 用例标题
-            heading = doc.add_heading(f'测试用例 {idx + 1}: {test["name"]}', level=2)
-            self._apply_style(heading, 'heading2')
+        header_cells = stats_table.rows[0].cells
+        header_cells[0].text = 'Total Test Cases'
+        header_cells[1].text = 'Passed'
+        header_cells[2].text = 'Failed'
+        header_cells[3].text = 'Skipped'
 
-            # 基本信息表格
-            table = doc.add_table(rows=4, cols=2)
-            table.style = 'Light List Accent 1'
-            cells = table.rows[0].cells
-            cells[0].text = '状态'
-            cells[1].text = '通过' if test['status'] == 'PASS' else '失败'
-            cells[1].paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 128, 0) if test['status'] == 'PASS' else RGBColor(255, 0, 0)
+        for cell in header_cells:
+            for paragraph in cell.paragraphs:
+                for run in paragraph.runs:
+                    run.bold = True
 
-            # 填充其他信息...
+        value_cells = stats_table.rows[1].cells
+        value_cells[0].text = str(total_cases)
 
-            # 步骤
-            doc.add_heading('执行步骤', level=3)
-            for step in test['steps']:
-                status_text = '通过' if step['status'] == 'PASS' else '失败'
-                step_msg = ', '.join(step['messages']) if step['messages'] else '无消息'
-                doc.add_paragraph(f'{step["name"]}: {status_text} - {step_msg}')
+        passed_paragraph = value_cells[1].paragraphs[0]
+        passed_run = passed_paragraph.add_run(str(passed_cases))
+        passed_run.font.color.rgb = RGBColor(0, 128, 0)  # Green
+        passed_run.bold = True
 
-            # 截图
+        failed_paragraph = value_cells[2].paragraphs[0]
+        failed_run = failed_paragraph.add_run(str(failed_cases))
+        failed_run.font.color.rgb = RGBColor(255, 0, 0)  # Red
+        failed_run.bold = True
+
+        skipped_paragraph = value_cells[3].paragraphs[0]
+        skipped_run = skipped_paragraph.add_run(str(skipped_cases))
+        skipped_run.font.color.rgb = RGBColor(255, 165, 0)  # Orange
+        skipped_run.bold = True
+
+        for row in stats_table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        doc.add_paragraph("\n")
+
+        # Test Overview
+        doc.add_heading("Test Case Overview", level=1)
+        table = doc.add_table(rows=1, cols=5)
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'Test Case'
+        hdr_cells[1].text = 'Start Time'
+        hdr_cells[2].text = 'End Time'
+        hdr_cells[3].text = 'Duration'
+        hdr_cells[4].text = 'Result'
+
+        for test in test_results:
+            row_cells = table.add_row().cells
+            row_cells[0].text = test['name']
+            row_cells[1].text = test.get('start_time', '')
+            row_cells[2].text = test.get('end_time', '')
+            row_cells[3].text = f"{test.get('duration', '')} ms"
+            result_text = 'Passed' if test['status'] == 'PASS' else 'Failed'
+            row_cells[4].text = result_text
+
+            run_status = row_cells[4].paragraphs[0].runs[0]
+            if test['status'] == 'PASS':
+                run_status.font.color.rgb = RGBColor(0, 128, 0)  # Green
+            else:
+                run_status.font.color.rgb = RGBColor(255, 0, 0)  # Red
+
+        doc.add_paragraph("\n")
+
+        # Detailed Test Results
+        for i, test in enumerate(test_results):
+            doc.add_page_break()
+
+            doc.add_heading(f"Test Case: {test['name']}", level=1)
+
+            p_status = doc.add_paragraph()
+            p_status.add_run("Status: ").bold = True
+            run_status = p_status.add_run("Passed" if test["status"] == "PASS" else "Failed")
+            run_status.bold = True
+            if test['status'] == 'PASS':
+                run_status.font.color.rgb = RGBColor(0, 128, 0)  # Green
+            else:
+                run_status.font.color.rgb = RGBColor(255, 0, 0)  # Red
+
+            doc.add_paragraph(f"Start Time: {test.get('start_time', '')}")
+            doc.add_paragraph(f"End Time: {test.get('end_time', '')}")
+            doc.add_paragraph(f"Duration: {test.get('duration', '')} ms")
+
+            if test['doc']:
+                doc.add_heading("Description", level=2)
+                doc.add_paragraph(test['doc'])
+
+            if test['steps']:
+                doc.add_heading("Steps", level=2)
+                for step_num, step in enumerate(test['steps'], 1):
+                    p_step = doc.add_paragraph()
+                    p_step.add_run(f"Step {step_num}: {step['name']}").bold = True
+                    p_step.add_run(f"  [{step['status']}]")
+                    if step['status'] != 'PASS':
+                        p_step.runs[-1].font.color.rgb = RGBColor(255, 0, 0)
+
+                    for msg in step['messages']:
+                        formatted_msg = self.format_action_message(msg)
+                        doc.add_paragraph(f"• {formatted_msg}", style='List Bullet')
+
             if test['base64_screenshots']:
-                doc.add_heading('执行截图', level=3)
-                for ss_idx, ss_info in enumerate(test['base64_screenshots'], 1):
-                    img = self.process_base64_image(ss_info['data'])
-                    if img:
-                        safe_name = re.sub(r'[\\/*?:"&lt;&gt;|]', "_", test['name'])
-                        img_path = os.path.join(self.temp_dir, f'{safe_name}_{ss_idx}.jpg')
-                        img.save(img_path)
-                        self._add_screenshot(doc, img_path, f'截图 {ss_idx} - {ss_info["step"]["name"]}')
+                doc.add_heading("Screenshots", level=2)
+                for screenshot_num, screenshot_info in enumerate(test['base64_screenshots'], 1):
+                    step_info = screenshot_info.get('step', {})
+                    description = step_info.get('description', "No description")
+                    p_sc = doc.add_paragraph()
+                    p_sc.add_run(f"Screenshot {screenshot_num}: {description}").bold = True
 
-        # 保存文档
+                    base64_data = screenshot_info['data']
+                    img = self.process_base64_image(base64_data)
+                    if img:
+                        img_file = self.save_image_for_word(img, self.temp_dir, screenshot_num, test['name'])
+                        if img_file and os.path.exists(img_file):
+                            try:
+                                doc.add_picture(img_file, width=Inches(6))
+                            except Exception:
+                                doc.add_paragraph("Failed to add screenshot.")
+                    else:
+                        doc.add_paragraph("Failed to process screenshot data.")
+            else:
+                doc.add_paragraph("No screenshots available.")
+
+            doc.add_paragraph("\n" + "-" * 80 + "\n")
+
         try:
             doc.save(output_file)
-            print(f'报告已生成: {output_file}')
+            print(f'Report generated: {output_file}')
         except Exception as e:
-            print(f'保存失败: {str(e)}')
+            print(f'Error saving report: {str(e)}')
             return None
 
-        # 清理临时文件
-        if os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
-
+        self._cleanup_temp_dir()
         return output_file
 
-
-    def _add_summary_table(self, doc, passed, failed, total):
-        """优化后的摘要表格"""
-        table = doc.add_table(rows=3, cols=2)
-        table.style = 'Medium Grid 1 Accent 1'  # 更专业的表格样式
-        # 表头强调
-        header_cells = table.rows[0].cells
-        header_cells[0].text = "指标"
-        header_cells[1].text = "数值"
-        for cell in header_cells:
-            cell.paragraphs[0].runs[0].bold = True
-        # 填充数据
-        data_rows = [
-            ("总用例数", total),
-            ("通过用例", passed),
-            ("失败用例", failed)
-        ]
-        for row_idx, (label, value) in enumerate(data_rows, start=1):  # 注意从第2行开始
-            cells = table.rows[row_idx].cells
-            cells[0].text = label
-            cells[1].text = str(value)
-
-            # 高亮关键结果
-            if label == "通过用例":
-                cells[1].paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 128, 0)
-            elif label == "失败用例":
-                cells[1].paragraphs[0].runs[0].font.color.rgb = RGBColor(255, 0, 0)
-            # 统一单元格样式
-            for cell in cells:
-                cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    def _cleanup_temp_dir(self):
+        try:
+            if self.temp_dir and os.path.exists(self.temp_dir):
+                shutil.rmtree(self.temp_dir)
+        except Exception as e:
+            print(f"Failed to clean temporary screenshot directory: {str(e)}")
 
 
-def parse_robot_output(xml_path):
-    result = ExecutionResult(xml_path)
-    collector = ScreenshotCollector()
-    result.visit(collector)
-    return collector.test_results
+def main():
+    generator = WordReportGenerator()
+    generator.generate_report()
 
 
 if __name__ == "__main__":
-    generator = WordReportGenerator()
-    report_path = generator.generate_report()
-    print(f"生成报告路径: {report_path}")
-</pre>
+    main()</pre>
 </div>
 
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries___init___py">
@@ -4996,7 +5022,8 @@ class RobotTestExecutor:
                 'parameter_names': row['Parameter Name'].split(',') if row['Parameter Name'] else [],
                 'highlight': row['Highlight'],
                 'screen_capture': row['Screenshot'],
-                'wait': row['Wait']
+                'wait': row['Wait'],
+                'description': row['Descriptions']
             }
             modules.setdefault(row['Page Name'], {}).setdefault(row['Module Name'], []).append(action_info)
         return modules
@@ -5028,6 +5055,7 @@ class RobotTestExecutor:
             action = action_info['web_action']
             highlight = action_info['highlight']
             screen_capture = action_info['screen_capture']
+            description = action_info['description']
             wait = action_info['wait']
             locator = self.page_elements[page_name][element_name] if element_name else None
             action_params = self._extract_parameters(data_set, action_info['parameter_names'])
@@ -5056,7 +5084,7 @@ class RobotTestExecutor:
                     logging.warning(f"Invalid wait value: {wait}. Skipping wait.")
 
             if screen_capture:
-                self.execute_action('capture_screenshot', locator, element_desc)
+                self.execute_action('capture_screenshot', locator, element_desc,description)
 
             logging.info("=" * 80)
 
@@ -6590,7 +6618,7 @@ from robot.libraries.BuiltIn import BuiltIn
 from .base import Base
 
 class UtilsActions(Base):
-    def capture_screenshot(self):
+    def capture_screenshot(self,description=None):
         try:
             if self.driver:
                 screenshot_binary = self.driver.get_screenshot_as_png()
@@ -6603,7 +6631,7 @@ class UtilsActions(Base):
                 image.save(buffer, format="WebP", quality=30)
                 encoded_string = base64.b64encode(buffer.getvalue()).decode('utf-8')
                 logging.info(
-                    f"{self.__class__.__name__}: Screenshot captured successfully at: " + str(datetime.datetime.now()))
+                    f"{self.__class__.__name__}: Screenshot captured successfully at: " + str(datetime.datetime.now())+ " with description: " + str(description))
                 BuiltIn().log(f'&lt;img src="data:image/webp;base64,{encoded_string}" width="1440px"&gt;', html=True)
             else:
                 logging.error(f"{self.__class__.__name__}: WebDriver is not initialized.")
@@ -8136,14 +8164,14 @@ function openInNewTab(url) {
             }
         },
         "CNY": {
-            "2025-03-23": {
+            "2025-03-29": {
                 "inbound": {
-                    "count": 2,
-                    "total_amount": 200.0
+                    "count": 5,
+                    "total_amount": 500.0
                 },
                 "outbound": {
-                    "count": 2,
-                    "total_amount": 200.0
+                    "count": 5,
+                    "total_amount": 500.0
                 }
             }
         }
