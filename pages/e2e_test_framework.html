@@ -3104,7 +3104,7 @@ class WebPerformanceTester:
     def __init__(self, test_config_path: str = None, test_cases_path: str = None):
         self.project_root = PROJECT_ROOT
         self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'web_pt_config.yaml')
-        self.test_cases_path = test_cases_path or os.path.join(self.project_root, 'test_cases', 'web_pt_cases.xlsx')
+        self.test_cases_path = test_cases_path  or os.path.join(self.project_root, 'test_cases', 'web_pt_cases.xlsx')
 
         self._web_actions_instance = None
         self._driver = None
@@ -3117,6 +3117,7 @@ class WebPerformanceTester:
 
     def _load_configuration(self):
         self.test_config = ConfigManager.load_yaml(self.test_config_path)
+        self.test_cases_path = self.test_config.get('test_cases_path', self.test_cases_path)
         self.performance_test_loader = PerformanceTestLoader(self.test_cases_path, self.test_config)
         self.env_config = self._load_environment_config()
         self.main_config = self._load_main_config()
@@ -3577,7 +3578,7 @@ class WebPerformanceReporter:
 
     def generate_memory_usage_chart(self, case_id, case_name):
         df = pd.DataFrame(self.memory_usage_data)
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(15, 6))
         plt.plot(df["round"], df["used_MB"], marker="o", label="Used Memory (MB)", color="blue")
         plt.title(f"JavaScript Memory Usage Trend - Case ID: {case_id}, Case Name: {case_name}")
         plt.xlabel("Round")
@@ -3589,10 +3590,10 @@ class WebPerformanceReporter:
     def generate_response_time_statistics_chart(self, case_id, case_name):
         df = pd.DataFrame(self.response_time_data)
         stats = df.groupby("function_name").agg({"response_time": ["mean", "max"]})
-        stats.columns = ["Mean", "Max"]
+        stats.columns = ["Avg", "Max"]
         stats.reset_index(inplace=True)
 
-        stats.plot(kind="bar", x="function_name", figsize=(10, 6), colormap="coolwarm")
+        stats.plot(kind="bar", x="function_name", figsize=(15, 6), colormap="coolwarm")
         plt.title(f"Response Time Statistics - Case ID: {case_id}, Case Name: {case_name}")
         plt.xlabel("Function Name")
         plt.ylabel("Time (s)")
@@ -3602,7 +3603,7 @@ class WebPerformanceReporter:
 
     def generate_response_time_trend_chart(self, case_id, case_name):
         df = pd.DataFrame(self.response_time_data)
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(15, 6))
         for func in df["function_name"].unique():
             func_data = df[df["function_name"] == func]
             plt.plot(func_data["round"], func_data["response_time"], marker="o", label=func)
@@ -3628,16 +3629,16 @@ class WebPerformanceReporter:
             ]
         }).reset_index()
 
-        stats.columns = ["Function Name", "Mean (s)", "Max (s)", "Min (s)",
+        stats.columns = ["Function Name", "Avg (s)", "Max (s)", "Min (s)",
                          "Median (s)", "P90 (s)", "P95 (s)", "P99 (s)"]
 
-        fig, ax = plt.subplots(figsize=(10, len(stats) * 0.5))
+        fig, ax = plt.subplots(figsize=(17, len(stats) * 0.4))
         ax.axis("tight")
         ax.axis("off")
         table = plt.table(cellText=stats.values, colLabels=stats.columns, cellLoc="center", loc="center")
         table.auto_set_font_size(False)
-        table.set_fontsize(10)
-        table.scale(1.3, 1.5)
+        table.set_fontsize(8)
+        table.scale(1.0, 1.3)
         plt.title(f"Response Time Statistics Table - Case ID: {case_id}, Case Name: {case_name}", y=1.1)
         return self._save_fig_as_base64()
 
@@ -4279,6 +4280,7 @@ from libraries.common.utility_helpers import PROJECT_ROOT
 from libraries.robot.case.base_generator import RobotCaseGenerator
 from libraries.performance.web_pt_loader import PerformanceTestLoader
 
+
 class WebPerformanceRobotCaseGenerator(RobotCaseGenerator):
     def __init__(self, test_config_path: str = None, test_cases_path: str = None):
         self.project_root: str = PROJECT_ROOT
@@ -4290,11 +4292,8 @@ class WebPerformanceRobotCaseGenerator(RobotCaseGenerator):
 
     def load_configuration(self):
         try:
-            self.test_config_path = (
-                os.path.join(self.project_root, 'configs', 'web_pt_config.yaml')
-                if self.test_config_path is None
-                else self.test_config_path
-            )
+            self.test_config_path = (os.path.join(self.project_root, 'configs', 'web_pt_config.yaml') if self.test_config_path is None
+                                     else self.test_config_path)
             self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
         except FileNotFoundError:
             logging.error(f"{self.__class__.__name__}: Config file not found at {self.test_config_path}")
@@ -4363,7 +4362,8 @@ class WebPerformanceRobotCaseGenerator(RobotCaseGenerator):
             suite.resource.imports.library('libraries.performance.web_pt_robot_keyword.RobotFrameworkWebTester')
         except Exception as e:
             logging.error(f"{self.__class__.__name__}: Error importing required libraries: {str(e)}")
-            raise</pre>
+            raise
+</pre>
 </div>
 
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_robot_custom_action_executor_py">
@@ -5431,7 +5431,9 @@ class Base:
     <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\web\web_action\cookie_actions.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>from .base import Base
+    <pre>import json
+
+from .base import Base
 import logging
 
 class CookieActions(Base):
@@ -5457,6 +5459,12 @@ class CookieActions(Base):
         logging.info(f"{self.__class__.__name__}: All cookies deleted successfully")
 
     def set_cookie(self, cookies: dict):
+        if isinstance(cookies, str):
+            try:
+                cookies = json.loads(cookies)
+            except json.JSONDecodeError:
+                logging.error(f"{self.__class__.__name__}: Invalid JSON string for cookies: {cookies}")
+                return
         # Validate required fields
         for key in ("name", "value"):
             if key not in cookies:
@@ -7009,7 +7017,7 @@ class WaitActions(Base):
         Pauses execution for the given number of seconds.
         """
         logging.info(f"{self.__class__.__name__}: Waiting for {seconds} seconds.")
-        time.sleep(int(seconds))
+        time.sleep(float(seconds))
 </pre>
 </div>
 
@@ -7547,7 +7555,7 @@ if __name__ == "__main__":
     }
     
     # 获取第一个为True的测试类型，如果都为False则使用默认值
-    default_test_type = 'performance'
+    default_test_type = 'e2e'
     test_type = next((t for t, enabled in test_type_map.items() if enabled), default_test_type)
     
     robot_case_generator = UnifiedRobotCaseGenerator(test_type)
@@ -8198,7 +8206,7 @@ function openInNewTab(url) {
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 57000.0
+        "CNY": 58100.0
     },
     "transactions": {
         "USD": {
@@ -8238,14 +8246,14 @@ function openInNewTab(url) {
             }
         },
         "CNY": {
-            "2025-04-05": {
+            "2025-04-10": {
                 "inbound": {
-                    "count": 3,
-                    "total_amount": 300.0
+                    "count": 20,
+                    "total_amount": 2000.0
                 },
                 "outbound": {
-                    "count": 2,
-                    "total_amount": 200.0
+                    "count": 9,
+                    "total_amount": 900.0
                 }
             }
         }
