@@ -63,7 +63,6 @@
 │   ├── <a href="#E:_MyProjects_e2e_test_framework_yaml_config_cli_py">yaml_config_cli.py</a>
 │   ├── configs/
 │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_configs_api_test_config_yaml">api_test_config.yaml</a>
-│   │   ├── <a href="#E:_MyProjects_e2e_test_framework_configs_db_config_yaml">db_config.yaml</a>
 │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_configs_e2e_test_config_yaml">e2e_test_config.yaml</a>
 │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_configs_logging_config_yaml">logging_config.yaml</a>
 │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_configs_saved_fields_yaml">saved_fields.yaml</a>
@@ -642,50 +641,6 @@ tc_id_list:
 tags:</pre>
 </div>
 
-<div class="code-container" id="E:_MyProjects_e2e_test_framework_configs_db_config_yaml">
-    <div class="class-header">E:\MyProjects\e2e_test_framework\configs\db_config.yaml</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>database:
-  DEV:
-    db_name1:
-      type: postgresql  # or oracle
-      schema: public
-      user: vhuang1
-      password: Apj.com1
-      host: 10.191.111.77
-      port: 5432
-      database: postgres
-    db_name2:
-      type: postgresql
-      schema: public
-      user: vhuang1
-      password: Apj.com1
-      host: 10.191.111.77
-      port: 5432
-      database: postgres
-  UAT:
-    db_name1:
-      type: oracle
-      user: uat_user
-      password: uat_password
-      host: uat_host
-      port: 1521
-      service_name: uat_service_name
-      min_connections: 1
-      max_connections: 10
-    db_name2:
-      type: oracle
-      user: uat_user
-      password: uat_password
-      host: uat_host
-      port: 1521
-      service_name: uat_service_name
-      min_connections: 1
-      max_connections: 10
-</pre>
-</div>
-
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_configs_e2e_test_config_yaml">
     <div class="class-header">E:\MyProjects\e2e_test_framework\configs\e2e_test_config.yaml</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -1182,40 +1137,79 @@ class APITestKeywords:
         self._load_configuration(test_config_path, test_cases_path)
         self._initialize_components()
 
-    def _load_configuration(self, test_config_path, test_cases_path):
+    def _load_configuration(self, test_config_path: str, test_cases_path: str) -&gt; None:
+        """Load and validate test configurations"""
+        try:
+            # Set config paths with defaults
+            self.test_config_path = test_config_path or os.path.join(
+                self.project_root,
+                'configs',
+                'api_test_config.yaml'
+            )
 
-        self.test_config_path = test_config_path or os.path.join(self.project_root, 'configs', 'api_test_config.yaml')
+            # Load and validate test config
+            self.test_config = ConfigManager.load_yaml(self.test_config_path)
+            if not self.test_config:
+                raise ValueError("Empty or invalid test configuration")
 
-        self.test_config: Dict = ConfigManager.load_yaml(self.test_config_path)
-        self.db_configs: Dict = ConfigManager.load_yaml(os.path.join(self.project_root, 'configs', 'db_config.yaml'))
+            # Set active environment
+            self.active_environment = self.test_config.get('active_environment')
+            if not self.active_environment:
+                raise ValueError("Active environment not specified")
+            builtin_lib.set_global_variable('${active_environment}', self.active_environment)
 
-        default_test_cases_path: str = os.path.join('test_cases', 'api_test_cases.xlsx')
-        self.test_cases_path: str = test_cases_path or os.path.join(self.project_root, self.test_config.get('test_cases_path', default_test_cases_path))
+            # Set test cases path
+            default_cases_path = os.path.join('test_cases', 'api_test_cases.xlsx')
+            self.test_cases_path = test_cases_path or os.path.join(
+                self.project_root,
+                self.test_config.get('test_cases_path', default_cases_path)
+            )
+            if not os.path.exists(self.test_cases_path):
+                raise FileNotFoundError(f"Test cases file not found: {self.test_cases_path}")
 
-        self.active_environment = self.test_config['active_environment']
-        builtin_lib.set_global_variable('${active_environment}', self.active_environment)
-        self.active_db_configs = self.db_configs.get('database', {}).get(self.active_environment, {})
-        if not self.active_db_configs:
-            raise ValueError(f"No database configuration for environment: {self.active_environment}")
+        except Exception as e:
+            logging.error(f"Failed to load configuration: {str(e)}")
+            raise
 
-    def _load_endpoints(self):
-        endpoints = self.api_test_loader.get_endpoints()
-        self.endpoints = {}
-        for _, row in endpoints[endpoints['Environment'] == self.active_environment].iterrows():
-            self.endpoints[row['Endpoint']] = {
-                'method': row['Method'],
-                'path': row['Path']
+    def _load_endpoints(self) -&gt; None:
+        """Load and validate endpoint configurations"""
+        try:
+            endpoints_df = self.api_test_loader.get_endpoints()
+            env_endpoints = endpoints_df[endpoints_df['Environment'] == self.active_environment]
+            if env_endpoints.empty:
+                raise ValueError(f"No endpoints found for environment: {self.active_environment}")
+            self.endpoints = {
+                row['Endpoint']: {
+                    'method': row['Method'],
+                    'path': row['Path']
+                }
+                for _, row in env_endpoints.iterrows()
             }
+        except Exception as e:
+            logging.error(f"Failed to load endpoints: {str(e)}")
+            raise
 
-    def _initialize_components(self):
-        self.saved_fields_manager: SavedFieldsManager = SavedFieldsManager()
-        self.api_test_loader = APITestLoader(self.test_cases_path)
-        self._load_endpoints()
-        self.body_generator: BodyGenerator = BodyGenerator(self.api_test_loader)
-        self.headers_generator: HeadersGenerator = HeadersGenerator(self.api_test_loader)
-        self.api_response_validator: ResponseValidator = ResponseValidator(self.active_db_configs)
-        self.response_field_saver: ResponseFieldSaver = ResponseFieldSaver()
-        self.db_validator = DBOperator()
+    def _initialize_components(self) -&gt; None:
+        """Initialize API test components"""
+        try:
+            # Initialize core components
+            self.saved_fields_manager = SavedFieldsManager()
+            self.api_test_loader = APITestLoader(self.test_cases_path)
+            # Load endpoint configurations
+            self._load_endpoints()
+            # Load and validate database configurations
+            self.active_db_configs = self.api_test_loader.get_db_configs(self.active_environment)
+            if not self.active_db_configs:
+                raise ValueError(f"No database configuration for environment: {self.active_environment}")
+            # Initialize API test components
+            self.body_generator = BodyGenerator(self.api_test_loader)
+            self.headers_generator = HeadersGenerator(self.api_test_loader)
+            self.api_response_validator = ResponseValidator(self.active_db_configs)
+            self.response_field_saver = ResponseFieldSaver()
+            self.db_validator = DBOperator(self.active_db_configs)
+        except Exception as e:
+            logging.error(f"Failed to initialize components: {str(e)}")
+            raise
 
     @keyword
     def api_sanity_check(self) -&gt; None:
@@ -1255,7 +1249,11 @@ class APITestKeywords:
             check_with_tcids = self._extract_check_with_tcids(test_case)
 
             if check_with_tcids:
-                return self._execute_test_case_with_checks(test_case, check_with_tcids)
+                pre_check_responses = self._execute_check_with_cases(check_with_tcids)
+                response, execution_time = self._execute_single_test_case(test_case)
+                logging.info("============================================")
+                post_check_responses = self._execute_check_with_cases(check_with_tcids)
+                self.api_response_validator.validate(test_case, response, pre_check_responses, post_check_responses)
             else:
                 response, execution_time = self._execute_single_test_case(test_case)
                 self.api_response_validator.validate(test_case, response)
@@ -1297,58 +1295,6 @@ class APITestKeywords:
             responses[tcid] = response
         return responses
 
-    def _execute_test_case_with_checks(self, test_case, check_with_tcids, max_retries=3, retry_delay=1):
-        pre_check_responses = self._execute_check_with_cases(check_with_tcids)
-        response, execution_time = self._execute_single_test_case(test_case)
-        logging.info("============================================")
-
-        # Create a custom handler to capture logs
-        class MemoryHandler(logging.Handler):
-            def __init__(self):
-                super().__init__()
-                self.logs = []
-
-            def emit(self, record):
-                self.logs.append(record)
-
-            def clear(self):
-                self.logs = []
-
-        # Set up temporary log capture
-        memory_handler = MemoryHandler()
-        logger = logging.getLogger()
-        original_handlers = logger.handlers
-        logger.handlers = []
-        logger.addHandler(memory_handler)
-
-        try:
-            last_exception = None
-            for attempt in range(max_retries):
-                memory_handler.clear()  # Clear previous attempt logs
-                post_check_responses = self._execute_check_with_cases(check_with_tcids)
-
-                try:
-                    self.api_response_validator.validate(test_case, response, pre_check_responses, post_check_responses)
-                    # Success - restore handlers and replay last logs
-                    logger.handlers = original_handlers
-                    for record in memory_handler.logs:
-                        logger.handle(record)
-                    return response, execution_time
-                except Exception as e:
-                    last_exception = e
-                    if attempt &lt; max_retries - 1:
-                        sleep(retry_delay)
-                        continue
-
-            # Failure after all retries - restore handlers and replay last logs
-            logger.handlers = original_handlers
-            for record in memory_handler.logs:
-                logger.handle(record)
-            raise last_exception
-
-        finally:
-            # Ensure original handlers are restored even if an unexpected error occurs
-            logger.handlers = original_handlers
     def send_request(self, test_case):
         ex_endpoint = test_case['Endpoint']
         current_endpoint = self.endpoints.get(ex_endpoint, None)
@@ -1380,6 +1326,7 @@ import pandas as pd
 import yaml
 from typing import List, Dict
 
+
 class APITestLoader:
     _instances = {}
 
@@ -1410,12 +1357,11 @@ class APITestLoader:
             raise ValueError(f"Error loading Excel file: {e}")
 
     def validate_excel_structure(self):
-        required_sheets = ['API', 'BodyTemplates', 'BodyDefaults', 'Headers', 'Endpoints']
+        required_sheets = ['API', 'BodyTemplates', 'BodyDefaults', 'Headers', 'Endpoints', 'DBConfigs']
         missing_sheets = set(required_sheets) - set(self.data.keys())
         if missing_sheets:
             logging.error(f"{self.__class__.__name__}: Missing required sheets: {', '.join(missing_sheets)}")
             raise ValueError(f"Missing required sheets: {', '.join(missing_sheets)}")
-
         for sheet_name, df in self.data.items():
             self.validate_sheet_data(sheet_name, df)
 
@@ -1456,7 +1402,8 @@ class APITestLoader:
             'BodyTemplates': self._validate_body_templates_sheet,
             'BodyDefaults': self._validate_body_defaults_sheet,
             'Headers': self._validate_headers_sheet,
-            'Endpoints': self._validate_endpoints_sheet
+            'Endpoints': self._validate_endpoints_sheet,
+            'DBConfigs': self._validate_db_configs_sheet
         }
         if sheet_name in validation_methods:
             validation_methods[sheet_name](df)
@@ -1549,7 +1496,45 @@ class APITestLoader:
         if value:
             referenced_sheet = self.get_data(sheet_name)
             if value not in referenced_sheet[column_name].values:
-                raise ValueError(f"Referenced value '{value}' in '{sheet_name}' sheet not found for TCID '{tcid}'")</pre>
+                raise ValueError(f"Referenced value '{value}' in '{sheet_name}' sheet not found for TCID '{tcid}'")
+
+    def _validate_db_configs_sheet(self, df: pd.DataFrame):
+        required_columns = ['Environment', 'DatabaseName', 'Type', 'User', 'Password', 'Host', 'Port', 'Database', 'Schema', 'ServiceName']
+        self._check_required_columns(df, required_columns, 'DBConfigs')
+
+        if df.duplicated(subset=['Environment', 'DatabaseName']).any():
+            raise ValueError("Duplicate Environment-DatabaseName combination found in DBConfigs sheet")
+
+        valid_types = ['postgresql', 'mysql', 'oracle']
+        if not df['Type'].str.lower().isin(valid_types).all():
+            raise ValueError(f"Invalid values in 'Type' column. Allowed values are: {', '.join(valid_types)}")
+
+    def get_db_configs(self, environment: str) -&gt; Dict[str, Dict]:
+        db_configs = self.get_data('DBConfigs')
+        env_configs = db_configs[db_configs['Environment'] == environment]
+        if env_configs.empty:
+            logging.error(f"{self.__class__.__name__}: No database configurations found for environment: {environment}")
+            return {}
+
+        configs = {}
+        for _, row in env_configs.iterrows():
+            config = {
+                'type': row['Type'],
+                'user': row['User'],
+                'password': row['Password'],
+                'host': row['Host'],
+                'port': int(row['Port']),
+                'database': row['Database'],
+                'schema': row['Schema'],
+            }
+
+            if row['Type'].lower() == 'oracle':
+                config.update({'service_name': row['ServiceName']})
+
+            configs[row['DatabaseName']] = config
+
+        return configs
+</pre>
 </div>
 
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_api_body_generator_py">
@@ -1924,8 +1909,7 @@ class ResponseHandler:
 class ResponseValidator(ResponseHandler):
     def __init__(self, db_configs):
         super().__init__()
-        self.db_configs = db_configs
-        self.db_validator = DBOperator()
+        self.db_validator = DBOperator(db_configs)
         self.is_main_test = False
 
     def validate(self, test_case: dict, response, pre_check_responses=None, post_check_responses=None) -&gt; None:
@@ -2029,12 +2013,6 @@ class ResponseValidator(ResponseHandler):
         result = {"Result": "Pass" if is_valid else "Fail"}
         self._log_result(is_valid, msg)
         return result
-
-    def _get_db_config_by_prefix(self, prefix: str) -&gt; dict:
-        db_config = self.db_configs.get(prefix.lower(), {})
-        if not db_config:
-            raise ValueError(f"No database configuration found for prefix: {prefix}")
-        return db_config
 
     def _log_result(self, success: bool, message: str):
         """Logs the result of a check with appropriate color."""
@@ -2892,12 +2870,9 @@ class SQLAlchemyDatabase(Database):
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>import logging
-import os
 import re
 from typing import Tuple, Any, Dict, Optional
 from libraries.db.db import SQLAlchemyDatabase
-from libraries.common.config_manager import ConfigManager
-from libraries.common.utility_helpers import PROJECT_ROOT
 from libraries.common.variable_generator import VariableGenerator
 from robot.libraries.BuiltIn import BuiltIn
 
@@ -2918,34 +2893,19 @@ class SingletonMeta(type):
 
 
 class DBOperator(metaclass=SingletonMeta):
-    def __init__(self):
+    def __init__(self, db_configs=None):
         self.db_connections: Dict[str, SQLAlchemyDatabase] = {}
-        self.db_configs = self._load_db_configs()
-        self.active_environment = self._get_active_environment()
+        self.env_db_configs = db_configs
         self._initialized = False
-
-    def _load_db_configs(self) -&gt; Dict[str, Any]:
-        config_path = os.path.join(PROJECT_ROOT, 'configs', 'db_config.yaml')
-        return ConfigManager.load_yaml(config_path)
-
-    def _get_active_environment(self) -&gt; str:
-        return BuiltIn().get_variable_value("${active_environment}")
 
     def _initialize_databases(self):
         if self._initialized:
             logging.info("Databases already initialized, skipping.")
             return
         try:
-            env_db_configs = self.db_configs.get('database', {}).get(self.active_environment, {})
-            if not env_db_configs:
-                raise ValueError(f"No database configurations found for environment: {self.active_environment}")
-
-            self.db_connections = SQLAlchemyDatabase.create_databases(env_db_configs)
-            logging.info(f"Database connections initialized for environment: {self.active_environment}")
+            self.db_connections = SQLAlchemyDatabase.create_databases(self.env_db_configs)
+            logging.info(f"Database connections initialized.")
             self._initialized = True
-        except ValueError as ve:
-            logging.error(f"Configuration error: {str(ve)}")
-            raise
         except Exception as e:
             logging.error(f"Unexpected error initializing databases: {str(e)}")
             raise
@@ -4998,6 +4958,7 @@ import re
 from typing import Dict, Tuple, List
 from robot.api.deco import keyword
 
+from libraries.api.api_test_loader import APITestLoader
 from libraries.api.saved_fields_manager import SavedFieldsManager
 from libraries.web.web_actions import WebActions
 from libraries.common.utility_helpers import PROJECT_ROOT
@@ -5042,43 +5003,83 @@ class RobotTestExecutor:
         self._driver = None
         self._load_configuration()
         self._initialize_components()
-        self.database_operator = DBOperator()
+        self.database_operator = DBOperator(self.active_db_configs)
 
     def _load_configuration(self):
-        self.test_config = ConfigManager.load_yaml(self.test_config_path)
-        self.web_test_loader = WebTestLoader(self.test_cases_path, self.test_config)
-        self.env_config = self._load_environment_config()
+        """Load test configurations and initialize loaders"""
+        try:
+            # Load main test configuration
+            self.test_config = ConfigManager.load_yaml(self.test_config_path)
+            if not self.test_config:
+                raise ValueError("Empty or invalid test configuration")
+            # Initialize test loaders
+            self.web_test_loader = WebTestLoader(self.test_cases_path, self.test_config)
+            self.api_test_loader = APITestLoader(self.test_cases_path)
+            # Load environment configuration
+            self.env_config = self._load_environment_config()
+        except Exception as e:
+            logging.error(f"Failed to load configuration: {str(e)}")
+            raise
 
     def _load_environment_config(self):
-        environments = self.web_test_loader.get_web_environments()
-        active_env = self.test_config['active_environment']
-        builtin_lib.set_global_variable('${active_environment}', active_env)
-        env_config = environments[environments['Environment'] == active_env].iloc[0].to_dict()
-        env_config['BrowserOptions'] = json.loads(env_config['BrowserOptions'])
-
-        return {
-            'environments': {
-                active_env: {
-                    'browser': env_config['Browser'],
-                    'is_remote': env_config['IsRemote'],
-                    'remote_url': env_config['RemoteURL'],
-                    'chrome_path': env_config['ChromePath'],
-                    'chrome_driver_path': env_config['ChromeDriverPath'],
-                    'edge_path': env_config['EdgePath'],
-                    'edge_driver_path': env_config['EdgeDriverPath'],
-                    'browser_options': env_config['BrowserOptions']
+        """Load environment specific configurations"""
+        try:
+            # Get active environment
+            active_env = self.test_config['active_environment']
+            if not active_env:
+                raise ValueError("Active environment not specified in configuration")
+            # Set global variable
+            builtin_lib.set_global_variable('${active_environment}', active_env)
+            # Get environment specific settings
+            environments = self.web_test_loader.get_web_environments()
+            env_config = environments[environments['Environment'] == active_env]
+            if env_config.empty:
+                raise ValueError(f"Environment '{active_env}' not found in configurations")
+            # Convert to dict and parse browser options
+            env_settings = env_config.iloc[0].to_dict()
+            env_settings['BrowserOptions'] = json.loads(env_settings['BrowserOptions'])
+            # Load database configurations
+            self.active_db_configs = self.api_test_loader.get_db_configs(active_env)
+            if not self.active_db_configs:
+                raise ValueError(f"No database configuration found for environment: {active_env}")
+            # Return formatted configuration
+            return {
+                'environments': {
+                    active_env: {
+                        'browser': env_settings['Browser'],
+                        'is_remote': env_settings['IsRemote'],
+                        'remote_url': env_settings['RemoteURL'],
+                        'chrome_path': env_settings['ChromePath'],
+                        'chrome_driver_path': env_settings['ChromeDriverPath'],
+                        'edge_path': env_settings['EdgePath'],
+                        'edge_driver_path': env_settings['EdgeDriverPath'],
+                        'browser_options': env_settings['BrowserOptions']
+                    }
                 }
             }
-        }
+        except Exception as e:
+            logging.error(f"Failed to load environment configuration: {str(e)}")
+            raise
 
     def _initialize_components(self):
-        self.locators_df = self.web_test_loader.get_locators()
-        self.page_object_df = self.web_test_loader.get_page_objects()
-        self.page_elements = self._load_page_elements()
-        self.page_modules = self._load_page_modules()
-        self.custom_action_executor = CustomActionExecutor(self.web_test_loader.get_custom_actions())
-        self.saved_fields_manager = SavedFieldsManager()
-        self.saved_fields_manager.load_saved_fields_and_set_robot_global_variables()
+        """Initialize test components and load required data"""
+        try:
+            # Load page related data
+            self.locators_df = self.web_test_loader.get_locators()
+            self.page_object_df = self.web_test_loader.get_page_objects()
+            # Initialize page elements and modules
+            self.page_elements = self._load_page_elements()
+            self.page_modules = self._load_page_modules()
+            # Initialize executors and managers
+            self.custom_action_executor = CustomActionExecutor(
+                self.web_test_loader.get_custom_actions()
+            )
+            self.saved_fields_manager = SavedFieldsManager()
+            # Load saved fields and set variables
+            self.saved_fields_manager.load_saved_fields_and_set_robot_global_variables()
+        except Exception as e:
+            logging.error(f"Failed to initialize components: {str(e)}")
+            raise
 
     @property
     def driver(self):
@@ -7141,7 +7142,6 @@ import os
 from typing import Dict, List
 from robot.libraries.BuiltIn import BuiltIn
 
-
 class WebTestLoader:
     _instances = {}
 
@@ -7163,7 +7163,7 @@ class WebTestLoader:
         self.initialized = True
 
     def _load_excel_data(self) -&gt; Dict[str, pd.DataFrame]:
-        sheets = ['Locators', 'PageModules', 'TestCases', 'TestSteps', 'TestData', 'WebEnvironments', 'CustomActions', 'EnvVariables']
+        sheets = ['Locators', 'PageModules', 'TestCases', 'TestSteps', 'TestData', 'WebEnvironments', 'CustomActions', 'EnvVariables', 'DBConfigs']
         return {sheet: pd.read_excel(self.excel_path, sheet_name=sheet).fillna("") for sheet in sheets}
 
     def _validate_data(self):
@@ -7173,7 +7173,58 @@ class WebTestLoader:
         self._validate_test_data()
         self._validate_web_environments()
         self._validate_custom_actions()
-        self._validate_environments()  # 验证新添加的 Environments Sheet
+        self._validate_environments()
+        self._validate_db_configs()
+
+    def _validate_db_configs(self):
+        db_configs = self.get_data_by_sheet_name('DBConfigs')
+        required_columns = ['Environment', 'DatabaseName', 'Type', 'User', 'Password', 'Host', 'Port', 'Database', 'Schema', 'ServiceName', 'MinConnections', 'MaxConnections']
+        missing_columns = set(required_columns) - set(db_configs.columns)
+        if missing_columns:
+            logging.error(f"WebTestLoader: Missing required columns in DBConfigs sheet: {', '.join(missing_columns)}")
+            raise ValueError(f"WebTestLoader: Missing required columns in DBConfigs sheet: {', '.join(missing_columns)}")
+
+        for index, row in db_configs.iterrows():
+            if pd.isna(row['Environment']) or row['Environment'] == '':
+                logging.error(f"WebTestLoader: Empty Environment in DBConfigs row {index + 2}")
+            if pd.isna(row['DatabaseName']) or row['DatabaseName'] == '':
+                logging.error(f"WebTestLoader: Empty DatabaseName in DBConfigs row {index + 2}")
+            if row['Type'].lower() not in ['postgresql', 'mysql', 'oracle']:
+                logging.error(f"WebTestLoader: Invalid database type '{row['Type']}' in DBConfigs row {index + 2}")
+
+    def get_db_configs(self, environment: str) -&gt; Dict[str, Dict]:
+        """获取指定环境的数据库配置"""
+        db_configs = self.get_data_by_sheet_name('DBConfigs')
+        env_configs = db_configs[db_configs['Environment'] == environment]
+        if env_configs.empty:
+            logging.error(f"WebTestLoader: No database configurations found for environment: {environment}")
+            return {}
+
+        configs = {}
+        for _, row in env_configs.iterrows():
+            config = {
+                'type': row['Type'],
+                'user': row['User'],
+                'password': row['Password'],
+                'host': row['Host'],
+                'port': int(row['Port']),
+            }
+
+            if row['Type'].lower() in ['postgresql', 'mysql']:
+                config.update({
+                    'database': row['Database'],
+                    'schema': row['Schema'],
+                })
+            elif row['Type'].lower() == 'oracle':
+                config.update({
+                    'service_name': row['ServiceName'],
+                    'min_connections': int(row['MinConnections']) if pd.notna(row['MinConnections']) else None,
+                    'max_connections': int(row['MaxConnections']) if pd.notna(row['MaxConnections']) else None,
+                })
+
+            configs[row['DatabaseName']] = config
+
+        return configs
 
     def _validate_environments(self):
         environments = self.get_data_by_sheet_name('EnvVariables')
@@ -7425,7 +7476,8 @@ class WebTestLoader:
             var_name = var['Variable Name']
             var_value = var['Variable Value']
             built_in.set_global_variable(f"${{{var_name}}}", var_value)
-            logging.info(f"WebTestLoader: Set global variable ${{{var_name}}} = {var_value}")</pre>
+            logging.info(f"WebTestLoader: Set global variable ${{{var_name}}} = {var_value}")
+</pre>
 </div>
 
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_webdriver_factory_py">
@@ -7571,7 +7623,7 @@ if __name__ == "__main__":
     }
     
     # 获取第一个为True的测试类型，如果都为False则使用默认值
-    default_test_type = 'performance'
+    default_test_type = 'api'
     test_type = next((t for t, enabled in test_type_map.items() if enabled), default_test_type)
     
     robot_case_generator = UnifiedRobotCaseGenerator(test_type)
@@ -8222,7 +8274,7 @@ function openInNewTab(url) {
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 58100.0
+        "CNY": 59800.0
     },
     "transactions": {
         "USD": {
@@ -8262,14 +8314,14 @@ function openInNewTab(url) {
             }
         },
         "CNY": {
-            "2025-04-10": {
+            "2025-04-12": {
                 "inbound": {
-                    "count": 20,
-                    "total_amount": 2000.0
+                    "count": 31,
+                    "total_amount": 3100.0
                 },
                 "outbound": {
-                    "count": 9,
-                    "total_amount": 900.0
+                    "count": 16,
+                    "total_amount": 1600.0
                 }
             }
         }
