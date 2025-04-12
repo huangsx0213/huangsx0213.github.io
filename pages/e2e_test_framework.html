@@ -127,11 +127,9 @@
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_cookie_actions_py">cookie_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_decorators_py">decorators.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_element_actions_py">element_actions.py</a>
-│   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_interceptor_actions_py">interceptor_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_javascript_actions_py">javascript_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_js_py">js.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_navigation_actions_py">navigation_actions.py</a>
-│   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_request_interceptor_py">request_interceptor.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_table_actions_py">table_actions.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_table_verifier_py">table_verifier.py</a>
 │   │   │   │   ├── <a href="#E:_MyProjects_e2e_test_framework_libraries_web_web_action_utils_actions_py">utils_actions.py</a>
@@ -171,8 +169,8 @@
 
 This automated testing framework offers the following features:
 
-1. Multi-type Testing Support: Supports API testing, Web UI testing, and End-to-End (E2E) testing.
-2. Flexible Configuration: Uses YAML files for configuration, making it easy to modify and maintain.
+1. Multi-type Testing Support: Supports API testing, Web UI testing, End-to-End testing, and Web Performance testing.
+2. Flexible Configuration: Uses YAML files for configuration, making it easy to modify and maintain. Includes a command-line tool (yaml_config_cli.py) for easy configuration updates.
 3. Data-Driven: Manages test cases using Excel files, supporting parameterized testing.
 4. Dynamic Value Support: Supports dynamically generated values in API tests, such as UUID, timestamps, etc.
 5. Variable Management: Supports sharing and reusing variables between test cases.
@@ -228,26 +226,78 @@ Ensure your project follows this structure:
 ```
 project_root/
 ├── configs/
-│   ├── api_test_config.yaml
-│   ├── web_test_config.yaml
-│   ├── e2e_test_config.yaml
-│   └── logging_config.yaml
+│   ├── api_test_config.yaml            # API测试配置文件
+│   ├── e2e_test_config.yaml            # 端到端测试配置文件
+│   ├── logging_config.yaml             # 日志配置文件
+│   ├── saved_fields.yaml               # 保存的字段配置文件
+│   ├── web_pt_config.yaml              # Web性能测试配置文件
+│   └── web_test_config.yaml            # Web UI测试配置文件
 ├── libraries/
 │   ├── api/
-│   ├── web/
-│   ├── e2e/
+│   │   ├── api_test_keywords.py        # API测试关键字实现
+│   │   ├── api_test_loader.py          # API测试用例加载器
+│   │   ├── body_generator.py           # 请求体生成器
+│   │   ├── headers_generator.py        # 请求头生成器
+│   │   ├── request_sender.py           # 请求发送器
+│   │   ├── response_handler.py         # 响应处理器
+│   │   ├── saved_fields_manager.py     # 保存字段管理器
+│   │   └── template_renderer.py        # 模板渲染器
+│   ├── common/
+│   │   ├── config_manager.py           # 配置管理器
+│   │   ├── log_manager.py              # 日志管理器
+│   │   ├── utility_helpers.py          # 通用工具函数
+│   │   ├── variable_generator.py       # 变量生成器
+│   │   └── variable_transformer.py     # 变量转换器
+│   ├── db/
+│   │   ├── db.py                       # 数据库连接和操作基类
+│   │   └── db_operator.py              # 数据库操作类
+│   ├── performance/
+│   │   ├── web_pt.py                   # Web性能测试主类
+│   │   ├── web_pt_loader.py            # Web性能测试用例加载器
+│   │   ├── web_pt_reporter.py          # Web性能测试报告生成器
+│   │   └── web_pt_robot_keyword.py     # Web性能测试Robot关键字
 │   ├── robot/
-│   └── common/
-├── test_cases/
-│   ├── api_test_cases.xlsx
-│   ├── web_test_cases.xlsx
-│   └── e2e_test_cases.xlsx
+│   │   ├── custom_action_executor.py   # 自定义动作执行器
+│   │   ├── robot_test_executor.py      # Robot测试执行器
+│   │   ├── case/
+│   │   │   ├── api_generator.py        # API测试用例生成器
+│   │   │   ├── base_generator.py       # 基础测试用例生成器
+│   │   │   ├── e2e_generator.py        # 端到端测试用例生成器
+│   │   │   ├── unified_generator.py    # 统一测试用例生成器
+│   │   │   ├── web_generator.py        # Web UI测试用例生成器
+│   │   │   └── web_pt_robot_generator.py  # Web性能测试Robot用例生成器
+│   │   └── report/
+│   │       ├── robot_dashboard_generator.py  # Robot仪表板生成器
+│   │       ├── robot_report_data.py    # Robot报告数据处理
+│   │       ├── robot_result_visitor.py # Robot结果访问器
+│   │       └── summary_report_generator.py  # 摘要报告生成器
+│   └── web/
+│       ├── web_actions.py              # Web操作集合类
+│       ├── web_test_loader.py          # Web测试用例加载器
+│       ├── webdriver_factory.py        # WebDriver工厂类
+│       └── web_action/
+│           ├── alert_actions.py        # 警告框操作
+│           ├── base.py                 # 基础Web操作类
+│           ├── cookie_actions.py       # Cookie操作
+│           ├── decorators.py           # 装饰器
+│           ├── element_actions.py      # 元素操作
+│           ├── interceptor_actions.py  # 请求拦截操作
+│           ├── javascript_actions.py   # JavaScript操作
+│           ├── js.py                   # JavaScript代码片段
+│           ├── navigation_actions.py   # 导航操作
+│           ├── request_interceptor.py  # 请求拦截器
+│           ├── table_actions.py        # 表格操作
+│           ├── table_verifier.py       # 表格验证器
+│           ├── utils_actions.py        # 工具操作
+│           ├── verification_actions.py # 验证操作
+│           ├── wait_actions.py         # 等待操作
+│           └── window_actions.py       # 窗口操作
 ├── templates/
-│   └── rf_report_template.html
-├── report/
-├── main.py
-├── yaml_config_cli.py
-└── requirements.txt
+│   ├── rf_report_template.html         # Robot Framework报告模板
+│   └── test_summary_template.html      # 测试摘要报告模板
+├── main.py                             # 主程序入口
+├── README.md                           # 项目说明文档
+└── yaml_config_cli.py                  # YAML配置命令行工具
 ```
 
 ## 3. Configuration
@@ -4950,15 +5000,12 @@ class SummaryReportGenerator:
     <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\robot\robot_test_executor.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
     <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import asyncio
-import json
+    <pre>import json
 import logging
 import os
 import re
 from typing import Dict, Tuple, List
 from robot.api.deco import keyword
-
-from libraries.api.api_test_loader import APITestLoader
 from libraries.api.saved_fields_manager import SavedFieldsManager
 from libraries.web.web_actions import WebActions
 from libraries.common.utility_helpers import PROJECT_ROOT
@@ -5003,20 +5050,25 @@ class RobotTestExecutor:
         self._driver = None
         self._load_configuration()
         self._initialize_components()
-        self.database_operator = DBOperator(self.active_db_configs)
 
     def _load_configuration(self):
         """Load test configurations and initialize loaders"""
         try:
             # Load main test configuration
             self.test_config = ConfigManager.load_yaml(self.test_config_path)
+            self.active_env = self.test_config['active_environment']
             if not self.test_config:
                 raise ValueError("Empty or invalid test configuration")
+            if not self.active_env:
+                raise ValueError("Active environment not specified in configuration")
+
             # Initialize test loaders
             self.web_test_loader = WebTestLoader(self.test_cases_path, self.test_config)
-            self.api_test_loader = APITestLoader(self.test_cases_path)
+            self.active_db_configs = self.web_test_loader.get_db_configs(self.active_env)
+
             # Load environment configuration
             self.env_config = self._load_environment_config()
+
         except Exception as e:
             logging.error(f"Failed to load configuration: {str(e)}")
             raise
@@ -5024,28 +5076,21 @@ class RobotTestExecutor:
     def _load_environment_config(self):
         """Load environment specific configurations"""
         try:
-            # Get active environment
-            active_env = self.test_config['active_environment']
-            if not active_env:
-                raise ValueError("Active environment not specified in configuration")
             # Set global variable
-            builtin_lib.set_global_variable('${active_environment}', active_env)
+            builtin_lib.set_global_variable('${active_environment}', self.active_env)
             # Get environment specific settings
             environments = self.web_test_loader.get_web_environments()
-            env_config = environments[environments['Environment'] == active_env]
+            env_config = environments[environments['Environment'] == self.active_env]
             if env_config.empty:
-                raise ValueError(f"Environment '{active_env}' not found in configurations")
+                raise ValueError(f"Environment '{self.active_env}' not found in configurations")
             # Convert to dict and parse browser options
             env_settings = env_config.iloc[0].to_dict()
             env_settings['BrowserOptions'] = json.loads(env_settings['BrowserOptions'])
-            # Load database configurations
-            self.active_db_configs = self.api_test_loader.get_db_configs(active_env)
-            if not self.active_db_configs:
-                raise ValueError(f"No database configuration found for environment: {active_env}")
+
             # Return formatted configuration
             return {
                 'environments': {
-                    active_env: {
+                    self.active_env: {
                         'browser': env_settings['Browser'],
                         'is_remote': env_settings['IsRemote'],
                         'remote_url': env_settings['RemoteURL'],
@@ -5071,12 +5116,11 @@ class RobotTestExecutor:
             self.page_elements = self._load_page_elements()
             self.page_modules = self._load_page_modules()
             # Initialize executors and managers
-            self.custom_action_executor = CustomActionExecutor(
-                self.web_test_loader.get_custom_actions()
-            )
+            self.custom_action_executor = CustomActionExecutor(self.web_test_loader.get_custom_actions())
             self.saved_fields_manager = SavedFieldsManager()
             # Load saved fields and set variables
             self.saved_fields_manager.load_saved_fields_and_set_robot_global_variables()
+            self.database_operator = DBOperator(self.active_db_configs)
         except Exception as e:
             logging.error(f"Failed to initialize components: {str(e)}")
             raise
@@ -5175,7 +5219,7 @@ class RobotTestExecutor:
                     logging.warning(f"Invalid wait value: {wait}. Skipping wait.")
 
             if screen_capture:
-                self.execute_action('capture_screenshot', locator, element_desc,description)
+                self.execute_action('capture_screenshot', locator, element_desc, description)
 
             logging.info("=" * 80)
 
@@ -5194,9 +5238,7 @@ class RobotTestExecutor:
             if 'locator' in action.__code__.co_varnames:
                 kwargs['element_desc'] = element_desc
                 result = action(element, *args, **kwargs)
-            elif action_name == "modify_server_side_cookies":
-                result = asyncio.run(action(*args, **kwargs))
-            elif 'locator' not in action.__code__.co_varnames and action_name != "modify_server_side_cookies":
+            elif 'locator' not in action.__code__.co_varnames:
                 result = action(*args, **kwargs)
             else:
                 raise ValueError(f"Action '{action_name}' requires a WebElement, but none was provided.")
@@ -5646,93 +5688,6 @@ class ElementActions(Base):
         logging.info(f"{self.__class__.__name__}: Sent custom key '{key}' to element [ {element_desc}:{locator} ] with ActionChains successfully.")</pre>
 </div>
 
-<div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_web_action_interceptor_actions_py">
-    <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\web\web_action\interceptor_actions.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import asyncio
-import logging
-from playwright.async_api import async_playwright
-from .base import Base
-from .request_interceptor import RequestInterceptor
-
-
-class InterceptorActions(Base):
-    async def modify_server_side_cookies(self, cookies):
-        """
-        Modify multiple server-side cookies at once.
-
-        Args:
-            url (str): The domain URL for the cookies
-            cookies (list): List of cookie dictionaries to set
-        """
-        try:
-            playwright, browser, page, client = await self.setup_playwright()
-
-            cookie_name = cookies.get("name")
-            cookie_value = cookies.get("value")
-
-            # Additional cookies parameters with defaults
-            domain = cookies.get("domain", '')
-            path = cookies.get("path", "/")
-            secure = cookies.get("secure", True)
-            httpOnly = cookies.get("httpOnly", True)
-            sameSite = cookies.get("sameSite", "None")
-
-            await client.send("Network.setCookie", {
-                "name": cookie_name,
-                "value": cookie_value,
-                "domain": domain,
-                "path": path,
-                "secure": secure,
-                "httpOnly": httpOnly,
-                "sameSite": sameSite
-            })
-
-            await asyncio.sleep(1)
-            await playwright.stop()
-        except Exception as e:
-            logging.error(f"{self.__class__.__name__}: An error occurred while modifying server-side cookies: {e}")
-
-    async def setup_playwright(self):
-        """Connect Playwright to browser and return essential objects."""
-        capabilities = self.driver.capabilities
-        debugger_address = None
-
-        # Try to find debugger address in different browser capabilities
-        if 'goog:chromeOptions' in capabilities:
-            debugger_address = capabilities['goog:chromeOptions']['debuggerAddress']
-        elif 'ms:edgeOptions' in capabilities:
-            debugger_address = capabilities['ms:edgeOptions']['debuggerAddress']
-        else:
-            for key in capabilities:
-                if isinstance(capabilities[key], dict) and 'debuggerAddress' in capabilities[key]:
-                    debugger_address = capabilities[key]['debuggerAddress']
-                    break
-
-        if not debugger_address:
-            raise ValueError("Could not find browser debugger address")
-
-        try:
-            playwright = await async_playwright().start()
-            browser = await playwright.chromium.connect_over_cdp(f"http://{debugger_address}")
-
-            # Directly get the first context and page
-            context = browser.contexts[0]
-            page = context.pages[0]
-            client = await context.new_cdp_session(page)
-
-            logging.info(f"{self.__class__.__name__}: Connected to page: {page.url}")
-            return playwright, browser, page, client
-
-        except Exception as e:
-            if 'playwright' in locals():
-                await playwright.stop()
-            logging.error(f"{self.__class__.__name__}: Failed to set up Playwright: {e}")
-            raise
-</pre>
-</div>
-
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_web_action_javascript_actions_py">
     <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\web\web_action\javascript_actions.py</div>
     <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
@@ -5919,171 +5874,6 @@ class NavigationActions(Base):
         url = self.driver.current_url
         logging.info(f"{self.__class__.__name__}: Current URL is: '{url}'")
         return url</pre>
-</div>
-
-<div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_web_action_request_interceptor_py">
-    <div class="class-header">E:\MyProjects\e2e_test_framework\libraries\web\web_action\request_interceptor.py</div>
-    <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
-    <button class="return-button" onclick="returnToDirectory()">Return</button>
-    <pre>import re
-
-class RequestInterceptor:
-    def __init__(self):
-        self.page = None
-        self.active = False
-        self.routes = []
-
-    async def modify_cookie(self, page, url_pattern, cookie_name, new_cookie_value, exact_match=False):
-        """
-        Intercept requests and modify the specified cookie in the response header.
-        """
-        if self.active:
-            print("Interception is already active. Please stop the current interception before starting a new one.")
-            return False
-
-        self.page = page
-        self.active = True
-        url_pattern_lower = url_pattern.lower()
-        pattern = None if exact_match else re.compile(url_pattern_lower)
-
-        async def handler(route):
-            request_url = route.request.url.lower()
-            match = (request_url == url_pattern_lower) if exact_match else (pattern.search(request_url) is not None)
-            if match:
-                print(f"Intercepted request: {request_url}")
-                response = await route.fetch()
-                body = await response.body()
-                status = response.status
-                headers = response.headers.copy()
-                modified = False
-
-                if "set-cookie" in headers:
-                    cookies = headers["set-cookie"].split(", ")
-                    new_cookies = []
-                    for group in cookies:
-                        parts = group.split("; ")
-                        new_parts = []
-                        for cookie in parts:
-                            if cookie.startswith(f"{cookie_name}="):
-                                new_parts.append(f"{cookie_name}={new_cookie_value}")
-                                modified = True
-                                print(f"Modified cookie: {cookie_name}={new_cookie_value}")
-                            else:
-                                new_parts.append(cookie)
-                        new_cookies.append("; ".join(new_parts))
-                    headers["set-cookie"] = ", ".join(new_cookies)
-
-                if not modified:
-                    print(f"Target cookie '{cookie_name}' not found.")
-                await route.fulfill(status=status, headers=headers, body=body)
-            else:
-                await route.continue_()
-
-        handler_info = {"pattern": "**", "handler": handler}
-        self.routes.append(handler_info)
-        await self.page.route("**", handler)
-        print(f"Cookie interception started using {'exact' if exact_match else 'regex'} match for pattern: {url_pattern}")
-        return True
-
-    async def modify_body(self, page, url_pattern, new_body, exact_match=False):
-        """
-        Intercept requests and replace the response body with a new body.
-
-        Parameters:
-        - page: Playwright page object.
-        - url_pattern: URL pattern to match.
-        - new_body: The new response body (bytes) to set.
-        - exact_match: If True, perform an exact URL match; otherwise use regex matching.
-        """
-        if self.active:
-            print("Interception is already active. Please stop the current interception before starting a new one.")
-            return False
-
-        self.page = page
-        self.active = True
-        url_pattern_lower = url_pattern.lower()
-        pattern = None if exact_match else re.compile(url_pattern_lower)
-
-        async def handler(route):
-            request_url = route.request.url.lower()
-            match = (request_url == url_pattern_lower) if exact_match else (pattern.search(request_url) is not None)
-            if match:
-                print(f"Intercepted request for body modification: {request_url}")
-                response = await route.fetch()
-                status = response.status
-                headers = response.headers.copy()
-                print("Response body replaced.")
-                await route.fulfill(status=status, headers=headers, body=new_body)
-            else:
-                await route.continue_()
-
-        handler_info = {"pattern": "**", "handler": handler}
-        self.routes.append(handler_info)
-        await self.page.route("**", handler)
-        print(f"Body interception started using {'exact' if exact_match else 'regex'} match for pattern: {url_pattern}")
-        return True
-
-    async def modify_header(self, page, url_pattern, header_mods, exact_match=False):
-        """
-        Intercept requests and modify the response headers.
-
-        Parameters:
-        - page: Playwright page object.
-        - url_pattern: URL pattern to match.
-        - header_mods: Dictionary of headers to modify or add.
-        - exact_match: If True, perform an exact URL match; otherwise use regex matching.
-        """
-        if self.active:
-            print("Interception is already active. Please stop the current interception before starting a new one.")
-            return False
-
-        self.page = page
-        self.active = True
-        url_pattern_lower = url_pattern.lower()
-        pattern = None if exact_match else re.compile(url_pattern_lower)
-
-        async def handler(route):
-            request_url = route.request.url.lower()
-            match = (request_url == url_pattern_lower) if exact_match else (pattern.search(request_url) is not None)
-            if match:
-                print(f"Intercepted request for header modification: {request_url}")
-                response = await route.fetch()
-                body = await response.body()
-                status = response.status
-                headers = response.headers.copy()
-                for key, value in header_mods.items():
-                    headers[key] = value
-                    print(f"Modified header: {key} =&gt; {value}")
-                await route.fulfill(status=status, headers=headers, body=body)
-            else:
-                await route.continue_()
-
-        handler_info = {"pattern": "**", "handler": handler}
-        self.routes.append(handler_info)
-        await self.page.route("**", handler)
-        print(f"Header interception started using {'exact' if exact_match else 'regex'} match for pattern: {url_pattern}")
-        return True
-
-    async def stop(self):
-        """
-        Stop all active interceptions.
-        """
-        try:
-            if not self.active or not self.page:
-                print("No active interception to stop.")
-                return False
-
-            for r in self.routes:
-                await self.page.unroute(r["pattern"], r["handler"])
-            self.routes = []
-            self.active = False
-
-            print("All interceptions stopped.")
-            return True
-        except Exception as e:
-            print(f"Error stopping interception: {e}")
-            return False
-</pre>
 </div>
 
 <div class="code-container" id="E:_MyProjects_e2e_test_framework_libraries_web_web_action_table_actions_py">
@@ -7104,7 +6894,6 @@ class WindowActions(Base):
     <button class="return-button" onclick="returnToDirectory()">Return</button>
     <pre>from libraries.web.web_action.alert_actions import AlertActions
 from libraries.web.web_action.element_actions import ElementActions
-from libraries.web.web_action.interceptor_actions import InterceptorActions
 from libraries.web.web_action.navigation_actions import NavigationActions
 from libraries.web.web_action.cookie_actions import CookieActions
 from libraries.web.web_action.window_actions import WindowActions
@@ -7125,8 +6914,7 @@ class WebActions(
     NavigationActions,
     CookieActions,
     AlertActions,
-    UtilsActions,
-    InterceptorActions):
+    UtilsActions):
     pass
 </pre>
 </div>
@@ -7141,6 +6929,7 @@ import pandas as pd
 import os
 from typing import Dict, List
 from robot.libraries.BuiltIn import BuiltIn
+
 
 class WebTestLoader:
     _instances = {}
@@ -7178,7 +6967,7 @@ class WebTestLoader:
 
     def _validate_db_configs(self):
         db_configs = self.get_data_by_sheet_name('DBConfigs')
-        required_columns = ['Environment', 'DatabaseName', 'Type', 'User', 'Password', 'Host', 'Port', 'Database', 'Schema', 'ServiceName', 'MinConnections', 'MaxConnections']
+        required_columns = ['Environment', 'DatabaseName', 'Type', 'User', 'Password', 'Host', 'Port', 'Database', 'Schema', 'ServiceName']
         missing_columns = set(required_columns) - set(db_configs.columns)
         if missing_columns:
             logging.error(f"WebTestLoader: Missing required columns in DBConfigs sheet: {', '.join(missing_columns)}")
@@ -7197,7 +6986,7 @@ class WebTestLoader:
         db_configs = self.get_data_by_sheet_name('DBConfigs')
         env_configs = db_configs[db_configs['Environment'] == environment]
         if env_configs.empty:
-            logging.error(f"WebTestLoader: No database configurations found for environment: {environment}")
+            logging.warning(f"WebTestLoader: No database configurations found for environment: {environment}")
             return {}
 
         configs = {}
@@ -7216,11 +7005,7 @@ class WebTestLoader:
                     'schema': row['Schema'],
                 })
             elif row['Type'].lower() == 'oracle':
-                config.update({
-                    'service_name': row['ServiceName'],
-                    'min_connections': int(row['MinConnections']) if pd.notna(row['MinConnections']) else None,
-                    'max_connections': int(row['MaxConnections']) if pd.notna(row['MaxConnections']) else None,
-                })
+                config.update({'service_name': row['ServiceName'], })
 
             configs[row['DatabaseName']] = config
 
@@ -7649,7 +7434,6 @@ robotframework~=7.0.1
 jsonpath-ng~=1.6.1
 pillow~=10.4.0
 ruamel.yaml~=0.18.6
-flask~=3.0.3
 urllib3~=2.2.2
 numpy~=2.0.1
 cx-Oracle~=8.3.0
@@ -8274,7 +8058,7 @@ function openInNewTab(url) {
         "USD": 13500.0,
         "EUR": 8000.0,
         "HKD": 50000.0,
-        "CNY": 59800.0
+        "CNY": 60500.0
     },
     "transactions": {
         "USD": {
@@ -8316,12 +8100,12 @@ function openInNewTab(url) {
         "CNY": {
             "2025-04-12": {
                 "inbound": {
-                    "count": 31,
-                    "total_amount": 3100.0
+                    "count": 50,
+                    "total_amount": 5000.0
                 },
                 "outbound": {
-                    "count": 16,
-                    "total_amount": 1600.0
+                    "count": 28,
+                    "total_amount": 2800.0
                 }
             }
         }
