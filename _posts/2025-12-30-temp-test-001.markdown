@@ -11,359 +11,261 @@ tags:
 ---
 
 
-  ```python
-import asyncio
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from playwright.async_api import async_playwright
-import os
-import re
 
+好的，我们来创建一个完整、详细、可直接落地的 JMeter 测试计划方案。本方案将严格遵循我们讨论过的模块化、数据驱动的设计思想。
 
-class RequestInterceptor:
-    def __init__(self):
-        self.browser = None
-        self.page = None
-        self.is_intercepting = False
-        self.interception_routes = []
+### **最终目标**
 
-    async def start_interception(self, page, url_pattern, cookie_name, new_cookie_value, exact_match=False):
-        """
-        Start intercepting requests matching the URL pattern and modifying specified cookies.
+执行一个 JMeter 测试，该测试会自动从 CSV 文件逐行读取测试用例，每个用例执行以下操作：
+1.  **（可选）准备数据**：向数据库中插入测试数据。
+2.  **执行请求**：根据 CSV 中定义的多个动态查询参数，请求一个 API。
+3.  **智能断言**：根据 CSV 中定义的多个动态期望值（支持嵌套），验证 API 的响应状态码和响应体内容。
 
-        Parameters:
-        - page: Playwright page object
-        - url_pattern: URL pattern to match
-        - cookie_name: Name of the cookie to modify
-        - new_cookie_value: New value to set for the cookie
-        - exact_match: If True, match URL exactly; if False, use pattern matching
-        """
-        if self.is_intercepting:
-            print("Interception is already active. Stop it first before starting a new one.")
-            return False
+---
 
-        self.page = page
-        self.is_intercepting = True
+### **第一步：环境与数据准备**
 
-        # Convert to lowercase to prevent case sensitivity issues
-        url_pattern = url_pattern.lower()
+#### 1.1. 前置条件
+*   **JMeter 已安装**：建议使用最新版本。
+*   **数据库 JDBC 驱动**: 下载你的目标数据库（如 MySQL, PostgreSQL）的 JDBC 驱动 `.jar` 文件，并将其放入 JMeter 安装目录下的 `lib` 文件夹中。**重启 JMeter 生效**。
+*   **一个测试目标**:
+    *   一个可以访问的数据库。
+    *   一个可以请求的 API (例如 `GET /api/users`)。
 
-        # Create regex pattern for flexible matching if not exact match
-        if not exact_match:
-            pattern = re.compile(url_pattern)
+#### 1.2. 创建数据库表 (示例)
+假设我们有一个 `users` 表：
+```sql
+CREATE TABLE users (
+    id INT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    status VARCHAR(20),
+    role VARCHAR(20),
+    profile JSON -- 使用 JSON 类型可以很好地模拟嵌套数据
+);
+```
 
-        async def handle_route(route):
-            request_url = route.request.url.lower()
+#### 1.3. 创建测试数据文件 (`test_data_users_advanced.csv`)
+在你的 JMeter 测试计划（.jmx 文件）旁边创建一个 CSV 文件，内容如下：
 
-            # Check if URL matches based on exact_match parameter
-            url_matches = False
-            if exact_match:
-                url_matches = request_url == url_pattern
-            else:
-                url_matches = pattern.search(request_url) is not None
+```csv
+test_case_name,user_id,user_name,user_email,user_status_db,user_role_db,user_profile_db,query_params,expected_http_code,expected_values
+TC001_Query_by_ID,101,Alice,alice@example.com,active,user,"{""level"": 5, ""verified"": true}",{'id': 101},200,"{'name': 'Alice', 'profile.level': 5}"
+TC002_Multi_Query,102,Bob,bob-admin@example.com,active,admin,"{""level"": 9, ""verified"": false}",{'status': 'active', 'role': 'admin'},200,"{'name': 'Bob', 'email': 'bob-admin@example.com'}"
+TC003_User_Not_Found,999,N/A,N/A,N/A,N/A,N/A,{'id': 999},404,{}
+TC004_Partial_Validation,103,Charlie,charlie@test.com,pending,user,"{""level"": 1, ""verified"": false}",{'email': 'charlie@test.com'},200,"{'status': 'pending'}"
+```
+**注意**:
+*   CSV 中如果 JSON 字符串本身包含双引号，需要用两个双引号 `""` 来转义，或者整个字段用双引号包围。
+*   `query_params` 和 `expected_values` 使用了单引号包裹的 JSON 格式，因为 Groovy 可以轻松处理，这在手动编辑 CSV 时更方便。
 
-            if url_matches:
-                print(f"Intercepted matching request: {request_url}")
-                match_type = "exact match" if exact_match else "pattern match"
-                print(f"Match type: {match_type}")
+---
 
-                # Get original response
-                response = await route.fetch()
+### **第二步：JMeter 测试计划结构搭建**
 
-                # Read response body
-                body = await response.body()
+打开 JMeter，按照以下结构创建元件：
 
-                # Copy response status and headers
-                status = response.status
-                headers = response.headers.copy()
+```
+Test Plan
+│
+├─ JDBC Connection Configuration  (全局数据库连接池)
+│
+├─ HTTP Header Manager (全局Header)
+│
+├─ Test Fragments (模块库)
+│  ├─ TF_DB_Insert_User
+│  │  └─ JDBC Request
+│  │
+│  ├─ TF_API_Query_User_Dynamic
+│  │  ├─ JSR223 PreProcessor (构建URL)
+│  │  └─ HTTP Request
+│  │
+│  └─ TF_API_Validate_User_Dynamic
+│     ├─ Response Assertion (校验状态码)
+│     └─ JSR223 Assertion (校验响应体)
+│
+└─ Thread Group
+   ├─ CSV Data Set Config (读取CSV)
+   │
+   └─ Transaction Controller: "E2E Case: ${test_case_name}"
+      ├─ If Controller (判断是否需要插入数据)
+      │  └─ Module Controller -> (调用 TF_DB_Insert_User)
+      │
+      ├─ Module Controller -> (调用 TF_API_Query_User_Dynamic)
+      │
+      └─ Module Controller -> (调用 TF_API_Validate_User_Dynamic)
+```
 
-                # Print debug information
-                print(f"Response status: {status}")
-                print(f"Response headers: {headers}")
+---
 
-                # If set-cookie header exists, modify the specified cookie
-                modified = False
-                if "set-cookie" in headers:
-                    cookies = headers["set-cookie"].split(", ")
-                    all_cookies = []
+### **第三步：详细配置每一个元件**
 
-                    # Process potentially multiple Set-Cookie headers
-                    for cookie_group in cookies:
-                        # Split compound cookie string
-                        individual_cookies = cookie_group.split("; ")
-                        new_cookies = []
+#### 3.1. 全局配置 (在 Test Plan 级别)
 
-                        for cookie in individual_cookies:
-                            # Check if this is the cookie we want to modify
-                            if cookie.startswith(f"{cookie_name}="):
-                                new_cookies.append(f"{cookie_name}={new_cookie_value}")
-                                modified = True
-                                print(f"Modified cookie: {cookie_name}={new_cookie_value}")
-                            else:
-                                new_cookies.append(cookie)
+*   **JDBC Connection Configuration**:
+    *   **Variable Name for Pool**: `db_pool`
+    *   **Database URL**: `jdbc:mysql://localhost:3306/your_db_name` (根据你的数据库修改)
+    *   **JDBC Driver class**: `com.mysql.cj.jdbc.Driver` (根据你的数据库修改)
+    *   **Username/Password**: 填入你的数据库凭证。
 
-                        all_cookies.append("; ".join(new_cookies))
+*   **HTTP Header Manager**:
+    *   添加一行: `Name`: `Content-Type`, `Value`: `application/json`
 
-                    # Recombine cookie headers
-                    headers["set-cookie"] = ", ".join(all_cookies)
+#### 3.2. Test Fragments (模块库)
 
-                # Print modification result
-                if modified:
-                    print(f"Cookie modified: {cookie_name}")
-                else:
-                    print(f"Target cookie not found: {cookie_name}")
+##### 3.2.1. `TF_DB_Insert_User`
+*   右键 `Test Fragments` -> `Add` -> `Sampler` -> `JDBC Request`
+*   **JDBC Request** 配置:
+    *   **Variable Name of Pool bound to**: `db_pool`
+    *   **Query Type**: `Update Statement`
+    *   **Query**:
+        ```sql
+        INSERT INTO users (id, name, email, status, role, profile) VALUES (?, ?, ?, ?, ?, ?);
+        ```
+    *   **Parameter values**: `${user_id},${user_name},${user_email},${user_status_db},${user_role_db},${user_profile_db}`
+    *   **Parameter types**: `INTEGER,VARCHAR,VARCHAR,VARCHAR,VARCHAR,VARCHAR` (如果你的DB支持JSON类型，最后一个可以是 `OTHER` 或 `VARCHAR`)
 
-                # Fulfill the request with modified response
-                await route.fulfill(
-                    status=status,
-                    headers=headers,
-                    body=body
-                )
-            else:
-                # If URL doesn't match, continue with the request normally
-                await route.continue_()
+##### 3.2.2. `TF_API_Query_User_Dynamic`
+*   右键 `TF_API_Query_User_Dynamic` -> `Add` -> `Pre Processors` -> `JSR223 PreProcessor`
+*   **JSR223 PreProcessor** 配置:
+    *   **Language**: `Groovy`
+    *   **Script**: (复制粘贴以下脚本)
+        ```groovy
+        import java.net.URLEncoder
 
-        # Set up route handler and store it for later removal
-        # Use ** wildcard to match all URLs
-        route_handler = {"pattern": "**", "handler": handle_route}
-        self.interception_routes.append(route_handler)
+        String queryParamsStr = vars.get("query_params");
+        if (queryParamsStr == null || queryParamsStr.trim() == "{}" || queryParamsStr.isEmpty()) {
+            vars.put("generated_query_string", "");
+            return;
+        }
+        try {
+            def paramsMap = new GroovyShell().evaluate(queryParamsStr);
+            String queryString = paramsMap.collect { key, value ->
+                def encodedKey = URLEncoder.encode(key.toString(), "UTF-8");
+                def encodedValue = URLEncoder.encode(value.toString(), "UTF-8");
+                return "${encodedKey}=${encodedValue}";
+            }.join("&");
+            vars.put("generated_query_string", queryString);
+            log.info("Generated Query String for ${vars.get('test_case_name')}: " + queryString);
+        } catch (Exception e) {
+            log.error("Failed to parse query_params: " + queryParamsStr, e);
+            vars.put("generated_query_string", "ERROR_IN_PARAMS");
+        }
+        ```
+*   右键 `TF_API_Query_User_Dynamic` -> `Add` -> `Sampler` -> `HTTP Request`
+*   **HTTP Request** 配置:
+    *   **Server Name or IP**: `your_api_host.com`
+    *   **Port Number**: `8080` (如果需要)
+    *   **Method**: `GET`
+    *   **Path**: `/api/users?${generated_query_string}`
 
-        # Start intercepting all requests, then filter in the handler function
-        await self.page.route("**", handle_route)
-        match_type = "exact" if exact_match else "pattern"
-        print(f"Interception started for URL ({match_type} matching): {url_pattern}")
-        return True
+##### 3.2.3. `TF_API_Validate_User_Dynamic`
+*   右键 `TF_API_Validate_User_Dynamic` -> `Add` -> `Assertions` -> `Response Assertion`
+*   **Response Assertion** 配置:
+    *   **Apply to**: `Main sample only`
+    *   **Field to Test**: `Response Code`
+    *   **Pattern Matching Rules**: `Equals`
+    *   **Patterns to Test**: `${expected_http_code}`
 
-    async def stop_interception(self):
-        """Stop all active interceptions."""
-        if not self.is_intercepting or not self.page:
-            print("No active interception to stop.")
-            return False
+*   右键 `TF_API_Validate_User_Dynamic` -> `Add` -> `Assertions` -> `JSR223 Assertion`
+*   **JSR223 Assertion** 配置:
+    *   **Language**: `Groovy`
+    *   **Script**: (复制粘贴以下脚本)
+        ```groovy
+        import groovy.json.JsonSlurper
 
-        # Remove all routes
-        for route in self.interception_routes:
-            await self.page.unroute(route["pattern"], route["handler"])
+        def expectedCode = vars.get("expected_http_code");
+        def expectedValuesStr = vars.get("expected_values");
 
-        self.interception_routes = []
-        self.is_intercepting = False
-        print("All interceptions stopped.")
-        return True
+        if (!prev.isSuccessful()) {
+            if (prev.getResponseCode() == expectedCode) { return; }
+            return;
+        }
+        if (expectedValuesStr == null || expectedValuesStr.trim() == "{}" || expectedValuesStr.isEmpty()) {
+            return;
+        }
 
+        def expectedMap;
+        def responseJson;
+        try {
+            expectedMap = new GroovyShell().evaluate(expectedValuesStr);
+            responseJson = new JsonSlurper().parseText(prev.getResponseDataAsString());
+        } catch (Exception e) {
+            AssertionResult.setFailure(true);
+            AssertionResult.setFailureMessage("Failed to parse JSON. Expected: ${expectedValuesStr}. Response: ${prev.getResponseDataAsString()}. Error: ${e.getMessage()}");
+            return;
+        }
 
-async def setup_browser(chrome_path, chromedriver_path):
-    """Set up and return configured Selenium WebDriver and Playwright browser."""
-    # Verify paths exist
-    if not os.path.exists(chrome_path):
-        raise FileNotFoundError(f"Chrome browser not found at path: {chrome_path}")
-    if not os.path.exists(chromedriver_path):
-        raise FileNotFoundError(f"ChromeDriver not found at path: {chromedriver_path}")
+        def errors = [];
+        expectedMap.each { expectedKey, expectedValue ->
+            try {
+                def actualValue = expectedKey.toString().split('\\.').inject(responseJson) { obj, prop -> obj?."${prop}" };
+                if (actualValue?.toString() != expectedValue?.toString()) {
+                    errors.add("FAIL - Key [${expectedKey}] -> Expected: [${expectedValue}], Actual: [${actualValue}]");
+                } else {
+                    // (可选) 打印成功的校验，方便调试
+                    // log.info("PASS - Key [${expectedKey}] -> Value: [${actualValue}]")
+                }
+            } catch (Exception e) {
+                errors.add("FAIL - Key [${expectedKey}] not found in response or path is invalid. Error: ${e.getMessage()}");
+            }
+        };
 
-    # Configure Chrome options
-    chrome_options = Options()
-    chrome_options.add_argument("--remote-debugging-port=9222")
-    chrome_options.add_argument("--headless")
-    chrome_options.binary_location = chrome_path
+        if (errors) {
+            AssertionResult.setFailure(true);
+            AssertionResult.setFailureMessage("Validation failed for [${vars.get('test_case_name')}]:\n" + errors.join("\n"));
+        }
+        ```
 
-    # Set up Chrome driver
-    service = Service(executable_path=chromedriver_path)
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-    driver.maximize_window()
+#### 3.3. 主流程 (Thread Group)
 
-    # Navigate to initial page
-    driver.get("https://www.baidu.com")
+*   **Thread Group**:
+    *   **Number of Threads (users)**: `1`
+    *   **Loop Count**: `1` (因为我们让 CSV 控制循环)
 
-    # Get debugger address
-    capabilities = driver.capabilities
-    debugger_address = None
+*   右键 `Thread Group` -> `Add` -> `Config Element` -> `CSV Data Set Config`
+*   **CSV Data Set Config** 配置:
+    *   **Filename**: `test_data_users_advanced.csv` (使用相对路径)
+    *   **Variable Names (comma-delimited)**: (留空，因为我们有表头)
+    *   **Ignore first line (use as variable names)**: `True`
+    *   **Recycle on EOF?**: `False`
+    *   **Stop thread on EOF?**: `True` (这样当CSV读完时，测试就结束了)
+    *   **Sharing mode**: `All threads`
 
-    # Try to find debugger address in different browser capabilities
-    if 'goog:chromeOptions' in capabilities:
-        debugger_address = capabilities['goog:chromeOptions']['debuggerAddress']
-    elif 'ms:edgeOptions' in capabilities:
-        debugger_address = capabilities['ms:edgeOptions']['debuggerAddress']
-    else:
-        for key in capabilities:
-            if isinstance(capabilities[key], dict) and 'debuggerAddress' in capabilities[key]:
-                debugger_address = capabilities[key]['debuggerAddress']
-                break
+*   右键 `Thread Group` -> `Add` -> `Logic Controller` -> `Transaction Controller`
+*   **Transaction Controller** 配置:
+    *   **Name**: `E2E Case: ${test_case_name}`
+    *   勾选 `Generate parent sample`
 
-    if not debugger_address:
-        driver.quit()
-        raise ValueError("Could not find debugger address in browser capabilities")
+*   右键 `Transaction Controller` -> `Add` -> `Logic Controller` -> `If Controller`
+*   **If Controller** 配置:
+    *   **Condition (JavaScript or Groovy)**: `"${user_id}" != "999"`
+    *   勾选 `Interpret Condition as Variable Expression?`
 
-    print(f"Browser debugger address: {debugger_address}")
+*   在 `If Controller` 下，以及 `Transaction Controller` 下，添加三个 `Module Controller`。
+*   **Module Controller 1** (在 If Controller 下):
+    *   **Module to Run**: `Test Plan > Test Fragments > TF_DB_Insert_User`
+*   **Module Controller 2** (在 Transaction Controller 下):
+    *   **Module to Run**: `Test Plan > Test Fragments > TF_API_Query_User_Dynamic`
+*   **Module Controller 3** (在 Transaction Controller 下):
+    *   **Module to Run**: `Test Plan > Test Fragments > TF_API_Validate_User_Dynamic`
 
-    # Connect Playwright to the browser
-    playwright = await async_playwright().start()
-    browser = await playwright.chromium.connect_over_cdp(f"http://{debugger_address}")
+---
 
-    # Get first context and page
-    contexts = browser.contexts
-    if not contexts:
-        driver.quit()
-        await playwright.stop()
-        raise ValueError("No browser contexts found")
+### **第四步：执行与验证**
 
-    pages = contexts[0].pages
-    if not pages:
-        driver.quit()
-        await playwright.stop()
-        raise ValueError("No pages found in browser context")
+1.  在 `Thread Group` 下添加一个 `View Results Tree` 监听器，用于调试。
+2.  点击绿色的 "Start" 按钮运行测试。
+3.  在 `View Results Tree` 中查看结果：
+    *   你会看到名为 `E2E Case: TC001_Query_by_ID`, `E2E Case: TC002_Multi_Query` 等的事务。
+    *   **成功的用例**: 事务和其下的所有请求都应该是绿色的。
+    *   **失败的用例**:
+        *   `TC003` 的 `TF_API_Query_User_Dynamic` 请求应该是红色的，因为返回了 404。但是，其下的 `TF_API_Validate_User_Dynamic` 模块断言会通过（绿色），因为我们预期就是 404。整个事务可能是红色的，这取决于你如何配置事务控制器。
+        *   如果任何校验失败，对应的 `JSR223 Assertion` 会失败，并在 `Assertion results` 区域显示我们自定义的、非常清晰的错误信息，例如：
+            ```
+            Validation failed for [TC002_Multi_Query]:
+            FAIL - Key [email] -> Expected: [bob-admin@example.com], Actual: [bob@example.com]
+            ```
+    *   检查 `jmeter.log` 文件，可以看到我们脚本中用 `log.info()` 打印的调试信息，如生成的URL查询字符串。
 
-    page = pages[0]
-    print(f"Successfully connected to page: {page.url}")
-
-    return driver, playwright, browser, page
-
-
-async def main():
-    chrome_path = r"E:\Downloads\my files\chrome-win64\chrome.exe"
-    chromedriver_path = r"E:\Downloads\my files\chromedriver-win64\chromedriver.exe"
-
-    driver = None
-    playwright = None
-
-    try:
-        # Set up browser
-        driver, playwright, browser, page = await setup_browser(chrome_path, chromedriver_path)
-
-        # Create interceptor
-        interceptor = RequestInterceptor()
-
-        # Test with exact matching
-        print("\n--- Testing with exact URL matching ---")
-        await interceptor.start_interception(
-            page,
-            "https://www.baidu.com/",
-            "H_PS_PSSID",
-            "111222333",
-            exact_match=True  # Use exact matching
-        )
-
-        # Navigate to the target site to trigger interception
-        print("Navigating to target site...")
-        await page.goto("https://www.baidu.com/")
-        print("Navigation complete, cookies should be modified if URL matched exactly")
-
-        # Wait for a while to observe the results
-        await asyncio.sleep(1)
-
-        # Check the cookie value
-        try:
-            cookie_value = driver.get_cookie("H_PS_PSSID")["value"]
-            print(f"The H_PS_PSSID in the cookie is: {cookie_value}")
-        except Exception as e:
-            print(f"Could not retrieve cookie: {e}")
-
-        # Stop interception
-        await interceptor.stop_interception()
-        print("Exact matching interception stopped")
-        # Test with exact matching
-        print("\n--- Testing with exact URL matching ---")
-        await interceptor.start_interception(
-            page,
-            "https://www.baidu.com/",
-            "H_PS_PSSID",
-            "333444555",
-            exact_match=True  # Use exact matching
-        )
-
-        # Navigate to the target site to trigger interception
-        print("Navigating to target site...")
-        await page.goto("https://www.baidu.com/")
-        print("Navigation complete, cookies should be modified if URL matched exactly")
-
-        # Wait for a while to observe the results
-        await asyncio.sleep(1)
-
-        # Check the cookie value
-        try:
-            cookie_value = driver.get_cookie("H_PS_PSSID")["value"]
-            print(f"The H_PS_PSSID in the cookie is: {cookie_value}")
-        except Exception as e:
-            print(f"Could not retrieve cookie: {e}")
-
-        # Stop interception
-        await interceptor.stop_interception()
-        print("Exact matching interception stopped")
-
-        # Test with exact matching
-        print("\n--- Testing with exact URL matching ---")
-        await interceptor.start_interception(
-            page,
-            "https://www.baidu.com/",
-            "H_PS_PSSID",
-            "777888999",
-            exact_match=True  # Use exact matching
-        )
-
-        # Navigate to the target site to trigger interception
-        print("Navigating to target site...")
-        await page.goto("https://www.baidu.com/")
-        print("Navigation complete, cookies should be modified if URL matched exactly")
-
-        # Wait for a while to observe the results
-        await asyncio.sleep(1)
-
-        # Check the cookie value
-        try:
-            cookie_value = driver.get_cookie("H_PS_PSSID")["value"]
-            print(f"The H_PS_PSSID in the cookie is: {cookie_value}")
-        except Exception as e:
-            print(f"Could not retrieve cookie: {e}")
-
-        # Stop interception
-        await interceptor.stop_interception()
-        print("Exact matching interception stopped")
-        # # Test with pattern matching
-        # print("\n--- Testing with pattern URL matching ---")
-        # await interceptor.start_interception(
-        #     page,
-        #     "baidu",  # This will match any URL containing "baidu"
-        #     "H_PS_PSSID",
-        #     "444555666",
-        #     exact_match=False  # Use pattern matching
-        # )
-        #
-        # # Navigate again to trigger pattern matching
-        # print("Navigating to target site again...")
-        # await page.goto("https://www.baidu.com/")
-        # print("Navigation complete, cookies should be modified if URL contains pattern")
-        #
-        # # Wait for a while to observe the results
-        # await asyncio.sleep(1)
-        #
-        # # Check the cookie value again
-        # try:
-        #     cookie_value = driver.get_cookie("H_PS_PSSID")["value"]
-        #     print(f"The H_PS_PSSID in the cookie is now: {cookie_value}")
-        # except Exception as e:
-        #     print(f"Could not retrieve cookie: {e}")
-        #
-        # # Stop interception when done
-        # await interceptor.stop_interception()
-        # print("Pattern matching interception stopped")
-        #
-        # # Continue browsing without interception
-        # await page.goto("https://www.baidu.com/")
-        # print("Navigated again without any interception")
-        #
-        # # Wait before closing
-        # await asyncio.sleep(1)
-
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        # Clean up
-        if driver:
-            driver.quit()
-            print("Selenium WebDriver closed")
-        if playwright:
-            await playwright.stop()
-            print("Playwright stopped")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
-  ```
+这个方案为你提供了一个功能完备、高度可维护且极易扩展的动态API测试框架。
