@@ -1,0 +1,211 @@
+---
+layout:     post
+title:      "Gatling Test System doc"
+subtitle:   "「  Gatling Test System 」" 
+date:       2025-07-20 11:00:01
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - AI
+---
+
+# Gatling Test System doc
+
+Search files...
+Ran tool
+Ran tool
+Ran tool
+Ran tool
+Ran tool
+Ran tool
+Ran tool
+Search files...
+Ran tool
+
+Below is a detailed analysis and organization of the entire project's architecture. This summary is designed as a comprehensive reference for AI context in future development, enabling quick understanding of the system's structure, components, functionalities, and logic flows. I've synthesized information from the codebase, including models, data access, services, UI, test execution, utilities, and reports. The analysis covers **all major functionalities and logic** based on the explored codebase, including edge cases like dependency handling, variable resolution, and error management.
+
+The project is a **Gatling Testing System**—a desktop application for managing, configuring, and executing performance tests using Gatling. It supports project-based organization, environment-specific configurations, API endpoint management, test scenarios with thread groups, dynamic variables, database integrations, and reporting. It's built as a JavaFX application with Maven, using SQLite for persistence and embedding Gatling for test runs.
+
+---
+
+### **1. High-Level Architecture Overview**
+- **Type**: Monolithic Java desktop application with embedded performance testing.
+- **Core Purpose**: Manage and run Gatling-based performance/load tests for APIs, with features for configuration, execution, and reporting.
+- **Key Design Patterns**:
+  - **MVC (Model-View-Controller)**: Models for data, FXML/Views for UI, ViewModels as controllers.
+  - **DAO Pattern**: For database interactions.
+  - **Service Layer**: Business logic abstraction over DAOs.
+  - **Singleton/Static Contexts**: For shared state (e.g., `ProjectContext`, `EnvironmentContext`, `TestRunContext`).
+  - **Observer Pattern**: Via `AppConfigChangeListener` for config reloads.
+- **Technology Stack**:
+  - **Language**: Java 21.
+  - **Build**: Maven (pom.xml defines dependencies like Gatling, JavaFX, SQLite-JDBC, Jackson).
+  - **UI**: JavaFX with FXML files (e.g., main_view.fxml, gatling_test_view.fxml).
+  - **Database**: SQLite (gatling_testing_system.db) for storing entities like projects, tests, and configs.
+  - **Testing Framework**: Gatling (embedded for simulations like `GatlingTestSimulation`).
+  - **Other**: Groovy for scripting, Logback for logging, ControlsFX for UI components.
+- **Entry Point**: `App.java` initializes the database (`DBUtil.initializeDatabase()`), loads config (`AppConfig.reload()`), and launches the JavaFX UI (`main_view.fxml`).
+- **Configuration**: Managed via `application.properties` (loaded by `AppConfig`). Changes trigger listeners to refresh UI/state.
+- **Security/Constraints**: All code/comments in English. Consistency in naming, structure, and error handling enforced.
+
+**Project Structure** (High-Level Folders/Packages):
+- **src/main/java/com/qa/app**:
+  - **model**: Data entities (e.g., `GatlingTest`, `Scenario`, `Project`).
+  - **dao**: Database access (e.g., `GatlingTestDaoImpl`).
+  - **service**: Business logic (e.g., `GatlingTestServiceImpl`, `runner` subpackage for test execution).
+  - **ui/vm**: ViewModels (e.g., `MainViewModel`, `GatlingTestViewModel`).
+  - **util**: Utilities (e.g., `DBUtil`, `AppConfig`).
+- **src/main/resources**: FXML files, configs (e.g., gatling.conf, logback.xml), static assets (CSS, JS, icons).
+- **target**: Build artifacts (e.g., Gatling results).
+- **Root Files**: pom.xml (Maven), application.properties, gatling_testing_system.db.
+
+**Deployment/Run Logic**:
+- Run via `mvn clean package` to build a shaded JAR (executable with `java -jar`).
+- Maven plugins handle classpath, JavaFX, Gatling integration.
+- Database auto-initialized on startup if missing.
+
+---
+
+### **2. Data Models (Entities and Relationships)**
+The system revolves around hierarchical entities stored in SQLite. All models use JavaFX properties for UI binding (e.g., `StringProperty`).
+
+- **Core Entities**:
+  - **Project** (`Project.java`): Top-level container. Fields: id, name, description. Relationships: 1-to-Many with Environment, Endpoint, GatlingTest, Scenario, etc.
+  - **Environment** (`Environment.java`): Configuration scopes (e.g., dev, prod). Fields: id, name, description, projectId. Relationships: 1-to-Many with Endpoint, DbConnection, GroovyVariable.
+  - **Endpoint** (`Endpoint.java`): API definitions. Fields: id, name, method (GET/POST/etc.), url, environmentId, projectId. Supports dynamic variables (e.g., @{var} in URL).
+  - **GatlingTest** (`GatlingTest.java`): Test cases. Fields: id, isEnabled, suite, tcid (unique ID), descriptions, conditions (JSON for setup/teardown), responseChecks (JSON for validations), headers/body (templates), tags, waitTime, bodyTemplateId, headersTemplateId, endpointName, projectId, dynamicVariables (maps for body/headers/endpoint), reportPath, lastRunPassed.
+    - **Logic**: Tests can depend on others (setup/teardown). Response checks include types like STATUS, JSON_PATH, DIFF (before/after diffs).
+  - **Scenario** (`Scenario.java`): Grouped tests with load params. Fields: id, name, description, threadGroupJson (serialized load config), scheduleJson, projectId, displayOrder. Relationships: 1-to-Many with ScenarioStep.
+  - **ScenarioStep** (`ScenarioStep.java`): Steps in a scenario. Fields: order, testTcid (references GatlingTest), waitTime, tags.
+  - **ScenarioSchedule** (`ScenarioSchedule.java`): Cron-based scheduling. Fields: scenarioId, cronExpr, nextRunAt, enabled.
+
+- **Supporting Entities**:
+  - **DbConnection** (`DbConnection.java`): Database configs for checks. Fields: id, alias, dbType (MYSQL/POSTGRESQL/etc.), host, port, dbName, username, password, poolSize, projectId, environmentId, description.
+  - **GroovyVariable** (`GroovyVariable.java`): Custom variables/scripts. Fields: id, name, value (Groovy script), description, environmentId, projectId.
+  - **BodyTemplate** (`BodyTemplate.java`): Reusable request bodies. Fields: id, name, content, description, projectId.
+  - **HeadersTemplate** (`HeadersTemplate.java`): Reusable headers. Fields: id, name, content, description, projectId.
+  - **ResponseCheck** (`ResponseCheck.java`): Validation rules. Fields: type (STATUS, JSON_PATH, XPATH, REGEX, DIFF, PRE_CHECK, PST_CHECK, DB), expression, operator (IS, CONTAINS, etc.), expect, saveAs, optional, dbAlias/dbSql/dbColumn (for DB checks).
+  - **GatlingLoadParameters** (`GatlingLoadParameters.java`): Load configs. Fields: type (STANDARD/STEPPING/ULTIMATE), with sub-models like StandardThreadGroup (numThreads, rampUp, loops, scheduler, duration, delay).
+
+- **Report Models** (Under `model/reports`):
+  - **FunctionalTestReport**: Aggregates test results. Fields: originTcid, suite, executedAt, groups (ModeGroup), passed.
+  - **ModeGroup**: Groups by mode (SETUP/MAIN/TEARDOWN). Fields: mode, items (CaseReport).
+  - **CaseReport**: Per-test report. Fields: tcid, mode, passed, items (RequestReport).
+  - **RequestReport**: Per-request details. Fields: request (RequestInfo), response (ResponseInfo), checks (CheckReport), passed.
+  - **CheckReport**: Per-check results. Fields: type, expression, operator, expect, actual, passed.
+
+- **Relationships and Constraints**:
+  - Foreign keys enforced (e.g., tests reference projects/endpoints/templates).
+  - Uniqueness: e.g., TCID unique, endpoint name unique per environment.
+  - Hierarchies: Projects → Environments → Endpoints/Tests/Scenarios.
+  - JSON Serialization: Many fields (e.g., conditions, responseChecks, threadGroupJson) stored as JSON strings in DB.
+
+**Logic Flows in Models**:
+- Dynamic variables: Resolved at runtime (e.g., @{var} in URLs/bodies/headers).
+- Checks: Evaluated post-response (e.g., DIFF computes after-before diffs).
+- Thread Groups: Control load (e.g., Standard: ramp-up users; Stepping: incremental; Ultimate: phased steps).
+
+---
+
+### **3. Data Access Layer (DAO)**
+- **Utility**: `DBUtil.java` manages SQLite connections (jdbc:sqlite:gatling_testing_system.db). Initializes schema on startup (creates tables like gatling_tests, projects, scenarios).
+- **DAO Interfaces/Impls**: Each entity has an interface (e.g., `IGatlingTestDao`) and impl (e.g., `GatlingTestDaoImpl`).
+  - **Operations**: CRUD (add/update/delete/get), plus specifics like `getTestsByProjectId`, `updateOrder` (for display ordering).
+  - **Logic**: Uses PreparedStatements for SQL. Handles transactions (e.g., for scenarios: add scenario + steps atomically). JSON fields parsed/stored as strings.
+  - **Error Handling**: Throws SQLException, wrapped in ServiceException higher up.
+
+**Key Logic**:
+- Schema Creation: Ensures foreign keys, uniqueness (e.g., UNIQUE(tcid) for tests).
+- Queries: Often ordered by displayOrder or id DESC.
+
+---
+
+### **4. Service Layer (Business Logic)**
+Services wrap DAOs, add validation, and handle complex logic like test execution.
+
+- **ProjectServiceImpl**: CRUD for projects. Logic: Ensures unique names.
+- **EnvironmentServiceImpl**: CRUD for environments. Logic: Unique names, project linking.
+- **EndpointServiceImpl**: CRUD for endpoints. Logic: Variable consistency checks (e.g., ensure @{vars} match definitions).
+- **GatlingTestServiceImpl**: Manages tests.
+  - **Key Functions**: create/update/remove tests, toggle enabled, runTests (expands dependencies into batches, enriches templates, launches Gatling via runner).
+  - **Logic**: Validates fields (e.g., TCID unique), parses conditions/responseChecks, handles setup/teardown dependencies, integrates with TestRunContext for variables.
+- **GatlingScenarioServiceImpl**: Manages scenarios.
+  - **Key Functions**: create/update/duplicate scenarios, runScenarios (builds run items, serializes to JSON, launches multi-scenario simulation).
+  - **Logic**: Handles steps, thread groups, scheduling (cron). Expands tests with dependencies.
+- **DbConnectionServiceImpl**: CRUD for DB connections. Logic: Unique aliases per environment, pools via DataSourceRegistry.
+- **GroovyVariableServiceImpl**: CRUD for variables. Logic: Script evaluation via GroovyScriptEngine.
+- **VariableServiceImpl**: Loads/saves Groovy variables, generates via VariableGenerator.
+- **Reports**: `HtmlSummaryReportGenerator` creates HTML reports from FunctionalTestReport.
+
+**Shared Contexts**:
+- **ProjectContext/EnvironmentContext**: Static holders for current project/environment (from app.properties). Refresh on config changes.
+- **TestRunContext**: Manages runtime variables (e.g., saveVariable, processVariableReferences) during test execution.
+
+**Error Handling**: Services throw `ServiceException` (wraps SQL/other exceptions). UI catches and displays via status labels.
+
+---
+
+### **5. UI Layer (Views and ViewModels)**
+- **Main Entry**: `main_view.fxml` with `MainViewModel` (navigation list, tab pane, status bar).
+  - **Logic**: Loads tabs dynamically (e.g., Gatling Test Management → gatling_test_view.fxml). Single-tab reuse for management views. Refreshes on config changes.
+- **Key ViewModels**:
+  - **GatlingTestViewModel**: Manages test CRUD, filters (suite/tag/enabled), dynamic variables, response checks (with clipboard), runs tests async.
+    - **Logic**: Validates forms, parses JSON for checks/conditions, integrates with HelpTooltipManager for tooltips.
+  - **GatlingScenarioViewModel**: Scenario CRUD, steps, thread groups (Standard/Stepping/Ultimate UI), scheduling.
+    - **Logic**: Drag-drop steps, order management, runs multi-scenarios.
+  - **ProjectViewModel/EnvironmentViewModel/EndpointViewModel**: CRUD tables/forms with validation.
+  - **DbConnectionViewModel**: DB config with type-specific fields (e.g., show schema for PostgreSQL).
+  - **GroovyVariableViewModel**: Variable editing with Groovy scripts.
+  - **GatlingTestReportViewModel**: Displays reports (tree view, tabs for details/checks).
+  - **ApplicationPropertiesViewModel**: Edits app.properties.
+
+**UI Logic**:
+- Binding: JavaFX properties for real-time updates.
+- Events: Listeners for selections, config changes (e.g., refresh on project switch).
+- Validation: Client-side checks (e.g., unique names, variable consistency).
+- Async: Test runs in background threads with callbacks.
+
+---
+
+### **6. Test Execution and Runner Logic**
+- **Core Classes**: In `service/runner`.
+  - **GatlingTestRunner**: Launches Gatling processes async. Builds commands, serializes params/tests to temp JSON, processes reports/variables post-run.
+  - **GatlingTestSimulation**: Single/batch test simulation. Builds HTTP requests, applies checks (STATUS/JSON_PATH/etc.), handles DIFF/PRE/PST checks, logs variables.
+    - **Logic**: Chains requests (setup → main → teardown), resolves variables runtime, executes DB queries for checks, generates NDJSON reports.
+  - **GatlingScenarioSimulation**: Multi-scenario simulation. Builds concurrent populations with thread groups.
+    - **Logic**: Estimates durations, injects users (ramp/at-once), forever loops for time-based groups.
+  - **TestRunContext**: Thread-safe variable storage (e.g., ${TCID.var}), diff/pre/pst value management.
+  - **RuntimeTemplateProcessor**: Renders templates with dynamic vars.
+
+**Execution Flow**:
+1. User selects tests/scenarios in UI → Service expands dependencies → Serializes to JSON.
+2. Runner starts external Java process with Gatling.
+3. Simulation builds chains: HTTP requests + checks + DB executions.
+4. Post-run: Parse reports, save variables to context, generate HTML summaries.
+5. Edge Cases: Batch mode for dependencies, optional checks, non-numeric diffs skipped, variable references resolved across tests.
+
+---
+
+### **7. Reporting Functionality**
+- **Generation**: `HtmlSummaryReportGenerator` creates HTML from FunctionalTestReport (groups by mode: SETUP/MAIN/TEARDOWN).
+- **Models**: Detailed per-request/check reports with passed/failed status.
+- **UI**: `GatlingTestReportViewModel` shows tree views, tabs for request/response details, recent files dropdown.
+- **Internal Reports**: Gatling's built-in reports in target/gatling.
+- **Logic**: Aggregates results, computes pass/fail (all checks must pass), stores reportPath in tests.
+
+---
+
+### **8. Utilities and Supporting Logic**
+- **AppConfig**: Loads/saves application.properties, notifies listeners on changes (e.g., current.project.name triggers refresh).
+- **DBUtil**: SQLite init/connections.
+- **VariableUtil/OperatorUtil**: Extract vars, compare values for checks.
+- **GroovyScriptEngine/VariableGenerator**: Executes Groovy for custom vars (e.g., __UUID, __DATETIME).
+- **HelpTooltipManager**: Tooltips for UI guidance (e.g., variable usage, check configs).
+
+**Edge Cases**:
+- Null/empty handling (e.g., skip invalid vars).
+- Concurrency: ConcurrentHashMap in TestRunContext.
+- Errors: Graceful (e.g., missing endpoint → exception with message).
+
+This architecture ensures modularity, with clear separation of concerns. For extensions, focus on services for logic and ViewModels for UI. If needed, I can dive deeper into specific code snippets or suggest improvements.
