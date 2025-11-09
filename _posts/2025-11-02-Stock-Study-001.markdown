@@ -2,7 +2,7 @@
 layout:     post
 title:      "光伏ETF（515790）量价关系综合分析报告"
 subtitle:   "「  ETF 」" 
-date:       2025-07-20 11:00:01
+date:       2025-11-02 11:00:01
 author:     "Vick Huang"
 header-img: "img/bg-walle.jpg"
 catalog: true

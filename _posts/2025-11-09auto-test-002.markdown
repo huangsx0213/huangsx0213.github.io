@@ -1,0 +1,214 @@
+---
+layout:     post
+title:      "Selenium E2E 测试框架架构方案"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2025-11-09 11:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+# Selenium E2E 测试框架架构方案
+
+## 目录结构
+
+```text
+e2e_test_framework/
+├─ core/
+│  ├─ browser.py
+│  ├─ base_page.py
+│  └─ wait.py
+├─ locators/
+│  ├─ login_locators.py
+│  ├─ dashboard_locators.py
+│  └─ components/
+│     └─ navbar_locators.py
+├─ pages/
+│  ├─ login_page.py
+│  ├─ dashboard_page.py
+│  └─ components/
+│     └─ navbar_component.py
+├─ actions/
+│  ├─ auth_actions.py
+│  └─ navbar_actions.py
+├─ flows/
+│  ├─ login_flow.py
+│  └─ order_flow.py
+├─ tests/
+│  └─ test_login_flow.py
+└─ conftest.py
+```
+
+## 模块职责
+
+- `core/`：驱动初始化、BasePage 通用操作、等待封装。
+- `locators/`：页面与组件的定位符集合，UI 变更集中维护。
+- `pages/`：Page Object；引用 locator 并封装页面级操作。
+- `pages/components/`：可复用 UI 组件封装。
+- `actions/`：跨页面的公共操作（导航栏、登录等）。
+- `flows/`：完整业务流程编排；组合多个 Actions/Page。
+- `tests/`：pytest 测试用例，面向业务语义编写断言。
+
+## 核心代码示例
+
+```python
+# core/browser.py
+from selenium import webdriver
+
+
+class BrowserFactory:
+    def create(self, browser_name="chrome"):
+        if browser_name == "chrome":
+            return webdriver.Chrome()
+        if browser_name == "edge":
+            return webdriver.Edge()
+        raise ValueError(f"Unsupported browser: {browser_name}")
+```
+
+```python
+# core/base_page.py
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
+class BasePage:
+    def __init__(self, driver, timeout=10):
+        self.driver = driver
+        self.wait = WebDriverWait(driver, timeout)
+
+    def click(self, locator):
+        self.wait.until(EC.element_to_be_clickable(locator)).click()
+
+    def type(self, locator, value):
+        field = self.wait.until(EC.visibility_of_element_located(locator))
+        field.clear()
+        field.send_keys(value)
+
+    def text(self, locator):
+        return self.wait.until(EC.visibility_of_element_located(locator)).text
+```
+
+```python
+# locators/login_locators.py
+from selenium.webdriver.common.by import By
+
+
+class LoginLocators:
+    USERNAME = (By.ID, "username")
+    PASSWORD = (By.ID, "password")
+    SUBMIT = (By.CSS_SELECTOR, "button[type='submit']")
+    ERROR = (By.CSS_SELECTOR, ".alert-error")
+```
+
+```python
+# pages/login_page.py
+from core.base_page import BasePage
+from locators.login_locators import LoginLocators
+
+
+class LoginPage(BasePage):
+    URL = "https://example.com/login"
+
+    def open(self):
+        self.driver.get(self.URL)
+
+    def fill_username(self, username):
+        self.type(LoginLocators.USERNAME, username)
+
+    def fill_password(self, password):
+        self.type(LoginLocators.PASSWORD, password)
+
+    def submit(self):
+        self.click(LoginLocators.SUBMIT)
+
+    def error_message(self):
+        return self.text(LoginLocators.ERROR)
+```
+
+```python
+# pages/components/navbar_component.py
+from core.base_page import BasePage
+from locators.components.navbar_locators import NavbarLocators
+
+
+class NavbarComponent(BasePage):
+    def open_menu_item(self, text):
+        self.click(NavbarLocators.MENU_TRIGGER)
+        items = self.driver.find_elements(*NavbarLocators.MENU_ITEMS)
+        for item in items:
+            if item.text.strip() == text:
+                item.click()
+                return
+        raise AssertionError(f"Menu item '{text}' not found")
+```
+
+```python
+# actions/navbar_actions.py
+from pages.components.navbar_component import NavbarComponent
+from pages.dashboard_page import DashboardPage
+
+
+class NavbarActions:
+    def __init__(self, driver):
+        self.navbar = NavbarComponent(driver)
+
+    def go_to_dashboard(self):
+        self.navbar.open_menu_item("Dashboard")
+        return DashboardPage(self.navbar.driver)
+
+    def logout(self):
+        self.navbar.open_menu_item("Log out")
+```
+
+```python
+# flows/login_flow.py
+from actions.auth_actions import AuthActions
+from actions.navbar_actions import NavbarActions
+from pages.dashboard_page import DashboardPage
+
+
+class LoginFlow:
+    def __init__(self, driver):
+        self.driver = driver
+        self.auth = AuthActions(driver)
+        self.navbar = NavbarActions(driver)
+
+    def login_and_land_on_dashboard(self, username, password):
+        self.auth.login(username, password)
+        return DashboardPage(self.driver)
+```
+
+```python
+# conftest.py
+import pytest
+from core.browser import BrowserFactory
+
+
+@pytest.fixture
+def driver():
+    browser = BrowserFactory().create("chrome")
+    yield browser
+    browser.quit()
+```
+
+```python
+# tests/test_login_flow.py
+from flows.login_flow import LoginFlow
+
+
+def test_login_success(driver):
+    flow = LoginFlow(driver)
+    dashboard = flow.login_and_land_on_dashboard("demo_user", "secret")
+    assert dashboard.has_loaded()
+```
+
+## 实施建议
+
+1. 按系统实际页面继续扩展 locators/pages/actions/flows。
+2. 为关键 Flow 添加断言方法（如 `DashboardPage.has_loaded`）。
+3. 引入日志、截图、错误处理增强调试体验。
+4. 配置 CI 执行 pytest，支持并发与多浏览器。
