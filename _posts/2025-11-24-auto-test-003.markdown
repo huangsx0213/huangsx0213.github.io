@@ -1,6 +1,6 @@
 ---
 layout:     post
-title:      "Selenium E2E 测试框架架构方案"
+title:      "Oracle Database Connection Tests Analysis"
 subtitle:   "「 End to End Auto Testing 」" 
 date:       2025-11-24 11:00:00
 author:     "Vick Huang"
