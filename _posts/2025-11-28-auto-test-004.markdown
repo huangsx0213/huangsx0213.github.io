@@ -1,0 +1,1434 @@
+---
+layout:     post
+title:      "AI 测试用例生成平台"
+subtitle:   "「 End to End Auto Testing 」" 
+date:       2025-11-28 11:00:00
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - Testing
+    - Automated Testing
+---
+
+
+下面是一份**综合你给出的 Python 伪代码框架 + 我之前“手工 → AutoSpec → AutoCode / 多角色服务化”方案**之后，重新设计的、尽量完整的落地蓝本。
+
+特点：
+
+- 分层清晰：接口层 / 服务层 / 领域与规则 / LLM 适配 / 存储 / 基础设施
+- 角色明确：需求分析 → 场景设计 → 手工用例 → 边界补全 → 审核 → 维护 → 自动化规格 AutoSpec → 自动化代码 AutoCode
+- 从一开始就把**自动化相关扩展点**设计进模型和服务，但当前可只实现手工部分，未来平滑扩展
+- 伪代码尽量贴近真实 Python/FastAPI 项目，可以直接复制作为骨架实现
+
+目录结构、模型、服务、API、Prompt、规则引擎、LLM 调用、存储、异步任务都覆盖到。
+
+---
+
+# 一、总体架构与演进路线
+
+## 1.1 分层架构总览
+
+```text
+AI 测试用例生成平台
+ ├─ 接口层 (API Layer, FastAPI)
+ │   ├─ 手工用例相关 API
+ │   ├─ 自动化规格 & 代码 API（可延后实现）
+ │   └─ 任务状态查询 API
+ ├─ 应用/服务层 (Service Layer)
+ │   ├─ RequirementAnalysisService        # 需求分析助手
+ │   ├─ ScenarioDesignService             # 场景/测试点助手
+ │   ├─ TestCaseAuthorService             # 手工用例撰写助手
+ │   ├─ BoundaryCompletionService         # 边界/异常补充助手
+ │   ├─ TestCaseReviewService             # 用例审核助手
+ │   ├─ TestCaseMaintenanceService        # 变更维护助手
+ │   ├─ AutomationSpecService             # 从手工用例生成自动化规格
+ │   ├─ AutomationCodeService             # 从规格生成自动化代码
+ │   └─ TestCaseOrchestrationService      # 整体编排（一键生成）
+ ├─ 领域与规则层 (Domain & Rules)
+ │   ├─ 领域模型：Requirement, Scenario, ManualTestCase, AutomationSpec, AutomationCodeArtifact
+ │   ├─ PromptBuilder + Jinja2 模板
+ │   ├─ RulesEngine（参数规则、场景规则等）
+ │   └─ Validator（手工用例、自动化规格/代码）
+ ├─ LLM 适配层 (LLM Adapter)
+ │   ├─ BaseLLMClient / OpenAIClient / (其他 Provider)
+ │   └─ LLMRouter（多 Provider 路由 + 日志 + 重试）
+ ├─ 存储层 (Repository / Persistence)
+ │   ├─ SQLAlchemy ORM 模型
+ │   ├─ RequirementRepository / ScenarioRepository
+ │   ├─ TestCaseRepository / AutomationRepository
+ │   └─ Task 状态存储（可选）
+ └─ 基础设施层 (Infra)
+     ├─ 配置 (Pydantic Settings)
+     ├─ 日志 (logging / structlog)
+     ├─ 异步任务 (Celery + Redis/RabbitMQ)
+     └─ SwaggerParser / 工具模块
+```
+
+## 1.2 演进路线（手工 → AutoSpec → AutoCode）
+
+1. **阶段 1**（现在）：只实现手工用例端到端
+   - 需求分析 → 场景设计 → 手工用例生成 → 边界补充 → 审核 → 存储
+2. **阶段 2**：引入 AutomationSpec
+   - 从已审核的手工用例生成自动化规格（AutoSpec）
+3. **阶段 3**：引入 AutomationCode
+   - 基于 AutoSpec + 自动化框架配置生成自动化代码骨架
+4. **阶段 4**：与 CI/CD / 自动化平台集成
+   - 代码提交到仓库，触发执行
+
+下面的目录结构和伪代码会一次性把这些扩展点预留出来。
+
+---
+
+# 二、项目目录结构（融合优化版）
+
+```text
+ai_testcase_service/
+├── app/
+│   ├── main.py                       # FastAPI 入口
+│   ├── api/                          # 接口层
+│   │   └── v1/
+│   │       ├── routes_requirements.py     # 需求分析 API
+│   │       ├── routes_scenarios.py        # 场景设计 API
+│   │       ├── routes_testcases.py        # 手工用例 API（同步/异步）
+│   │       ├── routes_automation.py       # ★ 自动化规格/代码 API（预留）
+│   │       ├── routes_tasks.py            # 任务查询 API
+│   │       └── dependencies.py            # 依赖注入工厂
+│   ├── core/
+│   │   ├── config.py                  # 配置管理 (BaseSettings)
+│   │   ├── logging_config.py          # 日志配置
+│   │   └── security.py                # 鉴权（可选）
+│   ├── models/                        # Pydantic 模型（领域 + 请求/响应）
+│   │   ├── requirement_models.py
+│   │   ├── scenario_models.py
+│   │   ├── testcase_models.py         # 手工用例 + 自动化元信息
+│   │   ├── automation_models.py       # AutoSpec + AutoCode 领域模型
+│   │   ├── api_models.py              # API 描述 (Swagger 抽象)
+│   │   └── task_models.py             # 任务入参/出参模型
+│   ├── services/                      # 服务层
+│   │   ├── requirement_analysis_service.py
+│   │   ├── scenario_design_service.py
+│   │   ├── testcase_author_service.py
+│   │   ├── boundary_completion_service.py
+│   │   ├── testcase_review_service.py
+│   │   ├── testcase_maintenance_service.py
+│   │   ├── automation_spec_service.py       # ★ 从手工用例生成 AutoSpec
+│   │   ├── automation_code_service.py       # ★ 从 AutoSpec 生成代码
+│   │   └── testcase_orchestration_service.py# 整体编排服务
+│   ├── domain/                        # 领域逻辑 & 规则 & Prompt
+│   │   ├── prompts/
+│   │   │   ├── templates/
+│   │   │   │   ├── requirement_analysis.jinja2
+│   │   │   │   ├── scenario_design.jinja2
+│   │   │   │   ├── testcase_authoring.jinja2
+│   │   │   │   ├── review.jinja2
+│   │   │   │   ├── maintenance_diff_analysis.jinja2
+│   │   │   │   ├── automation_spec.jinja2        # ★ AutoSpec Prompt
+│   │   │   │   └── automation_code.jinja2        # ★ AutoCode Prompt
+│   │   │   └── builder.py
+│   │   ├── rules/
+│   │   │   ├── base.py                      # BaseRule 抽象
+│   │   │   ├── parameter_rules.py           # 参数级规则（边界/缺失等）
+│   │   │   ├── scenario_rules.py            # 场景/业务级规则（可选）
+│   │   │   └── engine.py                    # RulesEngine
+│   │   └── validators/
+│   │       ├── testcase_validator.py
+│   │       └── automation_validator.py      # ★ AutoSpec / AutoCode 校验
+│   ├── llm/                           # LLM 适配层
+│   │   ├── base.py
+│   │   ├── openai_client.py
+│   │   ├── tongyi_client.py           # 可选
+│   │   └── llm_router.py
+│   ├── repositories/                  # 持久化层
+│   │   ├── testcase_repository.py
+│   │   ├── automation_repository.py   # AutoSpec / AutoCode 存储
+│   │   └── requirement_repository.py
+│   ├── db/                            # ORM & 会话管理
+│   │   ├── base.py
+│   │   ├── session.py
+│   │   └── models.py                  # SQLAlchemy ORM 实体
+│   ├── workers/                       # 异步任务
+│   │   ├── celery_app.py
+│   │   └── tasks.py
+│   └── utils/
+│       ├── swagger_parser.py
+│       ├── id_generator.py
+│       └── text_utils.py
+├── tests/
+│   ├── test_api/
+│   ├── test_services/
+│   ├── test_domain/
+│   └── conftest.py
+├── alembic/                           # 迁移
+├── pyproject.toml
+├── requirements.txt
+├── Dockerfile
+└── .env.example
+```
+
+---
+
+# 三、领域模型（Pydantic）——手工 + 自动化一体化
+
+## 3.1 需求 & 场景
+
+`app/models/requirement_models.py`
+
+```python
+from pydantic import BaseModel
+from typing import List, Optional
+
+class Requirement(BaseModel):
+    id: str
+    system: str
+    module: str
+    title: str
+    description: str
+    context: Optional[str] = None
+
+class RequirementAnalysisResult(BaseModel):
+    requirement_id: str
+    features: List[str]
+    business_rules: List[str]
+    risks: List[str]
+    test_focus: List[str]
+```
+
+`app/models/scenario_models.py`
+
+```python
+from pydantic import BaseModel
+from typing import List, Literal
+
+ScenarioType = Literal["functional", "boundary", "exception"]
+
+class Scenario(BaseModel):
+    id: str
+    requirement_id: str
+    title: str
+    type: ScenarioType
+    description: str
+```
+
+## 3.2 手工测试用例（Manual Test Case）
+
+`app/models/testcase_models.py`
+
+```python
+from pydantic import BaseModel, Field
+from typing import List, Optional, Literal
+
+TestCaseType = Literal["functional", "boundary", "exception", "performance", "security"]
+PriorityType = Literal["P0", "P1", "P2", "P3"]
+
+class TestStep(BaseModel):
+    description: str
+    data: Optional[dict] = None  # 输入数据（例如请求体/表单）
+
+class ManualTestCase(BaseModel):
+    id: str
+    requirement_id: str
+    scenario_id: Optional[str] = None
+    system: str
+    module: str
+    title: str
+    type: TestCaseType
+    precondition: Optional[str] = ""
+    steps: List[TestStep] = Field(default_factory=list)
+    expected: str
+    priority: PriorityType = "P2"
+    tags: List[str] = []
+
+    # ★ 自动化扩展元信息（未来用）
+    automation_status: Literal["not_supported", "candidate", "ready", "implemented"] = "candidate"
+    automation_level: Optional[Literal["api", "ui", "service"]] = None
+    automation_framework: Optional[str] = None  # pytest_api / playwright_ui 等
+```
+
+请求/响应模型（简化版）：
+
+```python
+class FunctionalCaseRequest(BaseModel):
+    system: str
+    module: str
+    requirement_id: Optional[str] = None
+    requirement_text: str
+    context: Optional[str] = None
+
+class TestCaseBatchResponse(BaseModel):
+    requirement_id: Optional[str] = None
+    cases: List[ManualTestCase]
+```
+
+## 3.3 API 描述（供 API 用例生成 & AutoSpec 使用）
+
+`app/models/api_models.py`
+
+```python
+from pydantic import BaseModel, Field
+from typing import List, Optional, Literal
+
+ParamLocation = Literal["query", "path", "header", "body"]
+
+class ApiParameter(BaseModel):
+    name: str
+    in_: ParamLocation = Field(alias="in")
+    type: str
+    required: bool = False
+    max_length: Optional[int] = None
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    enum: Optional[List[str]] = None
+    description: Optional[str] = None
+
+class ApiDescriptor(BaseModel):
+    name: str
+    method: str
+    path: str
+    summary: Optional[str] = None
+    description: Optional[str] = None
+    parameters: List[ApiParameter] = Field(default_factory=list)
+    request_body_schema: Optional[dict] = None
+    response_body_schema: Optional[dict] = None
+
+class ApiCaseRequest(BaseModel):
+    system: str
+    module: str
+    api: ApiDescriptor
+```
+
+## 3.4 自动化规格 & 自动化代码（AutoSpec / AutoCode）
+
+`app/models/automation_models.py`
+
+```python
+from pydantic import BaseModel
+from typing import List, Optional, Literal
+
+class AutomationStep(BaseModel):
+    action: str                  # "request", "click", "input", "assert" 等
+    target: Optional[str] = None # endpoint 或 selector
+    data: Optional[dict] = None
+    assertion: Optional[str] = None
+
+class AutomationSpec(BaseModel):
+    id: str
+    manual_case_id: str
+    requirement_id: str
+    framework: Literal["pytest_api", "playwright_ui", "custom_dsl"]
+    level: Literal["api", "ui", "service"]
+    steps: List[AutomationStep]
+    tags: List[str] = []
+    status: Literal["draft", "reviewed", "approved"] = "draft"
+
+class AutomationCodeArtifact(BaseModel):
+    id: str
+    spec_id: str
+    manual_case_id: str
+    repo_path: str
+    file_path: str
+    class_name: Optional[str] = None
+    function_name: Optional[str] = None
+    language: Literal["python", "java", "typescript"] = "python"
+    framework: str
+    content: str
+```
+
+请求模型：
+
+```python
+class AutomationSpecRequest(BaseModel):
+    manual_case_id: str
+    framework: Literal["pytest_api", "playwright_ui", "custom_dsl"]
+    level: Literal["api", "ui", "service"]
+
+class AutomationSpecResponse(BaseModel):
+    spec: AutomationSpec
+
+class RepoConfig(BaseModel):
+    repo_path: str
+    base_package: str
+    test_dir: str
+
+class AutomationCodeRequest(BaseModel):
+    spec_id: str
+    repo_config: RepoConfig
+
+class AutomationCodeResponse(BaseModel):
+    artifact: AutomationCodeArtifact
+```
+
+## 3.5 任务模型
+
+`app/models/task_models.py`
+
+```python
+from pydantic import BaseModel
+from typing import Optional, Any, Literal
+
+TaskStatus = Literal["PENDING", "STARTED", "SUCCESS", "FAILURE"]
+
+class TaskCreationResponse(BaseModel):
+    task_id: str
+    status: TaskStatus
+    message: str
+
+class TaskStatusResponse(BaseModel):
+    task_id: str
+    status: TaskStatus
+    result: Optional[Any] = None
+    error: Optional[str] = None
+```
+
+---
+
+# 四、数据库模型与 Repository（SQLAlchemy + Async）
+
+## 4.1 ORM 模型
+
+`app/db/models.py`
+
+```python
+from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey
+from sqlalchemy.orm import relationship
+
+Base = declarative_base()
+
+class RequirementRecord(Base):
+    __tablename__ = "requirements"
+    id = Column(String(64), primary_key=True)
+    system = Column(String(64), nullable=False)
+    module = Column(String(64), nullable=False)
+    title = Column(String(256), nullable=False)
+    description = Column(Text, nullable=False)
+    context = Column(Text, nullable=True)
+
+class ManualTestCaseRecord(Base):
+    __tablename__ = "manual_test_cases"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    case_id = Column(String(64), unique=True, nullable=False, index=True)
+    requirement_id = Column(String(64), ForeignKey("requirements.id"), nullable=True)
+    system = Column(String(64), nullable=False)
+    module = Column(String(64), nullable=False)
+    title = Column(String(256), nullable=False)
+    type = Column(String(32), nullable=False)
+    precondition = Column(Text, nullable=True)
+    steps_json = Column(JSON, nullable=False)
+    expected = Column(Text, nullable=False)
+    priority = Column(String(8), nullable=False)
+    tags = Column(JSON, nullable=True)
+    automation_status = Column(String(32), default="candidate")
+    automation_level = Column(String(32), nullable=True)
+    automation_framework = Column(String(64), nullable=True)
+    status = Column(String(32), default="draft")  # draft/approved/archived
+
+class AutomationSpecRecord(Base):
+    __tablename__ = "automation_specs"
+    id = Column(String(64), primary_key=True)
+    manual_case_id = Column(String(64), nullable=False, index=True)
+    requirement_id = Column(String(64), nullable=False)
+    framework = Column(String(64), nullable=False)
+    level = Column(String(32), nullable=False)
+    steps_json = Column(JSON, nullable=False)
+    tags = Column(JSON, nullable=True)
+    status = Column(String(32), default="draft")
+
+class AutomationCodeArtifactRecord(Base):
+    __tablename__ = "automation_code_artifacts"
+    id = Column(String(64), primary_key=True)
+    spec_id = Column(String(64), ForeignKey("automation_specs.id"))
+    manual_case_id = Column(String(64), nullable=False)
+    repo_path = Column(String(256), nullable=False)
+    file_path = Column(String(256), nullable=False)
+    class_name = Column(String(128), nullable=True)
+    function_name = Column(String(128), nullable=True)
+    language = Column(String(32), nullable=False)
+    framework = Column(String(64), nullable=False)
+    content = Column(Text, nullable=True)
+```
+
+## 4.2 会话与 Repository
+
+`app/db/session.py`
+
+```python
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+from app.core.config import settings
+
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=False,
+    future=True,
+)
+
+AsyncSessionLocal = sessionmaker(
+    engine, expire_on_commit=False, class_=AsyncSession
+)
+
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
+```
+
+`app/repositories/testcase_repository.py`
+
+```python
+from typing import List, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.db.models import ManualTestCaseRecord
+from app.models.testcase_models import ManualTestCase, TestStep
+
+class TestCaseRepository:
+    def __init__(self, db_session: AsyncSession):
+        self.db = db_session
+
+    async def save_cases(
+        self,
+        cases: List[ManualTestCase],
+    ):
+        for c in cases:
+            record = ManualTestCaseRecord(
+                case_id=c.id,
+                requirement_id=c.requirement_id,
+                system=c.system,
+                module=c.module,
+                title=c.title,
+                type=c.type,
+                precondition=c.precondition,
+                steps_json=[s.dict() for s in c.steps],
+                expected=c.expected,
+                priority=c.priority,
+                tags=c.tags,
+                automation_status=c.automation_status,
+                automation_level=c.automation_level,
+                automation_framework=c.automation_framework,
+                status="draft",
+            )
+            self.db.add(record)
+        await self.db.commit()
+
+    async def get_by_case_id(self, case_id: str) -> Optional[ManualTestCase]:
+        stmt = select(ManualTestCaseRecord).where(ManualTestCaseRecord.case_id == case_id)
+        result = await self.db.execute(stmt)
+        row = result.scalar_one_or_none()
+        if not row:
+            return None
+        return ManualTestCase(
+            id=row.case_id,
+            requirement_id=row.requirement_id,
+            system=row.system,
+            module=row.module,
+            title=row.title,
+            type=row.type,   # type: ignore
+            precondition=row.precondition,
+            steps=[TestStep(**s) for s in row.steps_json],
+            expected=row.expected,
+            priority=row.priority,   # type: ignore
+            tags=row.tags or [],
+            automation_status=row.automation_status, # type: ignore
+            automation_level=row.automation_level,   # type: ignore
+            automation_framework=row.automation_framework,
+        )
+
+    async def update_automation_meta(
+        self,
+        case_id: str,
+        status: str,
+        level: Optional[str],
+        framework: Optional[str],
+    ):
+        stmt = select(ManualTestCaseRecord).where(ManualTestCaseRecord.case_id == case_id)
+        result = await self.db.execute(stmt)
+        row = result.scalar_one_or_none()
+        if not row:
+            return
+        row.automation_status = status
+        row.automation_level = level
+        row.automation_framework = framework
+        await self.db.commit()
+```
+
+`app/repositories/automation_repository.py`
+
+```python
+from typing import Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.db.models import AutomationSpecRecord, AutomationCodeArtifactRecord
+from app.models.automation_models import AutomationSpec, AutomationStep, AutomationCodeArtifact
+
+class AutomationRepository:
+    def __init__(self, db_session: AsyncSession):
+        self.db = db_session
+
+    async def save_spec(self, spec: AutomationSpec):
+        record = AutomationSpecRecord(
+            id=spec.id,
+            manual_case_id=spec.manual_case_id,
+            requirement_id=spec.requirement_id,
+            framework=spec.framework,
+            level=spec.level,
+            steps_json=[s.dict() for s in spec.steps],
+            tags=spec.tags,
+            status=spec.status,
+        )
+        self.db.add(record)
+        await self.db.commit()
+
+    async def get_spec_by_id(self, spec_id: str) -> Optional[AutomationSpec]:
+        stmt = select(AutomationSpecRecord).where(AutomationSpecRecord.id == spec_id)
+        result = await self.db.execute(stmt)
+        row = result.scalar_one_or_none()
+        if not row:
+            return None
+        return AutomationSpec(
+            id=row.id,
+            manual_case_id=row.manual_case_id,
+            requirement_id=row.requirement_id,
+            framework=row.framework,   # type: ignore
+            level=row.level,           # type: ignore
+            steps=[AutomationStep(**s) for s in row.steps_json],
+            tags=row.tags or [],
+            status=row.status,         # type: ignore
+        )
+
+    async def save_code_artifact(self, artifact: AutomationCodeArtifact):
+        record = AutomationCodeArtifactRecord(
+            id=artifact.id,
+            spec_id=artifact.spec_id,
+            manual_case_id=artifact.manual_case_id,
+            repo_path=artifact.repo_path,
+            file_path=artifact.file_path,
+            class_name=artifact.class_name,
+            function_name=artifact.function_name,
+            language=artifact.language,
+            framework=artifact.framework,
+            content=artifact.content,
+        )
+        self.db.add(record)
+        await self.db.commit()
+```
+
+---
+
+# 五、LLM 适配 & Prompt 构建
+
+## 5.1 LLM 基类与 Router
+
+`app/llm/base.py`
+
+```python
+from abc import ABC, abstractmethod
+
+class BaseLLMClient(ABC):
+    @abstractmethod
+    async def chat(self, prompt: str, **kwargs) -> str:
+        ...
+```
+
+`app/llm/openai_client.py`
+
+```python
+import httpx
+from tenacity import retry, stop_after_attempt, wait_exponential
+from app.core.config import settings
+from app.llm.base import BaseLLMClient
+
+class OpenAIClient(BaseLLMClient):
+    def __init__(self):
+        self.api_key = settings.OPENAI_API_KEY
+        self.model = settings.OPENAI_MODEL
+        self.base_url = settings.OPENAI_BASE_URL
+
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=8))
+    async def chat(self, prompt: str, **kwargs) -> str:
+        messages = [
+            {"role": "system", "content": "You are a senior QA engineer."},
+            {"role": "user", "content": prompt},
+        ]
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                f"{self.base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                json={
+                    "model": self.model,
+                    "messages": messages,
+                    "temperature": kwargs.get("temperature", 0.2),
+                    "max_tokens": kwargs.get("max_tokens", 2048),
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
+```
+
+`app/llm/llm_router.py`
+
+```python
+from app.llm.base import BaseLLMClient
+from app.llm.openai_client import OpenAIClient
+
+class LLMRouter:
+    def __init__(self, provider: str = "openai"):
+        if provider == "openai":
+            self.client: BaseLLMClient = OpenAIClient()
+        else:
+            self.client = OpenAIClient()  # fallback
+
+    async def chat(self, prompt: str, meta: dict | None = None, **kwargs) -> str:
+        # meta 可用于记录日志/监控：环节、模型名等
+        return await self.client.chat(prompt, **kwargs)
+```
+
+## 5.2 PromptBuilder + Jinja2 模板
+
+`app/domain/prompts/builder.py`
+
+```python
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from app.models.requirement_models import Requirement
+from app.models.scenario_models import Scenario
+from app.models.testcase_models import ManualTestCase
+from app.models.automation_models import AutomationSpec
+from app.models.api_models import ApiDescriptor
+from typing import List
+
+class PromptBuilder:
+    def __init__(self, template_dir: str = "app/domain/prompts/templates"):
+        self.env = Environment(
+            loader=FileSystemLoader(template_dir),
+            autoescape=select_autoescape()
+        )
+
+    # 需求分析 Prompt
+    def build_requirement_analysis_prompt(self, req: Requirement) -> str:
+        template = self.env.get_template("requirement_analysis.jinja2")
+        return template.render(requirement=req)
+
+    # 场景设计 Prompt
+    def build_scenario_design_prompt(self, req: Requirement, analysis_result: dict | None = None) -> str:
+        template = self.env.get_template("scenario_design.jinja2")
+        return template.render(requirement=req, analysis=analysis_result)
+
+    # 手工用例撰写 Prompt
+    def build_testcase_authoring_prompt(
+        self,
+        requirement: Requirement,
+        scenarios: List[Scenario],
+    ) -> str:
+        template = self.env.get_template("testcase_authoring.jinja2")
+        return template.render(requirement=requirement, scenarios=scenarios)
+
+    # API 用例 Prompt
+    def build_api_to_cases_prompt(self, api: ApiDescriptor) -> str:
+        template = self.env.get_template("api_cases.jinja2")
+        return template.render(api=api)
+
+    # 自动化规格 Prompt
+    def build_automation_spec_prompt(
+        self, manual_case: ManualTestCase, framework: str, level: str
+    ) -> str:
+        template = self.env.get_template("automation_spec.jinja2")
+        return template.render(
+            manual_case=manual_case,
+            framework=framework,
+            level=level,
+        )
+
+    # 自动化代码 Prompt
+    def build_automation_code_prompt(
+        self,
+        spec: AutomationSpec,
+        repo_config,
+    ) -> str:
+        template = self.env.get_template("automation_code.jinja2")
+        return template.render(
+            spec_json=spec.json(),
+            spec=spec,
+            repo_config=repo_config,
+        )
+```
+
+解析函数可以放在同一模块或专门的 parser 中，这里示例手工用例解析：
+
+```python
+import json
+from app.models.testcase_models import ManualTestCase, TestStep
+
+class PromptParser:
+    def parse_manual_testcases(self, raw_output: str, base_meta: dict) -> list[ManualTestCase]:
+        # 期望 LLM 输出严格 JSON 数组，必要时可以做容错处理
+        data = json.loads(raw_output)
+        cases: list[ManualTestCase] = []
+        for idx, item in enumerate(data):
+            steps = [TestStep(description=s) if isinstance(s, str) else TestStep(**s) 
+                     for s in item.get("steps", [])]
+            mc = ManualTestCase(
+                id=base_meta["id_prefix"] + str(idx),
+                requirement_id=base_meta["requirement_id"],
+                system=base_meta["system"],
+                module=base_meta["module"],
+                title=item["title"],
+                type=item.get("type", "functional"),
+                precondition=item.get("precondition", ""),
+                steps=steps,
+                expected=item["expected"],
+                priority=item.get("priority", "P2"),
+                tags=item.get("tags", []),
+            )
+            cases.append(mc)
+        return cases
+```
+
+---
+
+# 六、规则引擎 & 校验
+
+`app/domain/rules/base.py`
+
+```python
+from abc import ABC, abstractmethod
+from typing import List
+from app.models.testcase_models import ManualTestCase
+from app.models.api_models import ApiDescriptor
+
+class BaseRule(ABC):
+    @abstractmethod
+    def apply(self, cases: List[ManualTestCase], context: dict) -> List[ManualTestCase]:
+        ...
+```
+
+`app/domain/rules/parameter_rules.py`
+
+```python
+from typing import List
+from app.domain.rules.base import BaseRule
+from app.models.testcase_models import ManualTestCase, TestStep
+from app.models.api_models import ApiDescriptor
+
+class RequiredParamMissingRule(BaseRule):
+    def apply(self, cases: List[ManualTestCase], context: dict) -> List[ManualTestCase]:
+        api: ApiDescriptor = context["api"]
+        new_cases = cases[:]
+        for param in api.parameters:
+            if param.required:
+                title = f"必填参数 {param.name} 缺失"
+                steps = [
+                    TestStep(description=f"构造请求，移除必填参数 {param.name}"),
+                    TestStep(description=f"发送 {api.method} {api.path} 请求"),
+                ]
+                new_cases.append(
+                    ManualTestCase(
+                        id="",
+                        requirement_id=context.get("requirement_id", ""),
+                        system=context.get("system", ""),
+                        module=context.get("module", ""),
+                        title=title,
+                        type="exception",
+                        precondition="",
+                        steps=steps,
+                        expected="返回错误，提示缺少必填参数",
+                        priority="P1",
+                        tags=["auto_boundary", "required_missing"],
+                    )
+                )
+        return new_cases
+```
+
+`app/domain/rules/engine.py`
+
+```python
+from typing import List
+from app.models.testcase_models import ManualTestCase
+from app.models.api_models import ApiDescriptor
+from .parameter_rules import RequiredParamMissingRule
+
+class RulesEngine:
+    def __init__(self):
+        self.api_rules = [RequiredParamMissingRule()]  # 可动态注册
+
+    def apply_for_api(
+        self, cases: List[ManualTestCase], api: ApiDescriptor, extra_ctx: dict | None = None
+    ) -> List[ManualTestCase]:
+        ctx = extra_ctx or {}
+        ctx["api"] = api
+        new_cases = cases
+        for rule in self.api_rules:
+            new_cases = rule.apply(new_cases, ctx)
+        return new_cases
+```
+
+`app/domain/validators/testcase_validator.py`
+
+```python
+from typing import List
+from app.models.testcase_models import ManualTestCase
+
+class TestCaseValidator:
+    def validate_batch(self, cases: List[ManualTestCase]) -> None:
+        for c in cases:
+            self._validate_single(c)
+
+    def _validate_single(self, c: ManualTestCase) -> None:
+        if not c.title:
+            raise ValueError("TestCase title cannot be empty")
+        if not c.steps:
+            raise ValueError(f"TestCase {c.title} must have at least one step")
+        if not c.expected:
+            raise ValueError(f"TestCase {c.title} must have expected result")
+```
+
+---
+
+# 七、服务层（核心业务编排）
+
+## 7.1 RequirementAnalysisService
+
+`app/services/requirement_analysis_service.py`
+
+```python
+from app.llm.llm_router import LLMRouter
+from app.domain.prompts.builder import PromptBuilder
+from app.domain.prompts.builder import PromptParser  # 如果你把解析也放在这里
+from app.models.requirement_models import Requirement, RequirementAnalysisResult
+
+class RequirementAnalysisService:
+    def __init__(self, llm: LLMRouter, prompts: PromptBuilder):
+        self.llm = llm
+        self.prompts = prompts
+
+    async def analyze(self, req: Requirement) -> RequirementAnalysisResult:
+        prompt = self.prompts.build_requirement_analysis_prompt(req)
+        raw = await self.llm.chat(prompt, meta={"purpose": "requirement_analysis"})
+        # 假设 LLM 输出一个 JSON 对象，包含 features/business_rules/risks/test_focus
+        import json
+        data = json.loads(raw)
+        return RequirementAnalysisResult(
+            requirement_id=req.id,
+            features=data.get("features", []),
+            business_rules=data.get("business_rules", []),
+            risks=data.get("risks", []),
+            test_focus=data.get("test_focus", []),
+        )
+```
+
+## 7.2 ScenarioDesignService
+
+`app/services/scenario_design_service.py`
+
+```python
+from typing import List
+from app.llm.llm_router import LLMRouter
+from app.domain.prompts.builder import PromptBuilder
+from app.models.requirement_models import Requirement
+from app.models.scenario_models import Scenario
+
+class ScenarioDesignService:
+    def __init__(self, llm: LLMRouter, prompts: PromptBuilder):
+        self.llm = llm
+        self.prompts = prompts
+
+    async def design_scenarios(
+        self,
+        requirement: Requirement,
+        analysis_result: dict | None = None
+    ) -> List[Scenario]:
+        prompt = self.prompts.build_scenario_design_prompt(requirement, analysis_result)
+        raw = await self.llm.chat(prompt, meta={"purpose": "scenario_design"})
+        import json, uuid
+        data = json.loads(raw)
+        scenarios: List[Scenario] = []
+        for item in data.get("scenarios", []):
+            scenarios.append(
+                Scenario(
+                    id=item.get("id", str(uuid.uuid4())),
+                    requirement_id=requirement.id,
+                    title=item["title"],
+                    type=item.get("type", "functional"),
+                    description=item["description"],
+                )
+            )
+        return scenarios
+```
+
+## 7.3 TestCaseAuthorService（从场景生成手工用例）
+
+`app/services/testcase_author_service.py`
+
+```python
+from typing import List
+from app.llm.llm_router import LLMRouter
+from app.domain.prompts.builder import PromptBuilder, PromptParser
+from app.models.requirement_models import Requirement
+from app.models.scenario_models import Scenario
+from app.models.testcase_models import ManualTestCase
+import uuid
+
+class TestCaseAuthorService:
+    def __init__(self, llm: LLMRouter, prompts: PromptBuilder, parser: PromptParser):
+        self.llm = llm
+        self.prompts = prompts
+        self.parser = parser
+
+    async def author_from_scenarios(
+        self,
+        requirement: Requirement,
+        scenarios: List[Scenario],
+    ) -> List[ManualTestCase]:
+        prompt = self.prompts.build_testcase_authoring_prompt(requirement, scenarios)
+        raw = await self.llm.chat(prompt, meta={"purpose": "testcase_author"})
+        base_meta = {
+            "id_prefix": f"TC-{requirement.id}-",
+            "requirement_id": requirement.id,
+            "system": requirement.system,
+            "module": requirement.module,
+        }
+        cases = self.parser.parse_manual_testcases(raw, base_meta)
+        return cases
+```
+
+## 7.4 BoundaryCompletionService
+
+`app/services/boundary_completion_service.py`
+
+```python
+from typing import List
+from app.domain.rules.engine import RulesEngine
+from app.models.testcase_models import ManualTestCase
+from app.models.api_models import ApiDescriptor
+
+class BoundaryCompletionService:
+    def __init__(self, rules_engine: RulesEngine):
+        self.engine = rules_engine
+
+    async def complete_for_api(
+        self, cases: List[ManualTestCase], api: ApiDescriptor, ctx: dict
+    ) -> List[ManualTestCase]:
+        # 使用规则引擎对 API 用例进行边界/异常补充
+        enriched = self.engine.apply_for_api(cases, api, ctx)
+        return enriched
+```
+
+## 7.5 AutomationSpecService（预留自动化规格生成）
+
+`app/services/automation_spec_service.py`
+
+```python
+from app.llm.llm_router import LLMRouter
+from app.domain.prompts.builder import PromptBuilder
+from app.domain.validators.automation_validator import AutomationSpecValidator
+from app.repositories.testcase_repository import TestCaseRepository
+from app.repositories.automation_repository import AutomationRepository
+from app.models.automation_models import AutomationSpec, AutomationSpecRequest, AutomationSpecResponse
+import json, uuid
+
+class AutomationSpecService:
+    def __init__(
+        self,
+        llm: LLMRouter,
+        prompts: PromptBuilder,
+        testcase_repo: TestCaseRepository,
+        automation_repo: AutomationRepository,
+        validator: AutomationSpecValidator,
+    ):
+        self.llm = llm
+        self.prompts = prompts
+        self.testcase_repo = testcase_repo
+        self.automation_repo = automation_repo
+        self.validator = validator
+
+    async def generate_spec(self, req: AutomationSpecRequest) -> AutomationSpec:
+        manual_case = await self.testcase_repo.get_by_case_id(req.manual_case_id)
+        if not manual_case:
+            raise ValueError("manual case not found")
+        prompt = self.prompts.build_automation_spec_prompt(
+            manual_case=manual_case,
+            framework=req.framework,
+            level=req.level,
+        )
+        raw = await self.llm.chat(prompt, meta={"purpose": "automation_spec"})
+        data = json.loads(raw)
+        steps = [AutomationStep(**s) for s in data["steps"]]
+        spec = AutomationSpec(
+            id=str(uuid.uuid4()),
+            manual_case_id=manual_case.id,
+            requirement_id=manual_case.requirement_id,
+            framework=req.framework,
+            level=req.level,
+            steps=steps,
+            tags=data.get("tags", []),
+            status="draft",
+        )
+        self.validator.validate_spec(spec)
+        await self.automation_repo.save_spec(spec)
+        await self.testcase_repo.update_automation_meta(
+            manual_case.id, status="ready", level=req.level, framework=req.framework
+        )
+        return spec
+```
+
+## 7.6 AutomationCodeService（预留自动化代码生成）
+
+`app/services/automation_code_service.py`
+
+```python
+from app.llm.llm_router import LLMRouter
+from app.domain.prompts.builder import PromptBuilder
+from app.repositories.automation_repository import AutomationRepository
+from app.models.automation_models import AutomationCodeArtifact, AutomationCodeRequest
+import uuid
+
+class AutomationCodeService:
+    def __init__(self, llm: LLMRouter, prompts: PromptBuilder, automation_repo: AutomationRepository):
+        self.llm = llm
+        self.prompts = prompts
+        self.automation_repo = automation_repo
+
+    async def generate_code(self, req: AutomationCodeRequest) -> AutomationCodeArtifact:
+        spec = await self.automation_repo.get_spec_by_id(req.spec_id)
+        if not spec:
+            raise ValueError("spec not found")
+        prompt = self.prompts.build_automation_code_prompt(spec, req.repo_config)
+        raw_code = await self.llm.chat(prompt, meta={"purpose": "automation_code"})
+        # 简化：将全部 raw_code 存为 content，实际中可解析出类名/函数名
+        artifact = AutomationCodeArtifact(
+            id=str(uuid.uuid4()),
+            spec_id=spec.id,
+            manual_case_id=spec.manual_case_id,
+            repo_path=req.repo_config.repo_path,
+            file_path=f"{req.repo_config.test_dir}/test_{spec.manual_case_id}.py",
+            class_name=None,
+            function_name=f"test_{spec.manual_case_id.lower()}",
+            language="python",
+            framework=spec.framework,
+            content=raw_code,
+        )
+        await self.automation_repo.save_code_artifact(artifact)
+        return artifact
+```
+
+---
+
+# 八、API 层：路由与依赖注入
+
+## 8.1 FastAPI 入口
+
+`app/main.py`
+
+```python
+from fastapi import FastAPI
+from app.api.v1.routes_requirements import router as req_router
+from app.api.v1.routes_scenarios import router as scenario_router
+from app.api.v1.routes_testcases import router as testcase_router
+from app.api.v1.routes_automation import router as automation_router
+from app.api.v1.routes_tasks import router as tasks_router
+from app.core.logging_config import setup_logging
+
+def create_app() -> FastAPI:
+    setup_logging()
+    app = FastAPI(title="AI Test Case Generation Service", version="1.0.0")
+    app.include_router(req_router, prefix="/api/v1/requirements", tags=["requirements"])
+    app.include_router(scenario_router, prefix="/api/v1/scenarios", tags=["scenarios"])
+    app.include_router(testcase_router, prefix="/api/v1/testcases", tags=["testcases"])
+    app.include_router(automation_router, prefix="/api/v1/automation", tags=["automation"])
+    app.include_router(tasks_router, prefix="/api/v1/tasks", tags=["tasks"])
+    return app
+
+app = create_app()
+```
+
+## 8.2 依赖注入
+
+`app/api/v1/dependencies.py`
+
+```python
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.session import get_db
+from app.llm.llm_router import LLMRouter
+from app.domain.prompts.builder import PromptBuilder, PromptParser
+from app.domain.rules.engine import RulesEngine
+from app.domain.validators.testcase_validator import TestCaseValidator
+from app.domain.validators.automation_validator import AutomationSpecValidator
+from app.repositories.testcase_repository import TestCaseRepository
+from app.repositories.automation_repository import AutomationRepository
+from app.services.requirement_analysis_service import RequirementAnalysisService
+from app.services.scenario_design_service import ScenarioDesignService
+from app.services.testcase_author_service import TestCaseAuthorService
+from app.services.boundary_completion_service import BoundaryCompletionService
+from app.services.automation_spec_service import AutomationSpecService
+from app.services.automation_code_service import AutomationCodeService
+
+def get_llm_router() -> LLMRouter:
+    return LLMRouter()
+
+def get_prompt_builder() -> PromptBuilder:
+    return PromptBuilder()
+
+def get_prompt_parser() -> PromptParser:
+    return PromptParser()
+
+def get_rules_engine() -> RulesEngine:
+    return RulesEngine()
+
+def get_testcase_repo(db: AsyncSession = Depends(get_db)) -> TestCaseRepository:
+    return TestCaseRepository(db)
+
+def get_automation_repo(db: AsyncSession = Depends(get_db)) -> AutomationRepository:
+    return AutomationRepository(db)
+
+# 各服务
+def get_requirement_analysis_service(
+    llm: LLMRouter = Depends(get_llm_router),
+    prompts: PromptBuilder = Depends(get_prompt_builder),
+) -> RequirementAnalysisService:
+    return RequirementAnalysisService(llm, prompts)
+
+def get_scenario_design_service(
+    llm: LLMRouter = Depends(get_llm_router),
+    prompts: PromptBuilder = Depends(get_prompt_builder),
+) -> ScenarioDesignService:
+    return ScenarioDesignService(llm, prompts)
+
+def get_testcase_author_service(
+    llm: LLMRouter = Depends(get_llm_router),
+    prompts: PromptBuilder = Depends(get_prompt_builder),
+    parser: PromptParser = Depends(get_prompt_parser),
+) -> TestCaseAuthorService:
+    return TestCaseAuthorService(llm, prompts, parser)
+
+def get_boundary_completion_service(
+    rules: RulesEngine = Depends(get_rules_engine),
+) -> BoundaryCompletionService:
+    return BoundaryCompletionService(rules)
+
+def get_automation_spec_service(
+    llm: LLMRouter = Depends(get_llm_router),
+    prompts: PromptBuilder = Depends(get_prompt_builder),
+    tc_repo: TestCaseRepository = Depends(get_testcase_repo),
+    auto_repo: AutomationRepository = Depends(get_automation_repo),
+) -> AutomationSpecService:
+    validator = AutomationSpecValidator()
+    return AutomationSpecService(llm, prompts, tc_repo, auto_repo, validator)
+
+def get_automation_code_service(
+    llm: LLMRouter = Depends(get_llm_router),
+    prompts: PromptBuilder = Depends(get_prompt_builder),
+    auto_repo: AutomationRepository = Depends(get_automation_repo),
+) -> AutomationCodeService:
+    return AutomationCodeService(llm, prompts, auto_repo)
+```
+
+## 8.3 手工用例 API（同步 / 异步）
+
+`app/api/v1/routes_testcases.py`
+
+```python
+from fastapi import APIRouter, Depends, status
+from app.models.testcase_models import FunctionalCaseRequest, TestCaseBatchResponse
+from app.api.v1.dependencies import (
+    get_requirement_analysis_service,
+    get_scenario_design_service,
+    get_testcase_author_service,
+    get_testcase_repo,
+)
+from app.services.requirement_analysis_service import RequirementAnalysisService
+from app.services.scenario_design_service import ScenarioDesignService
+from app.services.testcase_author_service import TestCaseAuthorService
+from app.utils.id_generator import gen_requirement_id
+from app.models.requirement_models import Requirement
+
+router = APIRouter()
+
+@router.post("/functional/sync", response_model=TestCaseBatchResponse)
+async def generate_functional_cases_sync(
+    req: FunctionalCaseRequest,
+    ra_svc: RequirementAnalysisService = Depends(get_requirement_analysis_service),
+    sc_svc: ScenarioDesignService = Depends(get_scenario_design_service),
+    author_svc: TestCaseAuthorService = Depends(get_testcase_author_service),
+    tc_repo = Depends(get_testcase_repo),
+):
+    # 1. requirement 实体组装
+    requirement = Requirement(
+        id=req.requirement_id or gen_requirement_id(),
+        system=req.system,
+        module=req.module,
+        title=f"{req.system}-{req.module}",
+        description=req.requirement_text,
+        context=req.context,
+    )
+    # 2. 分析需求
+    analysis_result = await ra_svc.analyze(requirement)
+    # 3. 场景设计
+    scenarios = await sc_svc.design_scenarios(requirement, analysis_result.dict())
+    # 4. 用例撰写
+    cases = await author_svc.author_from_scenarios(requirement, scenarios)
+    # 5. 入库
+    await tc_repo.save_cases(cases)
+    return TestCaseBatchResponse(
+        requirement_id=requirement.id,
+        cases=cases,
+    )
+```
+
+异步模式可以通过 Celery（见下节）实现：`POST /functional/async` → 创建任务 → `GET /tasks/{id}` 查询。
+
+## 8.4 自动化 API（预留）
+
+`app/api/v1/routes_automation.py`
+
+```python
+from fastapi import APIRouter, Depends
+from app.models.automation_models import AutomationSpecRequest, AutomationSpecResponse, AutomationCodeRequest, AutomationCodeResponse
+from app.api.v1.dependencies import get_automation_spec_service, get_automation_code_service
+from app.services.automation_spec_service import AutomationSpecService
+from app.services.automation_code_service import AutomationCodeService
+
+router = APIRouter()
+
+@router.post("/spec/generate", response_model=AutomationSpecResponse)
+async def generate_automation_spec(
+    req: AutomationSpecRequest,
+    svc: AutomationSpecService = Depends(get_automation_spec_service),
+):
+    spec = await svc.generate_spec(req)
+    return AutomationSpecResponse(spec=spec)
+
+@router.post("/code/generate", response_model=AutomationCodeResponse)
+async def generate_automation_code(
+    req: AutomationCodeRequest,
+    svc: AutomationCodeService = Depends(get_automation_code_service),
+):
+    artifact = await svc.generate_code(req)
+    return AutomationCodeResponse(artifact=artifact)
+```
+
+---
+
+# 九、异步任务（Celery）与任务查询
+
+`app/workers/celery_app.py`
+
+```python
+from celery import Celery
+from app.core.config import settings
+
+celery_app = Celery(
+    "ai_testcase_service",
+    broker=settings.CELERY_BROKER_URL,
+    backend=settings.CELERY_RESULT_BACKEND,
+)
+
+celery_app.conf.task_routes = {
+    "app.workers.tasks.*": {"queue": "default"},
+}
+```
+
+`app/workers/tasks.py`（示意：生成手工用例）
+
+```python
+from app.workers.celery_app import celery_app
+from app.models.testcase_models import FunctionalCaseRequest
+from app.services.testcase_orchestration_service import TestCaseOrchestrationService
+import asyncio
+
+def get_orchestration_service_for_worker() -> TestCaseOrchestrationService:
+    # 简化：实际中需要手动构建 llm, prompts, repos ...
+    ...
+
+@celery_app.task(bind=True)
+def generate_functional_cases_task(self, req_data: dict):
+    req = FunctionalCaseRequest.parse_obj(req_data)
+    svc = get_orchestration_service_for_worker()
+    try:
+        result = asyncio.run(svc.generate_full_flow_manual_cases(req))
+        return {"status": "SUCCESS", "result": result.dict()}
+    except Exception as e:
+        self.update_state(state="FAILURE", meta={"error": str(e)})
+        return {"status": "FAILURE", "error": str(e)}
+```
+
+`app/api/v1/routes_tasks.py`
+
+```python
+from fastapi import APIRouter
+from celery.result import AsyncResult
+from app.workers.celery_app import celery_app
+from app.models.task_models import TaskStatusResponse
+
+router = APIRouter()
+
+@router.get("/{task_id}", response_model=TaskStatusResponse)
+async def get_task_status(task_id: str):
+    res = AsyncResult(task_id, app=celery_app)
+    if res.state == "PENDING":
+        return TaskStatusResponse(task_id=task_id, status="PENDING")
+    if res.state == "FAILURE":
+        return TaskStatusResponse(task_id=task_id, status="FAILURE", error=str(res.info))
+    if res.state == "SUCCESS":
+        return TaskStatusResponse(task_id=task_id, status="SUCCESS", result=res.result)
+    return TaskStatusResponse(task_id=task_id, status=res.state)  # STARTED, RETRY 等
+```
+
+---
+
+# 十、配置 & 日志
+
+`app/core/config.py`
+
+```python
+from pydantic import BaseSettings
+
+class Settings(BaseSettings):
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+
+    DATABASE_URL: str = "sqlite+aiosqlite:///./testcases.db"
+
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
+
+    class Config:
+        env_file = ".env"
+
+settings = Settings()
+```
+
+`app/core/logging_config.py`
+
+```python
+import logging
+import sys
+
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
+```
+
+---
+
+# 十一、总结与落地建议
+
+1. 这个方案已经把：
+   - 多角色/多环节（需求分析、场景设计、用例撰写、边界补充、审核、维护、自动化规格、自动化代码）
+   - 分层架构（API / Service / Domain & Rules / LLM / Repository / Infra）
+   - 手工 → AutoSpec → AutoCode 的演进路径
+   全部融合在一个统一的 blueprint 里。
+
+2. 当前你可以**只实现手工用例相关部分**（RequirementAnalysisService / ScenarioDesignService / TestCaseAuthorService / BoundaryCompletion / Review / Repository），即：
+   - `/api/v1/testcases/functional/sync`
+   - 或 `/functional/async` + Celery
+
+3. 同时保留自动化相关模型、服务接口和 Prompt 模板，未来只需：
+   - 逐步实现 `AutomationSpecService.generate_spec` 的 Prompt 和解析；
+   - 再实现 `AutomationCodeService.generate_code`；
+   即可让系统自然升级为“手工用例→自动化规格→自动化代码”的完整链路。
+
+如果你希望，我可以再为某一块单独拉出来做“几乎可直接运行”的完整代码，比如专门针对 “pytest+requests 的 API 自动化 AutoSpec + AutoCode” 做一套示例 Prompt 和生成规则。
