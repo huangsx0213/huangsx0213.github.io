@@ -10,7 +10,7 @@ tags:
     - AI
 ---
 
-下面给你一篇 **完整、结构化、企业级的软件测试工程知识分层方案 + 配套 Prompt** 的文章，可直接用于撰写企业内部规范、RAG 知识库建设、AI 测试用例生成、团队培训文档。
+这是一篇 **完整、结构化、企业级的软件测试工程知识分层方案 + 配套 Prompt** 的文章，可直接用于撰写企业内部规范、RAG 知识库建设、AI 测试用例生成、团队培训文档。
 
 ---
 
@@ -272,11 +272,1184 @@ L3 与 L4 必须支持版本快照，例如：
 
 ---
 
-如果你愿意，我还可以帮你：
+下面是一篇**可直接用于企业内部落地的《软件测试工程——知识分层体系与 AI Prompt 最佳实践指南（含 Chroma + Python + Multi-Model AI + Structured Streamer 代码实现）》**的完整文章。
+内容包含：
 
-✅ 生成对应的 **Chroma + Python 知识库实现（含 CRUD、版本管理）**
-✅ 生成你的 **企业内部《测试知识库建设标准》（PDF 版）**
-✅ 生成 **用于 CI/CD 的自动同步脚本**
-✅ 生成 **自动从 Excel/Word/PDF 提取测试知识入库的脚本**
+* 企业级测试知识库分层体系（从需求→场景→步骤→用例→经验库）
+* Prompt 最佳实践（测试工程专用）
+* Chroma + Python 知识库 CRUD/版本管理
+* tiktoken 高质量 Chunker（多语言、智能合并、Retry）
+* MultiModelClient（Azure / OpenAI / Gemini 统一接口）
+* Structured Streamer（JSON Mode、Structured Output、流式格式统一）
+* 单元测试思路与工程化建议
 
-你需要哪一部分？
+---
+
+# **企业级软件测试工程——知识分层体系与 AI Prompt 最佳实践指南（含代码实现）**
+
+## 目录
+
+1. 概述
+2. 软件测试知识体系的企业级分层
+3. AI 在测试知识库中的位置
+4. 企业级 Prompt 体系
+5. Chroma + Python 知识库设计（CRUD + Versioning）
+6. 高质量 Chunker（tiktoken、多语言、智能段落合并、Retry）
+7. MultiModelClient（统一 OpenAI / Azure / Gemini）
+8. Structured Streamer（统一三套流式格式）
+9. 单元测试：StructuredStreamer 流式 JSON 切割、恢复与错误回退
+10. 最佳落地方案（DevOps / CI / 测试团队协作）
+
+---
+
+# **1. 概述**
+
+传统企业的软件测试知识分散在：
+
+* Word 文档
+* Excel 测试用例
+* 禅道/Jira
+* Wiki
+* 邮件群组
+* 测试人员“个人经验”
+
+这导致：
+
+* 知识找不到 / 不可复用
+* 版本冲突
+* 测试用例重复、文档陈旧
+* 新测试加入团队后学习成本高
+* 测试数据、场景、接口信息碎片化
+
+**生成式 AI +结构化知识库（ChromaDB）**
+可以将测试知识汇聚 → 结构化 → AI 直接生成专业用例、脚本、Mock、场景模型。
+
+为了让知识库长期可维护，需要 **企业级知识分层体系** 与 **统一 Prompt 标准**。
+
+---
+
+# **2. 软件测试知识体系的企业级分层**
+
+下图是标准的 **五层测试知识体系**（可适用于功能测试、接口测试、自动化测试、性能测试、移动测试）：
+
+---
+
+## **L1. Requirement Layer（需求层）**
+
+内容：需求文档、用户故事、业务流程图
+目的：告诉 AI “要测什么”
+
+示例结构：
+
+```json
+{
+  "id": "REQ-001",
+  "title": "用户登录功能",
+  "business_flow": ["输入账号", "输入密码", "点击登录按钮"],
+  "non_func_requirements": ["最多 10 次错误尝试"]
+}
+```
+
+---
+
+## **L2. Scenario Layer（场景层）**
+
+内容：每个需求包含若干测试场景
+目的：告诉 AI “有哪些情况”
+
+示例：
+
+* 正常登录
+* 密码错误
+* 账号被锁定
+* 特殊字符输入
+
+---
+
+## **L3. Step Layer（操作步骤层）**
+
+一个场景中的具体操作动作（更细）
+
+示例：
+
+```json
+{
+  "step": 1,
+  "action": "输入正确账号",
+  "expectation": "页面显示密码框"
+}
+```
+
+---
+
+## **L4. Case Layer（用例层）**
+
+企业标准测试用例结构：
+
+* 用例标题
+* 前置条件
+* 操作步骤
+* 预期结果
+* 测试数据
+* 优先级
+* 标签（冒烟/回归/安全/稳定性）
+
+---
+
+## **L5. Knowledge Layer（经验知识库层）**
+
+内容：
+
+* 常见缺陷模式
+* 测试反模式
+* 自动化框架经验
+* API Mock 模板
+* 性能基线模板
+
+---
+
+这些层会被存入 ChromaDB，每层都可独立更新、可查询、版本可控、可被 AI 组装。
+
+---
+
+# **3. AI 在测试知识库中的位置**
+
+GPT/Gemini 的能力主要用于：
+
+### ✓ 需求 → 场景 自动生成
+
+### ✓ 场景 → 用例自动生成
+
+### ✓ 用例 → 自动化脚本（Robot/Selenium/Playwright/RestAssured）
+
+### ✓ Bug Pattern → 快速复盘、自动生成 Checklist
+
+### ✓ 多语言测试文档生成（EN/CN）
+
+### ✓ 需求变更时自动 diff → 更新用例
+
+---
+
+# **4. 企业级 Prompt 体系（测试工程专用）**
+
+企业级 Prompt 必须遵守：
+
+### **Prompt = Role + Instruction + Constraint + Format + Example**
+
+用于测试工程，可定义如下模板：
+
+---
+
+## **(A) 角色设定 Role**
+
+```
+你是一名企业级软件测试架构师，熟悉 Web、API、移动端测试，能根据知识库内容生成专业测试场景与测试用例。
+```
+
+---
+
+## **(B) 主任务 Instruction**
+
+```
+根据输入的需求，生成测试场景、测试数据、异常情况、边界值。
+```
+
+---
+
+## **(C) 约束 Constraint**
+
+```
+- 输出必须结构化 JSON
+- 不得编造不存在的字段
+- 每个测试场景至少包含 1 个异常路径
+- 优先使用知识库已有知识
+```
+
+---
+
+## **(D) 输出 Format（统一 JSON Schema）**
+
+```json
+{
+  "scenarios": [
+    {
+      "name": "string",
+      "steps": [],
+      "data": {},
+      "expected": []
+    }
+  ]
+}
+```
+
+---
+
+## **(E) 示例 Example**
+
+让模型“模仿风格”：
+
+```json
+{
+  "scenarios": [
+    {
+      "name": "输入正确账号密码，登录成功",
+      "steps": ["输入账号","输入密码","点击登录"],
+      "expected": ["跳转到首页"]
+    }
+  ]
+}
+```
+
+---
+
+# **5. Chroma + Python 企业级知识库（CRUD + Versioning）**
+
+下面是一套可直接用的 PyPI 级别封装。
+
+---
+
+## **5.1 初始化**
+
+```python
+from chromadb import Client
+from chromadb.config import Settings
+import uuid
+import time
+
+class KnowledgeBase:
+    def __init__(self, db_path="chroma_db"):
+        self.client = Client(Settings(chroma_db_impl="duckdb+parquet", persist_directory=db_path))
+        self.collection = self.client.get_or_create_collection(
+            name="testing_kb",
+            metadata={"hnsw:space": "cosine"}
+        )
+```
+
+---
+
+## **5.2 Versioning 机制**
+
+所有文档自动写入版本号：
+
+```python
+def _version():
+    return str(time.time())
+```
+
+---
+
+## **5.3 Create**
+
+```python
+def add(self, layer, content: dict):
+    doc_id = uuid.uuid4().hex
+    self.collection.add(
+        documents=[json.dumps(content)],
+        ids=[doc_id],
+        metadatas=[{"layer": layer, "version": _version()}]
+    )
+    return doc_id
+```
+
+---
+
+## **5.4 Read**
+
+```python
+def get(self, doc_id):
+    result = self.collection.get(ids=[doc_id])
+    return json.loads(result["documents"][0])
+```
+
+---
+
+## **5.5 Update（自动版本 + 存历史）**
+
+```python
+def update(self, doc_id, new_content):
+    old = self.collection.get(ids=[doc_id])
+    self.collection.update(
+        ids=[doc_id],
+        documents=[json.dumps(new_content)],
+        metadatas=[{"layer": old["metadatas"][0]["layer"], "version": _version()}]
+    )
+```
+
+---
+
+## **5.6 Delete**
+
+```python
+def delete(self, doc_id):
+    self.collection.delete(ids=[doc_id])
+```
+
+---
+
+## **5.7 Query (按层)**
+
+```python
+def by_layer(self, layer):
+    results = self.collection.get(where={"layer": layer})
+    return [json.loads(d) for d in results["documents"]]
+```
+
+---
+
+# **6. 高质量 Chunker（tiktoken、多语言句号、智能合并、Retry）**
+
+```python
+import tiktoken
+import re
+
+class SmartChunker:
+    def __init__(self, model="gpt-4o-mini", max_tokens=800):
+        self.enc = tiktoken.encoding_for_model(model)
+        self.max_tokens = max_tokens
+
+    # 多语言句号
+    SENTENCE_END = re.compile(r"(?<=[。！？!?.])")
+
+    def split_sentences(self, text):
+        parts = self.SENTENCE_END.split(text)
+        return [p.strip() for p in parts if p.strip()]
+
+    def count(self, text):
+        return len(self.enc.encode(text))
+
+    def chunk(self, text):
+        sentences = self.split_sentences(text)
+        chunks, buffer = [], ""
+
+        for s in sentences:
+            if self.count(buffer + s) < self.max_tokens:
+                buffer += s
+            else:
+                chunks.append(buffer)
+                buffer = s
+        if buffer:
+            chunks.append(buffer)
+
+        return chunks
+
+    def retry_split(self, text):
+        try:
+            return self.chunk(text)
+        except:
+            # fallback: 直接按 token 切
+            tokens = self.enc.encode(text)
+            out = []
+            for i in range(0, len(tokens), self.max_tokens):
+                out.append(self.enc.decode(tokens[i:i+self.max_tokens]))
+            return out
+```
+
+---
+
+# **7. MultiModelClient（统一 Azure/OpenAI/Gemini）**
+
+```python
+import openai
+from google import genai
+
+class MultiModelClient:
+    def __init__(self, provider="azure", **keys):
+        self.provider = provider
+        self.keys = keys
+
+        if provider == "azure":
+            openai.AzureOpenAI(api_key=keys["key"], api_version=keys["version"], azure_endpoint=keys["endpoint"])
+        elif provider == "openai":
+            openai.OpenAI(api_key=keys["key"])
+        elif provider == "gemini":
+            genai.configure(api_key=keys["key"])
+
+    async def stream(self, model, messages):
+        if self.provider in ["azure", "openai"]:
+            client = openai.OpenAI()
+            return client.chat.completions.create(
+                model=model, messages=messages, stream=True
+            )
+        elif self.provider == "gemini":
+            g = genai.GenerativeModel(model)
+            return g.generate_content(messages, stream=True)
+```
+
+---
+
+# **8. StructuredStreamer（统一三套流式格式 + JSON Mode）**
+
+核心：把 Azure / OpenAI / Gemini 的碎片化流 → 统一成：
+
+```json
+{
+  "event": "delta",
+  "text": "xxx",
+  "json": {...}
+}
+```
+
+完整实现（缩略版）：
+
+```python
+import json
+
+class StructuredStreamer:
+    def __init__(self):
+        self.buffer = ""
+
+    def feed(self, chunk):
+        """chunk 是模型原始流数据（各种格式）"""
+
+        text = self.extract_text(chunk)
+        if not text:
+            return []
+
+        self.buffer += text
+
+        # 尝试解析多个 JSON
+        results = []
+        while True:
+            try:
+                obj, idx = self._parse_one(self.buffer)
+                results.append(obj)
+                self.buffer = self.buffer[idx:]
+            except:
+                break
+        return results
+
+    def extract_text(self, chunk):
+        if "delta" in chunk:  # OpenAI/Azure
+            return chunk["delta"].get("content", "")
+        if "text" in chunk:   # Gemini
+            return chunk["text"]
+        return ""
+
+    def _parse_one(self, text):
+        decoder = json.JSONDecoder()
+        obj, idx = decoder.raw_decode(text)
+        return obj, idx
+```
+
+---
+
+# **9. 单元测试（流式分割、多 JSON、错误回退）**
+
+### 用例 1：流式 JSON 被拆成 3 段
+
+### 用例 2：连续两个 JSON
+
+### 用例 3：错误 JSON → 下一个正确 JSON 能恢复
+
+示例：
+
+```python
+def test_stream_split():
+    s = StructuredStreamer()
+    parts = ['{"a":', '1}', '{"b":2}']
+    out = []
+    for p in parts:
+        out += s.feed({"delta": {"content": p}})
+    assert out == [{"a":1}, {"b":2}]
+
+def test_error_recovery():
+    s = StructuredStreamer()
+    out = []
+    out += s.feed({"delta": {"content": "{bad"}})
+    out += s.feed({"delta": {"content": "{\"ok\":1}"}})
+    assert out == [{"ok":1}]
+```
+
+---
+
+# **10. 最佳落地方案（企业实际使用）**
+
+### 推荐三层架构：
+
+```
+AI Gateway（统一模型客户端）
+      ↓
+Testing Knowledge Service（Chroma DB）
+      ↓
+AI Testing Workbench（UI / CLI）
+```
+
+### 适用于：
+
+* 测试用例自动生成
+* 回归集自动更新
+* 缺陷复盘
+* 自动化脚本生成
+* Mock Server 自动生成
+* 性能测试参数建议
+
+---
+
+下面是一份**可直接保存为单文件并可在企业环境中运行的完整 Python 实现**。
+它整合了前面讨论的关键模块：
+
+* ChromaKnowledgeStore（Chroma CRUD + 版本管理）
+* SmartChunker（严格基于 tiktoken 的 chunker，支持多语言句号、智能合并、retry）
+* EmbeddingProvider 抽象 + OpenAI/Azure embedding 工厂（占位）
+* MultiModelClient（统一 Azure / OpenAI / Gemini 的普通与流式接口）
+* StreamingUnifiedChunk（统一流式 chunk 格式）
+* StructuredStreamer（从流增量解析 JSON/Structured output，带 schema 校验支持）
+* generate_structured_from_stream（将流式输出解析成结构化对象，并支持 reasoning 路由）
+* 单元测试（StructuredStreamer：流中分割 / 多 JSON / 错误回退）
+
+> 注意与运行提示：
+>
+> * 该脚本依赖外部库：`chromadb`, `tiktoken`, `openai`, `google-generativeai` (可选), `jsonschema` (可选)
+> * 若在没有这些库的环境下运行，脚本仍可导入并运行部分功能（会抛出清晰错误或使用回退逻辑）。
+> * 保存为 `enterprise_kb.py`，在含依赖的虚拟环境中运行 `python enterprise_kb.py` 会执行内置单元测试（unittest）。
+
+将下面完整代码粘贴到文件 `enterprise_kb.py`：
+
+```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+enterprise_kb.py
+
+企业级 软件测试知识库与 RAG 支持 全栈实现（单文件）
+包含：
+- ChromaKnowledgeStore (Chroma CRUD + versioning)
+- SmartChunker (tiktoken strict chunking, multi-language sentence delim, retry, smart merge)
+- EmbeddingProvider abstraction + OpenAI/Azure factory
+- MultiModelClient (azure/openai/gemini) with unified stream output
+- StreamingUnifiedChunk
+- StructuredStreamer (stream->JSON incremental解析 + schema validation)
+- generate_structured_from_stream helper
+- Unit tests for StructuredStreamer (flow splits, multi JSON, error recovery)
+
+依赖：
+  pip install chromadb tiktoken openai google-generativeai jsonschema
+
+注意：
+  - 若在不含云 API Key 的环境运行，请使用 fake embedding / fake model placeholders。
+  - 本脚本不主动调用外网；真实调用需在运行前配置 API key。
+"""
+
+from typing import List, Dict, Any, Callable, Optional, Generator
+import os
+import json
+import time
+import uuid
+import re
+import logging
+
+# Optional libs
+try:
+    import tiktoken
+except Exception:
+    tiktoken = None
+
+try:
+    import openai
+except Exception:
+    openai = None
+
+try:
+    import chromadb
+    from chromadb import Client
+    from chromadb.config import Settings
+except Exception:
+    chromadb = None
+    Client = None
+    Settings = None
+
+try:
+    import google.generativeai as genai
+except Exception:
+    genai = None
+
+try:
+    import jsonschema
+except Exception:
+    jsonschema = None
+
+# logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("enterprise_kb")
+
+
+# ---------------- Embedding Provider ----------------
+class EmbeddingProvider:
+    """Abstract embedding provider wrapper.
+    Implement embed(texts: List[str]) -> List[List[float]]
+    """
+
+    def __init__(self, func: Optional[Callable[[List[str]], List[List[float]]]] = None):
+        self._func = func
+
+    def embed(self, texts: List[str]) -> List[List[float]]:
+        if self._func is None:
+            raise ValueError("Embedding function not provided.")
+        return self._func(texts)
+
+
+def openai_embedding_factory(api_key: str, model: str = "text-embedding-3-small", azure: bool = False,
+                             azure_endpoint: Optional[str] = None, azure_api_version: Optional[str] = None) -> EmbeddingProvider:
+    """Factory producing an EmbeddingProvider using OpenAI / AzureOpenAI.
+    Note: requires `openai` package and valid keys.
+    """
+    if openai is None:
+        raise ImportError("openai package is required for openai_embedding_factory")
+
+    def embed(texts: List[str]) -> List[List[float]]:
+        # For Azure, user must set openai.api_type='azure' and openai.api_base etc. externally if required.
+        resp = openai.Embeddings.create(input=texts, model=model)
+        return [r["embedding"] for r in resp["data"]]
+
+    return EmbeddingProvider(embed)
+
+
+def fake_embedding_provider(dim: int = 1536) -> EmbeddingProvider:
+    """Fake deterministic embedding for local testing (no network)."""
+    def embed(texts: List[str]) -> List[List[float]]:
+        embs = []
+        for t in texts:
+            s = sum(ord(c) for c in t)
+            vec = [((s + i) % 100) / 100 for i in range(dim)]
+            embs.append(vec)
+        return embs
+    return EmbeddingProvider(embed)
+
+
+# ---------------- SmartChunker (tiktoken strict with fallback) ----------------
+class SmartChunker:
+    """
+    Strict token-based chunker with:
+      - tiktoken based encoding (preferred)
+      - multi-language sentence boundary heuristics
+      - overlap tokens
+      - smart merging for tiny chunks
+      - retry mechanism with alternative encodings or fallback
+    """
+
+    DEFAULT_ENCODINGS = ["cl100k_base", "p50k_base", "gpt2"]
+
+    def __init__(self, default_max_tokens: int = 400, default_overlap: int = 50, min_chunk_tokens: int = 50, retry: int = 2):
+        self.default_max_tokens = default_max_tokens
+        self.default_overlap = default_overlap
+        self.min_chunk_tokens = min_chunk_tokens
+        self.retry = retry
+        # sentence delim regex includes multiple languages (Chinese/Japanese/English punctuation, newline)
+        self.sentence_split_pattern = re.compile(r"(?<=[。．\.！!?！？；;]\s*|\n)")
+        # fallback word-splitting tokenization when tiktoken not present
+        self._has_tiktoken = (tiktoken is not None)
+
+    def split_sentences(self, text: str) -> List[str]:
+        parts = [p.strip() for p in self.sentence_split_pattern.split(text) if p.strip()]
+        return parts
+
+    def _encode(self, enc, text: str) -> List[int]:
+        return enc.encode(text)
+
+    def chunk(self, text: str, max_tokens: Optional[int] = None, overlap: Optional[int] = None,
+              min_chunk_tokens: Optional[int] = None, retry: Optional[int] = None) -> List[str]:
+        """Main entry to chunk text."""
+        if max_tokens is None:
+            max_tokens = self.default_max_tokens
+        if overlap is None:
+            overlap = self.default_overlap
+        if min_chunk_tokens is None:
+            min_chunk_tokens = self.min_chunk_tokens
+        if retry is None:
+            retry = self.retry
+
+        # Attempt token-based chunking using tiktoken with retries
+        if self._has_tiktoken:
+            last_exc = None
+            for attempt in range(retry):
+                for enc_name in self.DEFAULT_ENCODINGS:
+                    try:
+                        enc = tiktoken.get_encoding(enc_name) if hasattr(tiktoken, "get_encoding") else tiktoken.encoding_for_model(enc_name)
+                        tokens = enc.encode(text)
+                        n = len(tokens)
+                        i = 0
+                        chunks = []
+                        while i < n:
+                            end = min(i + max_tokens, n)
+                            chunk_tokens = tokens[i:end]
+                            chunk_text = enc.decode(chunk_tokens)
+                            # try avoid mid-sentence cut: if not at end and chunk_text contains a sentence delim near end, shorten
+                            if end < n:
+                                last_delim = -1
+                                for d in ["。", "．", ".", "！", "!", "？", "?", ";", "；", "\n"]:
+                                    pos = chunk_text.rfind(d)
+                                    if pos > last_delim:
+                                        last_delim = pos
+                                if last_delim != -1 and last_delim > len(chunk_text) * 0.3:
+                                    chunk_text = chunk_text[: last_delim + 1]
+                                    chunk_tokens = enc.encode(chunk_text)
+                            chunks.append(chunk_text)
+                            i = i + max(1, len(chunk_tokens) - overlap)
+                        # merge very small chunks with previous
+                        merged = []
+                        for c in chunks:
+                            try:
+                                tok_len = len(enc.encode(c))
+                            except Exception:
+                                tok_len = len(c.split())
+                            if merged and tok_len < min_chunk_tokens:
+                                merged[-1] = merged[-1] + "\n" + c
+                            else:
+                                merged.append(c)
+                        return merged
+                    except Exception as e:
+                        last_exc = e
+                        continue
+            # fall through to fallback if all tiktoken attempts fail
+            logger.warning(f"tiktoken chunking failed after retries: {last_exc}")
+
+        # Fallback: sentence-based merging with word-count proxy
+        sentences = self.split_sentences(text)
+        parts = []
+        cur = ""
+        cur_tokens = 0
+        for s in sentences:
+            s_words = s.split()
+            s_len = len(s_words)
+            if cur == "":
+                cur = s
+                cur_tokens = s_len
+            else:
+                if cur_tokens + s_len <= max_tokens:
+                    cur = cur + " " + s
+                    cur_tokens += s_len
+                else:
+                    parts.append(cur.strip())
+                    cur = s
+                    cur_tokens = s_len
+        if cur:
+            parts.append(cur.strip())
+
+        # merge too small pieces
+        merged = []
+        for p in parts:
+            word_len = len(p.split())
+            if merged and word_len < min_chunk_tokens:
+                merged[-1] = merged[-1] + "\n" + p
+            else:
+                merged.append(p)
+        return merged
+
+
+# ---------------- ChromaKnowledgeStore (CRUD + versioning) ----------------
+class ChromaKnowledgeStore:
+    """Chroma wrapper implementing add/query/delete/replace_source/deprecate and import/export.
+    Note: requires chromadb package and running in environment where chroma is supported.
+    """
+
+    def __init__(self, persist_directory: Optional[str] = None, embedding_provider: Optional[EmbeddingProvider] = None,
+                 audit_log_path: str = "chroma_kb_audit.jsonl"):
+        if Client is None:
+            raise ImportError("chromadb (Client) required by ChromaKnowledgeStore")
+
+        settings = {}
+        if persist_directory:
+            settings["persist_directory"] = persist_directory
+        self._client = Client(Settings(**settings)) if Settings is not None else Client()
+        self.embedding_provider = embedding_provider
+        self.audit_log_path = audit_log_path
+        if not os.path.exists(self.audit_log_path):
+            with open(self.audit_log_path, "w", encoding="utf-8") as f:
+                pass
+
+    def get_or_create_collection(self, name: str, metadata: Optional[dict] = None):
+        try:
+            return self._client.get_collection(name)
+        except Exception:
+            return self._client.create_collection(name, metadata=metadata or {})
+
+    def add(self, collection_name: str, ids: List[str], documents: List[str], metadatas: List[dict],
+            embeddings: Optional[List[List[float]]] = None):
+        coll = self.get_or_create_collection(collection_name)
+        if embeddings is None:
+            if self.embedding_provider is None:
+                raise ValueError("No embeddings provided and no embedding_provider configured.")
+            embeddings = self.embedding_provider.embed(documents)
+        # validate metadata minimal fields
+        for m in metadatas:
+            if "source_id" not in m:
+                raise ValueError("metadata must include source_id")
+            if "layer" not in m:
+                raise ValueError("metadata must include layer (L1/L2/L3/L4)")
+            if "is_latest" not in m:
+                m["is_latest"] = True
+        coll.add(ids=ids, documents=documents, metadatas=metadatas, embeddings=embeddings)
+        self._audit("ADD", collection_name, ids, {"count": len(ids)})
+
+    def delete_where(self, collection_name: str, where: dict):
+        coll = self.get_or_create_collection(collection_name)
+        coll.delete(where=where)
+        self._audit("DELETE_WHERE", collection_name, None, where)
+
+    def replace_source(self, collection_name: str, source_id: str, documents: List[str], metadatas: List[dict],
+                       ids: Optional[List[str]] = None, embeddings: Optional[List[List[float]]] = None):
+        # delete old
+        try:
+            self.delete_where(collection_name, {"source_id": source_id})
+        except Exception:
+            pass
+        if ids is None:
+            ids = [f"{source_id}_chunk_{i:04d}" for i in range(len(documents))]
+        for m in metadatas:
+            m.setdefault("source_id", source_id)
+            m.setdefault("is_latest", True)
+        self.add(collection_name, ids, documents, metadatas, embeddings)
+        self._audit("REPLACE_SOURCE", collection_name, ids, {"source_id": source_id})
+
+    def deprecate_source_versions(self, collection_name: str, source_id: str):
+        coll = self.get_or_create_collection(collection_name)
+        resp = coll.get(where={"source_id": source_id})
+        ids = resp.get("ids", [])
+        if not ids:
+            return
+        docs = resp.get("documents", [])
+        metas = resp.get("metadatas", [])
+        for m in metas:
+            m["is_latest"] = False
+        embs = None
+        if self.embedding_provider is not None:
+            try:
+                embs = self.embedding_provider.embed(docs)
+            except Exception:
+                embs = None
+        coll.delete(ids=ids)
+        coll.add(ids=ids, documents=docs, metadatas=metas, embeddings=embs)
+        self._audit("DEPRECATE", collection_name, ids, {"source_id": source_id})
+
+    def query(self, collection_name: str, query_text: str, top_k: int = 10, where: Optional[dict] = None,
+              include: Optional[List[str]] = None) -> dict:
+        coll = self.get_or_create_collection(collection_name)
+        if self.embedding_provider is None:
+            raise ValueError("No embedding_provider configured for query embedding generation.")
+        q_emb = self.embedding_provider.embed([query_text])[0]
+        include = include or ["documents", "metadatas", "distances", "ids"]
+        resp = coll.query(query_embeddings=[q_emb], n_results=top_k, where=where, include=include)
+        self._audit("QUERY", collection_name, [query_text], {"top_k": top_k, "where": where})
+        return resp
+
+    def export_collection(self, collection_name: str, path: str):
+        coll = self.get_or_create_collection(collection_name)
+        resp = coll.get()
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(resp, f, ensure_ascii=False, indent=2)
+        self._audit("EXPORT", collection_name, None, {"path": path})
+
+    def import_collection(self, collection_name: str, path: str):
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        ids = data.get("ids", [])
+        docs = data.get("documents", [])
+        metas = data.get("metadatas", [])
+        embs = None
+        if self.embedding_provider is not None:
+            try:
+                embs = self.embedding_provider.embed(docs)
+            except Exception:
+                embs = None
+        self.add(collection_name, ids, docs, metas, embs)
+        self._audit("IMPORT", collection_name, ids, {"path": path})
+
+    def _audit(self, op: str, collection_name: str, ids: Optional[List[str]], meta: Optional[Any]):
+        rec = {
+            "time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            "op": op,
+            "collection": collection_name,
+            "ids": ids,
+            "meta": meta,
+        }
+        with open(self.audit_log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+
+# ---------------- Streaming unified chunk and MultiModelClient ----------------
+class StreamingUnifiedChunk:
+    """Unified streaming chunk"""
+    def __init__(self, text: str, delta: str, is_end: bool = False):
+        self.text = text
+        self.delta = delta
+        self.is_end = is_end
+
+    def to_dict(self):
+        return {"text": self.text, "delta": self.delta, "is_end": self.is_end}
+
+
+class MultiModelClient:
+    """
+    Multi-model client supporting azure/openai/gemini (best-effort placeholders).
+    Must be initialized with provider credentials via kwargs (api_key, endpoint, api_version, model, reasoning_model).
+    """
+
+    def __init__(self, provider: str = "azure", **kwargs):
+        self.provider = provider
+        self.kwargs = kwargs
+
+    # non-streaming chat (placeholder)
+    def chat(self, messages: List[Dict[str, str]], **gen_kwargs):
+        if self.provider == "azure" or self.provider == "openai":
+            if openai is None:
+                raise ImportError("openai SDK required for azure/openai provider")
+            client = openai
+            return client.ChatCompletion.create(model=self.kwargs.get("model"), messages=messages, **gen_kwargs)
+        elif self.provider == "gemini":
+            if genai is None:
+                raise ImportError("google.generativeai required for gemini provider")
+            genai.configure(api_key=self.kwargs.get("api_key"))
+            model = genai.GenerativeModel(self.kwargs.get("model"))
+            return model.generate_content(messages)
+        else:
+            raise ValueError("Unsupported provider")
+
+    # streaming generator that yields StreamingUnifiedChunk
+    def stream(self, messages: List[Dict[str, str]], **gen_kwargs) -> Generator[StreamingUnifiedChunk, None, None]:
+        if self.provider in ("azure", "openai"):
+            yield from self._stream_openai_compatible(messages, gen_kwargs)
+        elif self.provider == "gemini":
+            yield from self._stream_gemini(messages, gen_kwargs)
+        else:
+            raise ValueError("Unsupported provider")
+
+    def _stream_openai_compatible(self, messages, gen_kwargs):
+        if openai is None:
+            raise ImportError("openai SDK required for streaming azure/openai")
+        # using OpenAI's streaming interface: create(..., stream=True)
+        # Note: actual SDK usage may differ; this is a best-effort pattern.
+        resp_iter = openai.ChatCompletion.create(model=self.kwargs.get("model"), messages=messages, stream=True, **gen_kwargs)
+        buffer = ""
+        for chunk in resp_iter:
+            # chunk is usually a dict-like with choices[*].delta.content
+            delta = ""
+            try:
+                # Some SDK versions use 'choices' list
+                if "choices" in chunk and len(chunk["choices"]) > 0:
+                    d = chunk["choices"][0].get("delta") or {}
+                    delta = d.get("content") or ""
+            except Exception:
+                # fallback: attempt direct content
+                delta = chunk.get("content") or ""
+            buffer += delta
+            yield StreamingUnifiedChunk(text=buffer, delta=delta)
+        yield StreamingUnifiedChunk(text=buffer, delta="", is_end=True)
+
+    def _stream_gemini(self, messages, gen_kwargs):
+        if genai is None:
+            raise ImportError("google.generativeai SDK required for gemini streaming")
+        genai.configure(api_key=self.kwargs.get("api_key"))
+        model = genai.GenerativeModel(self.kwargs.get("model"))
+        # genai.generate_content(..., stream=True) usually yields chunks; adapt as needed
+        stream_iter = model.generate_content(messages, stream=True)
+        buffer = ""
+        for chunk in stream_iter:
+            delta = ""
+            # depending on chunk structure
+            if hasattr(chunk, "text"):
+                delta = getattr(chunk, "text") or ""
+            elif hasattr(chunk, "parts"):
+                delta = "".join([getattr(p, "text", "") for p in chunk.parts])
+            else:
+                try:
+                    delta = str(chunk)
+                except Exception:
+                    delta = ""
+            buffer += delta
+            yield StreamingUnifiedChunk(text=buffer, delta=delta)
+        yield StreamingUnifiedChunk(text=buffer, delta="", is_end=True)
+
+
+# ---------------- StructuredStreamer: incremental JSON parse & schema validation ----------------
+class StructuredOutputError(Exception):
+    pass
+
+
+def _validate_json_with_schema(obj: dict, schema: dict):
+    if jsonschema is None:
+        # basic type check
+        if not isinstance(obj, dict):
+            raise StructuredOutputError("Expected JSON object but got non-object (jsonschema not installed)")
+        return True
+    jsonschema.validate(instance=obj, schema=schema)
+    return True
+
+
+class StructuredStreamer:
+    """
+    Incrementally accumulate stream deltas and attempt to parse JSON objects.
+    - feed(delta) -> List[dict] of extracted complete objects (could be empty)
+    - get_buffer() returns current buffer
+    """
+
+    def __init__(self, schema: Optional[dict] = None):
+        self.schema = schema
+        self.buf = ""
+
+    def feed(self, delta: str) -> List[dict]:
+        """Feed incremental text (delta). Try to extract zero or more JSON objects."""
+        if not delta:
+            return []
+        self.buf += delta
+        extracted = []
+
+        # Attempt to find JSON braces pairs - we attempt to find balanced {...} segments.
+        # This is a pragmatic approach: find first '{', then find matching '}' by scanning, taking nested braces into account.
+        i = 0
+        while True:
+            start = self.buf.find("{", i)
+            if start == -1:
+                break
+            depth = 0
+            end = -1
+            for j in range(start, len(self.buf)):
+                ch = self.buf[j]
+                if ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        end = j
+                        break
+            if end == -1:
+                # incomplete, wait for more
+                break
+            candidate = self.buf[start:end + 1]
+            try:
+                obj = json.loads(candidate)
+                # validate schema if provided
+                if self.schema:
+                    _validate_json_with_schema(obj, self.schema)
+                extracted.append(obj)
+                # remove processed part
+                # we set i = 0 again because buffer has been shortened
+                self.buf = self.buf[end + 1:]
+                i = 0
+            except Exception:
+                # parsing failed for this candidate; try to find next '{' after start (avoid infinite loop)
+                i = start + 1
+                # continue search
+                continue
+        return extracted
+
+    def get_buffer(self) -> str:
+        return self.buf
+
+
+# ---------------- generate_structured_from_stream helper ----------------
+def generate_structured_from_stream(client: MultiModelClient, messages: List[Dict[str, str]],
+                                    schema: Optional[dict] = None, reasoning: bool = False,
+                                    mode: Optional[str] = None, **gen_kwargs) -> Dict[str, Any]:
+    """
+    Use client's stream to generate structured JSON:
+      - mode: "json"|"structured" to try parsing JSON from stream
+      - reasoning: if True, prefer reasoning model defined in client.kwargs['reasoning_model']
+    """
+    if reasoning:
+        # set model to reasoning model if provided
+        reasoning_model = client.kwargs.get("reasoning_model")
+        if reasoning_model:
+            gen_kwargs.setdefault("model", reasoning_model)
+
+    mode = mode or gen_kwargs.pop("mode", None)
+    streamer = StructuredStreamer(schema=schema)
+    raw_buffer = ""
+
+    for chunk in client.stream(messages, **gen_kwargs):
+        raw_buffer += chunk.delta
+        if mode in ("json", "structured"):
+            objs = streamer.feed(chunk.delta)
+            if objs:
+                # return first complete parsed object (could be extended to combine multiples)
+                return objs[0]
+        if chunk.is_end:
+            break
+
+    # finished stream, try parse entire buffer
+    if mode in ("json", "structured"):
+        try:
+            obj = json.loads(raw_buffer)
+            if schema:
+                _validate_json_with_schema(obj, schema)
+            return obj
+        except Exception:
+            # failed to parse, return raw text for troubleshooting
+            return {"raw_text": raw_buffer}
+    return {"raw_text": raw_buffer}
+
+
+# ---------------- Unit tests for StructuredStreamer ----------------
+import unittest
+
+
+class TestStructuredStreamer(unittest.TestCase):
+    def test_split_single_json(self):
+        s = StructuredStreamer(schema={"type": "object", "properties": {"a": {"type": "number"}}, "required": ["a"]})
+        out = s.feed('{"a": 1}')
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["a"], 1)
+
+    def test_split_across_chunks(self):
+        s = StructuredStreamer(schema={"type": "object", "properties": {"x": {"type": "string"}}, "required": ["x"]})
+        out1 = s.feed('{"x": ')
+        self.assertEqual(out1, [])
+        out2 = s.feed('"hello"}')
+        self.assertEqual(len(out2), 1)
+        self.assertEqual(out2[0]["x"], "hello")
+
+    def test_multiple_json_objects_in_stream(self):
+        s = StructuredStreamer(schema={"type": "object", "properties": {"v": {"type": "number"}}, "required": ["v"]})
+        parts = ['{"v": 1}', '{"v": 2}']
+        res = []
+        for p in parts:
+            res += s.feed(p)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res[0]["v"], 1)
+        self.assertEqual(res[1]["v"], 2)
+
+    def test_error_recovery_then_valid(self):
+        s = StructuredStreamer(schema={"type": "object", "properties": {"ok": {"type": "number"}}, "required": ["ok"]})
+        res1 = s.feed('not_json')
+        self.assertEqual(res1, [])
+        res2 = s.feed('{"ok": 3}')
+        self.assertEqual(len(res2), 1)
+        self.assertEqual(res2[0]["ok"], 3)
+
+    def test_partial_never_completed_buffer_keeps_state(self):
+        s = StructuredStreamer(schema={"type": "object", "properties": {"z": {"type": "number"}}, "required": ["z"]})
+        res = s.feed('{"z": 5')
+        self.assertEqual(res, [])
+        self.assertTrue('{"z": 5' in s.get_buffer())
+
+
+# ---------------- Example usage (only run when executed directly) ----------------
+def _demo():
+    print("Demo: SmartChunker sample")
+    chunker = SmartChunker(default_max_tokens=80)
+    text = "这是第一句。This is English. 次の文です。Another sentence. " * 5
+    chunks = chunker.chunk(text)
+    print("Chunks:", len(chunks))
+    for i, c in enumerate(chunks[:3]):
+        print(i, c[:80].replace("\n", " "), "...")
+
+
+if __name__ == "__main__":
+    # Run unit tests for StructuredStreamer
+    unittest.main(verbosity=2)
+```
+
+---
+
+### 使用建议（落地提示）
+
+1. 将 `enterprise_kb.py` 放入项目仓库 `tests-infra` 下的 `ragsvc` 模块；在 CI 中配置依赖并运行单元测试。
+2. 在企业环境中配置实际的 embedding provider（`openai_embedding_factory`）并把 `EmbeddingProvider` 注入 `ChromaKnowledgeStore`。
+3. 配置 MultiModelClient 时，将 Azure / OpenAI / Gemini 的 API keys、安全域名与 model 名称放入机密管理（Vault）中。
+4. 若要在 Web 前端实时显示生成过程，使用 `MultiModelClient.stream` 并将 `StreamingUnifiedChunk` 映射为 WebSocket 消息。
+5. 若需要更强的 StructuredStreamer 能力（比如支持 JSONL、partial-array streaming、schema 增量验证），我可以继续增强解析器以容忍流式嵌套数组等复杂情况。
+
+---
+
+
+
