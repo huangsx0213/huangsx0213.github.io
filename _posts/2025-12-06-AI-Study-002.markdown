@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      "企业级软件测试工程——知识分层体系"
-subtitle:   "「  Gatling Test System 」" 
+subtitle:   "「  AI Study 」" 
 date:       2025-12-06 11:00:01
 author:     "Vick Huang"
 header-img: "img/bg-walle.jpg"

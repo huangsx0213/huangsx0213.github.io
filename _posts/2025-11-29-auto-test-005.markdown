@@ -2,7 +2,7 @@
 layout:     post
 title:      "Gatling Test System doc"
 subtitle:   "「  Gatling Test System 」" 
-date:       2025-07-20 11:00:01
+date:       2025-11-29 11:00:01
 author:     "Vick Huang"
 header-img: "img/bg-walle.jpg"
 catalog: true
