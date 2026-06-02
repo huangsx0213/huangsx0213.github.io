@@ -1,0 +1,636 @@
+---
+layout:     post
+title:      "# AI Test Gen Skill 渐进式披露：业界研究与实施方案"
+subtitle:   "「  AI Study 」" 
+date:       2026-06-02 11:00:01
+author:     "Vick Huang"
+header-img: "img/bg-walle.jpg"
+catalog: true
+tags:
+    - AI
+---
+
+# AI Test Gen Skill 渐进式披露：业界研究与实施方案
+
+> **文档类型**：研究 + 方案 spec
+> **创建日期**：2026-06-02
+> **作者**：Claude (基于 2026-05-31 interpreter-skill-progressive-discovery spec 的演进)
+> **目标读者**：架构师、Agent 实现者、Prompt 工程师
+> **关联文档**：
+> - [2026-05-31-interpreter-skill-progressive-discovery.md](./2026-05-31-interpreter-skill-progressive-discovery.md) — 初始架构定义
+> - [skill-context-design.md](../skill-context-design.md) — Skill Context 设计
+> - [skills-guide.md](../skills-guide.md) — Skill 编写指南
+> - [ai-test-gen.md](../ai-test-gen.md) — AI Test Gen 功能说明
+
+---
+
+## 0. 术语
+
+| 术语 | 定义 |
+|------|------|
+| **Progressive Disclosure** | 分层加载模式：元数据 → 完整内容 → 附加资源，LLM 自主决定加载深度 |
+| **Interpreter Skill** | 含 `index.ts` 可执行模块的 skill；确定性逻辑由代码保证（区别于纯 prompt skill） |
+| **SkillMetadata** | YAML frontmatter 中的 `name` + `description`（Anthropic Level 1） |
+| **MCP Resource** | 只读、可寻址、可缓存的数据（区别于有副作用的 Tool） |
+| **Deterministic 比例** | 测试用例生成过程中由代码（不靠 LLM）完成决策的比例 |
+| **ReAct Loop** | 多轮 reasoning → action → observation 循环（ReAct 论文, 2022） |
+| **Mode A / Mode B** | 确定性 Pipeline / 自主 Orchestrator（见 2026-05-31 spec） |
+
+---
+
+## 1. 背景与动机
+
+### 1.1 当前 Mode A 实测加载量
+
+| Agent | `requiredSkills` | SKILL.md 全文 | references 全文 | **合计 chars** | **折算 tokens** |
+|-------|-----------------|--------------|----------------|---------------|----------------|
+| `TestAnalystRole` | 5 个 | 24,551 | 59,036（`requirement-index/references/index.json`） | **~83,587** | **~21,000** |
+| `TestDesignerRole` | 2 个 | 18,034 | 0 | **~18,034** | **~4,500** |
+| `QualityManagerRole` | 2 个 | 18,316 | 0 | **~18,316** | **~4,600** |
+| **3 agent × N batch** | — | — | — | — | **~30,100 × N tokens** |
+
+> 关键发现：`requirement-index/references/index.json` 单文件 59KB，每次 Analyst 调用都全量塞进 system prompt。
+
+### 1.2 三个症状
+
+1. **Token 浪费**：每次调用都加载所有 `requiredSkills` 全文 + 所有 references
+2. **违反 Progressive Disclosure 原则**：3 个 sub-agent role 的 `useProgressiveDisclosure` 默认 `false`，全量加载
+3. **按需加载工具不可用**：`allowedTools: ['execute_skill_module']` 已声明，但 `useReActLoop: false` 关闭了工具暴露
+
+### 1.3 文档目标
+
+1. 调研业界 5 套主流范式（Anthropic Skills、MCP、LangGraph、Qodo/MTSC、LangChain Skills）
+2. 与当前项目对标，定位差距
+3. 提出 3 阶段演进路径（保守 → 渐进 → 分层架构）
+
+---
+
+## 2. 业界 5 套主流范式
+
+### 2.1 范式 1：Anthropic Skills 三层渐进披露
+
+> 来源：[Anthropic: Equipping agents for the real world with Agent Skills](https://claude.com/blog/equipping-agents-for-the-real-world-with-agent-skills)（2025-10-16 官方发布）
+> 配套文档：[The Complete Guide to Building Skills for Claude (PDF)](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf?hsLang=en)
+
+**三层架构**：
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ Level 1: YAML frontmatter                                  │
+│   - 始终注入 system prompt                                  │
+│   - 只含 name + description                                 │
+│   - ~100 tokens/skill                                       │
+├────────────────────────────────────────────────────────────┤
+│ Level 2: SKILL.md body                                     │
+│   - LLM 通过 load_skill tool 决定加载                       │
+│   - 完整指令、决策表、样例                                   │
+│   - <5k tokens                                              │
+├────────────────────────────────────────────────────────────┤
+│ Level 3: references/ 链接文件                              │
+│   - LLM 进一步按需导航读取                                  │
+│   - 详细 schema、form-filling 规则等                         │
+└────────────────────────────────────────────────────────────┘
+```
+
+**核心设计原则**：
+
+| 原则 | 含义 | 业界示例 |
+|------|------|---------|
+| **Skills = 文件夹** | 包含 `SKILL.md` + `scripts/`（**可执行代码**）+ `references/` + `assets/`（模板） | `anthropics/skills` GitHub 仓库 |
+| **Description 写法** | 写"**什么时候用**"，不是"能做什么" | Anthropic 内部 100+ skill |
+| **Gotchas 段落** | 记录 Claude 实际踩过的坑（最值钱） | `frontend-design/SKILL.md` |
+| **代码嵌入** | 给 Claude 可调用 Python/Bash helper，**释放 LLM 决策带宽** | `pdf` skill 填表 |
+| **Composability** | 多 skill 同时待命，按需激活 | `signup-flow-driver` + `tmux-cli-driver` |
+| **Open Standard** | 2025-12-18 发布为 `agentskills.io` 开放标准 | 跨平台（Claude.ai / Claude Code / API） |
+
+**Token 经济**（官方数据）：
+
+| 阶段 | Token 占用 | 时机 |
+|------|----------|------|
+| 启动 | 7 × 100 = ~700 tokens | 立即 |
+| Analyst 激活 | +3k tokens | 调用时 |
+| Requirement 详细查询 | +5-50k tokens | LLM 决策触发 |
+| **总量（典型）** | **~10-60k tokens** | 取决于任务 |
+
+> 对比当前项目：~21k tokens/Analyst 调用，且不含 "按需" 优化空间。
+
+### 2.2 范式 2：MCP（Model Context Protocol）— Read vs Do 分离
+
+> 来源：[MCP Tools 规范 (2025-11-25)](https://modelcontextprotocol.io/specification/2025-11-25/server/tools) + [Client Best Practices: Progressive Tool Discovery](https://modelcontextprotocol.io/docs/develop/clients/client-best-practices) + [Microsoft: MCP Resources as Tool Inputs](http://microsoft.github.io/mcscatblog/posts/mcp-resources-as-tool-inputs/)
+
+**资源/工具二维分类**：
+
+```
+┌────────────────────────┬────────────────────────┐
+│  Tools (执行动作)       │  Resources (读数据)     │
+├────────────────────────┼────────────────────────┤
+│ 有副作用 (写 DB/文件)   │ 只读、无副作用          │
+│ LLM 决策调用            │ Client/用户主动拉取     │
+│ Output 不可缓存         │ 可订阅、可缓存          │
+│ Token 影响: 不确定       │ Token 影响: 已知        │
+│ 例: queryDB/apiCall    │ 例: db://schema.json   │
+└────────────────────────┴────────────────────────┘
+```
+
+**Progressive Tool Discovery**（官方推荐模式）：
+
+> "The host fetches tool definitions via `tools/list` as normal, but defers injecting them into the model's context. The host provides a lightweight `search_tools` meta-tool. The host loads full definitions into context only as needed."
+
+**触发阈值建议**（官方）：
+- 工具定义占总 context < 1-5% → 全部加载 OK
+- 超过阈值 → 切到 progressive discovery
+- 实现 search strategy：BM25 / 向量相似 / subagent-based（Haiku/Flash 选 tool）
+
+**核心反模式**（[apigene.ai 56 个开发者讨论分析](https://apigene.ai/blog/mcp-resources)）：
+
+| 反模式 | 后果 | 正确做法 |
+|--------|------|---------|
+| Tool 输出 30k chars 全量塞 LLM | context 爆 | Server 存数据，agent 传 URI |
+| 98% tool description 没写"何时用" | LLM 不会选 | 改写 description（何时用） |
+| Tool-only 架构 | token 燃烧 | 引入 resources 分层 |
+| 静态加载所有 tool | 启动慢 | Dynamic loading 省 12k tokens/session |
+
+### 2.3 范式 3：LangGraph Subgraph as Node vs as Tool
+
+> 来源：[LangChain Forum 官方回复](https://forum.langchain.com/t/how-to-use-a-subgraph-as-a-tool/2175/1) + [LangGraph Tool Calling Docs](https://langchain-ai.github.io/langgraph/how-tos/tool-calling/)
+
+**两种集成模式**：
+
+```
+Option A: 紧集成 — Subgraph 作为节点
+  ✓ 共享 checkpoints、interrupts、time-travel
+  ✓ Parent state 直接 update
+  ✓ 适合：固定流水线 (A → B → C)
+  例：当前 Mode A 的 3 agent + 3 checkpoint 串行
+
+Option B: 灵活 — Subgraph 作为 Tool
+  ✓ ReAct agent 自主决定何时调用
+  ✓ LLM-driven 路由
+  ✓ 适合：探索性、动态决策
+  例：Mode B Orchestrator 的 spawn_subagent
+```
+
+**当前项目使用情况**：
+
+| 模式 | 用在哪 | 状态 |
+|------|-------|------|
+| Option A | Mode A 流水线 | ✅ 已实现 |
+| Option B | Mode B Orchestrator | ⚠️ 部分（`spawn_subagent` 已写，但未实测） |
+| Option B | Mode A sub-agent | ❌ 未实现（`useReActLoop: false` 关闭了） |
+
+### 2.4 范式 4：测试用例生成的行业实践
+
+| 工具/会议 | 关键模式 | Deterministic 比例 | 与本项目对比 |
+|----------|---------|------------------|------------|
+| **Qodo / CodiumAI** | Multi-agent + behavior coverage plan + 依赖推断（自动 mock） | ~40% | 方向一致 ✅ |
+| **Diffblue Cover** | 100% deterministic，**不靠 LLM** | 100% | 思路可借鉴 ✅ |
+| **MTSC 2025（国内大厂）** | 广度优先搜索 + 异步生成 + 用例树 + RAG + 模板化 | ~30-50% | 部分覆盖 ✅ |
+| **TestGrid CoTester** | NL 描述 → 浏览器录制 + agent 生成 | ~20% | NL 用例对齐 ✅ |
+| **testRigor** | 模板优先 + LLM 微调 | ~70% | 业界认为模板化质量更高 |
+
+**MTSC 2025 共识**（[AI 驱动的测试用例生成](https://blog.csdn.net/weixin_40025666/article/details/150543867)）：
+
+```
+关键技术 5 项：
+1. RAG 检索增强 — 加载历史用例 + 知识库
+2. 异步生成 — 并行批次提速
+3. 用例树结构 — 功能点 → 测试点 → 前置 → 步骤 → 预期
+4. 测试方法论支持 — EP/BVA/DT/ST/UC（与本项目 5 种一致）
+5. 分层提示词 — 节点动态合成
+```
+
+**Qodo Multi-Agent 栈**（[Qodo 2025 Review](https://skywork.ai/skypage/en/Qodo-(Codium-AI)-Review-2025-The-Ultimate-Guide-to-AI-Code-Integrity/1975032725448093696)）：
+
+```
+Planner → Test Designer → Code Reviewer → CI Validator
+                                          ↓
+                              Auto mock 外部依赖
+                                          ↓
+                              Behavior coverage 矩阵
+```
+
+### 2.5 范式 5：LangChain Skills SQL Assistant 范式
+
+> 来源：[LangChain 官方教程: Build a SQL assistant with on-demand skills](https://docs.langchain.com/oss/javascript/langchain/multi-agent/skills-sql-assistant)
+
+**架构示意**：
+
+```typescript
+// 1. Skill metadata 始终在 system prompt
+const systemPrompt = skills.map(s => 
+  `- ${s.name}: ${s.description}`
+).join('\n');
+
+// 2. load_skill tool — 加载完整 SKILL.md
+const loadSkill = tool(
+  async ({ skillName }, runtime) => {
+    const skill = await loadSkillContent(skillName);
+    return Command(update={{
+      messages: [new ToolMessage(skill.content, runtime.tool_call_id)],
+      loadedSkills: [...state.loadedSkills, skillName],
+    }});
+  },
+);
+
+// 3. Skill middleware — 注入已加载 skill
+const skillMiddleware = createMiddleware({
+  wrapModelCall: (request, handler) => {
+    const skills = state.loadedSkills.map(loadFullSkill);
+    request.systemPrompt = `${request.systemPrompt}\n\n${skills.join('\n')}`;
+    return handler(request);
+  },
+});
+
+// 4. Agent 通过 tool call 决定何时加载
+const agent = createAgent({
+  model: 'anthropic:claude-3-7-sonnet',
+  tools: [loadSkill, ...otherTools],
+  middleware: [skillMiddleware],
+});
+```
+
+**Progressive Disclosure 4 大动机**（官方原文）：
+1. **Reduce context usage** — 只加载 2-3 个相关 skill
+2. **Team autonomy** — 不同团队维护不同 skill
+3. **Scales efficiently** — 数十上百个 skill 不爆 context
+4. **Simplify history** — 单 agent 单 thread
+
+---
+
+## 3. 当前项目 vs 业界对标
+
+| 维度 | 业界最佳实践 | 当前项目 Mode A | 差距 |
+|------|------------|---------------|------|
+| **Skill 形态** | 文件夹（md + scripts + refs + assets） | 只有 `SKILL.md` + 部分 `references/` | ❌ 缺 `scripts/` |
+| **3 层加载** | metadata → body → refs（按 tool 触发） | 一次性全量注入 | ❌ 完全没分层 |
+| **Description 写法** | "**什么时候用**" | 大多写"做什么" | ⚠️ 模糊 |
+| **Tool/script 调用** | `execute_skill_module` 暴露 deterministic 函数 | `allowedTools` 写了但 ReAct=false 时不暴露 | ❌ 工具未注册 |
+| **资源/数据分层** | Resources = 只读 + 可缓存 | references/ 当全文加载 | ❌ 没区分 |
+| **Multi-agent 流水线** | Option A（紧集成）+ Option B（ReAct 调度） | 只有 Option A | ❌ 缺 B |
+| **测试方法论** | 5 种 ISTQB 技术 | 5 种 ✅ | ✅ 一致 |
+| **模板化** | MTSC 推荐模板优先 | 系统 prompt 里描述 | ⚠️ 不够模板化 |
+| **Deterministic 比例** | 30-100% | ~5% | ❌ 比例过低 |
+| **Token 经济** | ~10-60k（动态） | ~21k（静态、且不含优化） | ❌ 浪费 |
+| **Gotchas 段落** | Anthropic 推崇 | 缺失 | ⚠️ 需补 |
+| **Open Standard** | `agentskills.io` | 私有格式 | ⚠️ 长期需对齐 |
+
+---
+
+## 4. 核心洞察
+
+### 4.1 决策类型应该放哪里
+
+| 决策类型 | 应放哪 | 理由 |
+|---------|-------|------|
+| **ISTQB 技术选择**（EP/BVA/DT/ST/UC） | **Skill 的 `index.ts`（代码）** | 决定论、可测试、零 LLM 成本 |
+| **覆盖维度枚举**（输入域） | **Skill 的 `index.ts`** | 决定论（BVA 自动生成边界值） |
+| **风险评级** | **`index.ts`** + LLM 综合 | 部分可代码化（critical → high） |
+| **步骤拆解**（precondition/action/expected） | **LLM** | 需要语义理解 |
+| **步骤排序/原子性** | **`index.ts`** | 决定论（sequence 自动递增） |
+| **自然语言表达** | **LLM** | 需要语言能力 |
+| **HITL 反馈应用** | **`index.ts`** 中间件 | 决定论（保留 id、合并新增） |
+
+### 4.2 Deterministic 化比例目标
+
+| 目标 | 比例 | 适用场景 |
+|------|------|---------|
+| 保守 | 30% | 紧急修 token 问题（Phase 1） |
+| 平衡 | 50% | Qodo 水平（Phase 2） |
+| 理想 | 80% | testRigor / Diffblue 思路（Phase 3） |
+
+### 4.3 Token 节省估算
+
+| 阶段 | 当前 | Phase 1 后 | Phase 2 后 |
+|------|------|----------|----------|
+| Analyst 启动 | 21k | ~700（metadata） | ~700 |
+| Analyst 按需加载 | — | — | ~3-5k（按需 EP/BVA） |
+| 总量（典型） | 21k | ~5k | ~3-8k |
+| **节省** | — | **-76%** | **-62% ~ -86%** |
+
+### 4.4 重开 ReAct 的风险与对冲
+
+| 风险 | 来源 | 对冲方案 |
+|------|------|---------|
+| 工具调用风暴 | LLM 过度调 execute_skill_module | `maxIterations` 限制（如 3 轮） |
+| 数据流再次断裂 | Tool output 嵌套问题 | 已修复 [`tool.ts`](../shared/ai/tool.ts)（data 不再嵌套） |
+| 成本不可控 | 多轮 LLM 调用 | TokenTracker 已在 `ReactLoopState` 累积 |
+| 行为不可预测 | LLM 决策 | 关键决策下沉到 `index.ts`（deterministic） |
+
+---
+
+## 5. 建议方案：3 阶段演进
+
+### Phase 1：保守型（立即可做，零风险）
+
+**目标**：仅启用 metadata-only 加载，**修 token 问题，不改数据流**。
+
+**改动**：
+
+```typescript
+// 3 个 role 文件分别加一行：
+// shared/ai/roles/test-analyst.ts
+export const TestAnalystRole: AgentRole = {
+  // ... 现有字段
+  useProgressiveDisclosure: true,  // ← 新增
+};
+
+// shared/ai/roles/test-designer.ts
+export const TestDesignerRole: AgentRole = {
+  // ... 现有字段
+  useProgressiveDisclosure: true,  // ← 新增
+};
+
+// shared/ai/roles/quality-manager.ts
+export const QualityManagerRole: AgentRole = {
+  // ... 现有字段
+  useProgressiveDisclosure: true,  // ← 新增
+};
+```
+
+**验证**：
+
+```typescript
+// 单元测试
+it('Mode A sub-agents use metadata-only loading', () => {
+  expect(TestAnalystRole.useProgressiveDisclosure).toBe(true);
+  expect(TestDesignerRole.useProgressiveDisclosure).toBe(true);
+  expect(QualityManagerRole.useProgressiveDisclosure).toBe(true);
+});
+
+it('Token usage reduced >70% with useProgressiveDisclosure=true', () => {
+  const oldCtx = createAgentContext(provider, { ...TestAnalystRole, useProgressiveDisclosure: false });
+  const newCtx = createAgentContext(provider, { ...TestAnalystRole, useProgressiveDisclosure: true });
+  expect(newCtx.skillContext.systemPrompt.length).toBeLessThan(oldCtx.skillContext.systemPrompt.length * 0.3);
+});
+```
+
+**预期收益**：
+- Analyst 21k tokens → ~700 tokens（**-97%**）
+- Designer 4.5k → ~300（**-93%**）
+- Quality 4.6k → ~300（**-93%**）
+- 风险：极低（只影响 system prompt 注入方式）
+
+**已知 trade-off**：
+- LLM 看不到 SKILL.md 全文 → 决策质量可能下降
+- 解决方案：Phase 2 补上"按需 load_skill 工具"
+
+**工期**：< 1 小时（含测试）
+
+---
+
+### Phase 2：渐进式（核心价值，目标 80% progressive）
+
+**目标**：重开 ReAct + 把 deterministic 部分代码化到 `skill/index.ts`。
+
+**步骤 2.1：Sub-agent 重新启用 ReAct**
+
+```typescript
+// shared/ai-test-gen/test-generation.ts (line ~340)
+agentOpts: {
+  // ... 现有字段
+  useReActLoop: agentOpts?.useReActLoop ?? true,  // ← 改回 true
+},
+```
+
+**步骤 2.2：为每个核心 skill 增加 `index.ts`（deterministic scripts）**
+
+```
+skills/test-analyst/
+  SKILL.md
+  index.ts          ← 新增
+
+skills/test-designer/
+  SKILL.md
+  index.ts          ← 新增
+
+skills/quality-manager/
+  SKILL.md
+  index.ts          ← 新增
+
+skills/requirement-query/
+  SKILL.md
+  index.ts          ← 新增
+```
+
+**`test-analyst/index.ts` 示例**：
+
+```typescript
+import { z } from 'zod';
+
+// ISTQB 5 种技术 → 自动生成 technique skeleton
+export const techniques = {
+  'equivalence-partitioning': (cond) => generateEpCases(cond),
+  'boundary-value-analysis': (cond) => generateBvaCases(cond),
+  'decision-table': (cond) => generateDtCases(cond),
+  'state-transition': (cond) => generateStCases(cond),
+  'use-case': (cond) => generateUcCases(cond),
+} as const;
+
+// BVA: 输入域边界值自动展开（deterministic）
+export function generateBvaCases(condition: Condition): TestCase[] {
+  const { dimension, variants } = condition.coverageDimensions[0];
+  const boundary = computeBoundary(dimension);  // min, min-1, min+1, max-1, max, max+1
+  return boundary.map(value => ({
+    id: `${condition.id}-bva-${value}`,
+    techniqueApplied: 'boundary-value-analysis',
+    testData: [{ name: dimension, value, type: inferType(value) }],
+    steps: generateAtomicSteps(condition, value),
+  }));
+}
+
+// 风险评级（deterministic + LLM 综合）
+export function inferRiskLevel(requirement: Requirement): RiskLevel {
+  if (requirement.priority === 'CRITICAL') return 'high';
+  if (requirement.priority === 'HIGH' && hasPaymentOrAuth(requirement)) return 'high';
+  return 'medium';
+}
+```
+
+**步骤 2.3：ReAct 工具注册**
+
+`createReActToolExecutor` 已有 `execute_skill_module` 工具（参考 [tool.ts](../shared/ai/tool.ts)），重开 ReAct 后自动暴露。
+
+**步骤 2.4：HITL 反馈应用（`index.ts` 中间件）**
+
+```typescript
+// 跨 batch 复用：保留已存在的 condition.id, 只新增/修改
+export function applyHumanFeedback(
+  previous: TestCondition[],
+  feedback: string,
+  newOnes: TestCondition[],
+): TestCondition[] {
+  // 1. 保留 id 匹配的 conditions
+  // 2. 根据 feedback 重写/合并
+  // 3. 生成新 id 给新增的
+  // 4. 返回合并结果
+}
+```
+
+**预期收益**：
+- Token 节省 70-90%（同 Phase 1）
+- 决策质量提升（关键路径代码化）
+- 可测试性提升（`index.ts` 可写单测）
+- 与 Anthropic Skills 规范对齐（`scripts/` 目录）
+
+**风险**：
+- ReAct 工具调用风暴 → `maxIterations: 3` 限制
+- 数据流回退 → 保留 `useReActLoop: false` 旁路
+
+**工期**：2-3 天（含 5 个 skill 的 index.ts 编写 + 单测）
+
+---
+
+### Phase 3：分层架构（MCP-style，可选长期目标）
+
+**目标**：把 `references/` 改为可寻址 resource，按需 fetch。
+
+**改动**：
+
+```
+skills/requirement-index/
+  SKILL.md
+  index.ts
+  resources/             ← 改名为 resources/
+    requirement-{epicId}.json  ← 按 epic 拆分（不再 1 个 59KB 文件）
+    query-grammar.md
+  resource-manifest.ts    ← 新增：resource 注册表
+```
+
+**`resource-manifest.ts` 示例**：
+
+```typescript
+export const resources = {
+  'requirement-epic-123': {
+    uri: 'resource://requirement-index/requirement-123.json',
+    type: 'json',
+    size: 4096,
+    description: 'Requirements for epic 123 (Login & Auth)',
+  },
+  'requirement-epic-124': { /* ... */ },
+} as const;
+```
+
+**Tool 升级为 resource-aware**：
+
+```typescript
+const fetchRequirementResource = tool({
+  name: 'fetch_requirement_resource',
+  description: 'Fetch a specific requirement resource by URI. Use this when the requirement-epic summary is not enough.',
+  schema: z.object({ uri: z.string() }),
+  execute: async ({ uri }) => {
+    // 返回 resource 内容（不返回大段 JSON）
+  },
+});
+```
+
+**预期收益**：
+- 完全对齐 MCP 规范
+- 资源可订阅、可缓存
+- 适配 100+ skill 不爆 context
+
+**工期**：1 周（架构改造 + 现有 skill 迁移）
+
+---
+
+## 6. 实施清单
+
+| Phase | 任务 | 文件 | 优先级 | 风险 | 工期 |
+|-------|------|------|--------|------|------|
+| **1** | 3 个 role 加 `useProgressiveDisclosure: true` | `shared/ai/roles/{test-analyst,test-designer,quality-manager}.ts` | 高 | 极低 | < 1h |
+| **1** | 单元测试：metadata-only 加载验证 | `shared/ai/__tests__/progressive-disclosure.test.ts` | 中 | 无 | 1h |
+| **1** | 更新每个 SKILL.md 的 description（"何时用"） | `shared/ai/skills/*/SKILL.md` | 中 | 低 | 2h |
+| **1** | 文档：本研究 + 方案 | `docs/specs/2026-06-02-test-gen-skill-progressive-disclosure-industry-research.md` | 高 | 无 | 1h |
+| **2.1** | `useReActLoop` 改回默认 `true`（sub-agent） | `shared/ai-test-gen/test-generation.ts:340` | 高 | 中 | 0.5h |
+| **2.1** | 验证 `data-flow.test.ts` 仍通过 | `shared/ai-test-gen/__tests__/data-flow.test.ts` | 高 | — | 0.5h |
+| **2.2** | 写 `test-analyst/index.ts`（ISTQB 5 技术自动展开） | `shared/ai/skills/test-analyst/index.ts` | 高 | 低 | 1d |
+| **2.2** | 写 `requirement-query/index.ts`（structured query） | `shared/ai/skills/requirement-query/index.ts` | 高 | 低 | 1d |
+| **2.2** | 写 `quality-manager/index.ts`（6 维质量 checklist） | `shared/ai/skills/quality-manager/index.ts` | 中 | 低 | 0.5d |
+| **2.2** | 写 `test-designer/index.ts`（步骤排序、原子化） | `shared/ai/skills/test-designer/index.ts` | 中 | 低 | 0.5d |
+| **2.3** | 验证 ReAct 工具自动暴露 | `shared/ai/__tests__/react-loop.test.ts` | 中 | — | 0.5h |
+| **2.4** | 写 `applyHumanFeedback` 中间件 + 单测 | `shared/ai/skills/*/index.ts` | 中 | 低 | 0.5d |
+| **2** | 端到端：跑一个 batch 验证数据流 | 手工 + 截图 | 高 | — | 1d |
+| **3** | 拆分 `requirement-index/references/index.json` 为按 epic | `shared/ai/skills/requirement-index/resources/*` | 低 | 中 | 2d |
+| **3** | 加 `resource-manifest.ts` + `fetch_requirement_resource` tool | `shared/ai/skills/requirement-index/` | 低 | 中 | 2d |
+| **3** | MCP 兼容性检查 | 全局 | 低 | 低 | 1d |
+
+---
+
+## 7. 验证标准
+
+### Phase 1 验收
+
+- [ ] 3 个 role 都设置 `useProgressiveDisclosure: true`
+- [ ] 单测覆盖 metadata-only 加载
+- [ ] `npm run lint` 通过
+- [ ] `data-flow.test.ts` 仍 100% 通过
+- [ ] `pipeline.test.ts` 仍 100% 通过
+- [ ] 手工跑 1 个 batch，token 用量日志显示 < 1k tokens/skill injection
+
+### Phase 2 验收
+
+- [ ] `useReActLoop: true` 不再导致数据流断裂
+- [ ] 5 个 `skill/index.ts` 单测覆盖 > 80%
+- [ ] `execute_skill_module` 工具在 3 个 sub-agent 中可调用
+- [ ] 工具调用总轮次 ≤ 3（防风暴）
+- [ ] 端到端跑通 analyst → checkpoint → designer → checkpoint → quality → checkpoint
+- [ ] 输出的 test cases 数量与旧版持平或更多
+
+### Phase 3 验收
+
+- [ ] `requirement-index` 不再全量注入
+- [ ] `fetch_requirement_resource` 按需返回，max 5KB/次
+- [ ] 100+ skill 场景下 system prompt < 50k tokens
+- [ ] 符合 MCP 规范（resources + tools 分层）
+
+---
+
+## 8. 参考资料
+
+### 官方文档
+
+- [Anthropic: Equipping agents for the real world with Agent Skills](https://claude.com/blog/equipping-agents-for-the-real-world-with-agent-skills)
+- [Anthropic: The Complete Guide to Building Skills for Claude (PDF)](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf?hsLang=en)
+- [Anthropic Skills GitHub 仓库](https://github.com/anthropics/skills)
+- [Open Standard: agentskills.io](https://agentskills.io/)
+- [MCP Tools Spec (2025-11-25)](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)
+- [MCP Client Best Practices: Progressive Tool Discovery](https://modelcontextprotocol.io/docs/develop/clients/client-best-practices)
+- [LangChain JS: Build a SQL assistant with on-demand skills](https://docs.langchain.com/oss/javascript/langchain/multi-agent/skills-sql-assistant)
+- [LangGraph: Call tools](https://langchain-ai.github.io/langgraph/how-tos/tool-calling/)
+- [LangChain Forum: How to use a subgraph as a tool](https://forum.langchain.com/t/how-to-use-a-subgraph-as-a-tool/2175/1)
+
+### 行业实践
+
+- [MTSC 2025 参会感悟：AI 驱动的测试用例生成](https://blog.csdn.net/weixin_40025666/article/details/150543867)
+- [Qodo (Codium AI) Review 2025](https://skywork.ai/skypage/en/Qodo-(Codium-AI)-Review-2025-The-Ultimate-Guide-to-AI-Code-Integrity/1975032725448093696)
+- [Qodo: Optimizing Automated Unit Test Generation for Enterprise](https://www.qodo.ai/blog/optimizing-automated-unit-test-generation-for-enterprise/)
+- [Qodo: AI Testing Tools for Enterprise](https://www.qodo.ai/blog/enterprise-guide-to-ai-testing-tools/)
+- [TestGrid: AI Test Case Generation Guide](https://testgrid.io/blog/ai-test-case-generation/)
+- [Microsoft: MCP Resources as Tool Inputs](http://microsoft.github.io/mcscatblog/posts/mcp-resources-as-tool-inputs/)
+- [apigene.ai: What Are MCP Resources?](https://apigene.ai/blog/mcp-resources)
+
+### 中文社区
+
+- [Claude Skills 完全指南：让 AI 真正懂你的工作流](https://blog.csdn.net/qq_45066628/article/details/159732110)
+- [Anthropic 工程师总结的 9 条血泪经验](https://blog.51cto.com/u_6813689/14642241)
+- [MCP 深度解析：打通 AI 与世界的"USB-C"](https://blog.csdn.net/Kiradzy/article/details/147595927)
+- [从零开始学 LangGraph（8）：Tools + Subgraph 实战](https://developer.volcengine.com/articles/7577300994531262514)
+
+### 学术参考
+
+- Yao et al., **ReAct: Synergizing Reasoning and Acting in Language Models** (2022, Princeton + Google)
+- ISTQB Foundation Level Syllabus（5 种测试设计技术）
+
+---
+
+## 9. 决策记录
+
+| 日期 | 决策 | 原因 |
+|------|------|------|
+| 2026-06-02 | 采用 3 阶段渐进策略 | 风险可控、收益递进、长期对齐业界 |
+| 2026-06-02 | Phase 1 优先实施 | 零风险、立即收益（省 76-97% token） |
+| TBD | Phase 2 启动条件 | Phase 1 稳定运行 1 周后 |
+| TBD | Phase 3 启动条件 | skill 数量 > 20 个时 |
+
+---
+
+**本文档作为后续工作的输入。Phase 1 实施完成后，请更新本文件并归档到 `docs/superpowers/specs/` 目录。**
